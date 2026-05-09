@@ -1,9 +1,7 @@
 from core.model_router import call_model
-from core.evolve_engine import SECURITY_DIRECTIVE
-
-
 class Coder:
     async def execute(self, task: str) -> str:
+        from core.evolve_engine import SECURITY_DIRECTIVE
         prompt = f"""{SECURITY_DIRECTIVE}
         Task: {task}
         

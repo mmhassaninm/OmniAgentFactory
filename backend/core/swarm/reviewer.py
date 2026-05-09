@@ -1,9 +1,7 @@
 from core.model_router import call_model
-from core.evolve_engine import SECURITY_DIRECTIVE
-
-
 class Reviewer:
     async def execute(self, task: str, previous_results: list) -> str:
+        from core.evolve_engine import SECURITY_DIRECTIVE
         context = "\n".join([r["result"] for r in previous_results[-3:]])
         prompt = f"""{SECURITY_DIRECTIVE}
         Review this work and suggest improvements:

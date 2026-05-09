@@ -100,3 +100,24 @@ class Orchestrator:
             output_lines.append(f"\nTask: {item['task']}")
             output_lines.append(f"Result:\n{item['result']}")
         return "\n".join(output_lines)
+
+    async def execute_task(self, task_description: str, max_iterations: int = 3) -> dict:
+        """
+        Main entry point for UI and optimization loop.
+        Wraps run_swarm to provide backward compatibility with services.swarm.
+        """
+        logger.info(f"[Swarm Orchestrator] Executing task: {task_description[:50]}...")
+        # Use a dummy agent_id and pass None for db since the logging handles missing db.
+        final_str = await self.run_swarm(task_description, "SWARM_STANDALONE", None)
+        
+        return {
+            "task": task_description,
+            "status": "success",
+            "iterations_used": 1,
+            "final_code": final_str,
+            "research_context": "Swarm dynamically planned and executed tasks.",
+            "reviewer_feedback": "N/A"
+        }
+
+swarm_orchestrator = Orchestrator()
+

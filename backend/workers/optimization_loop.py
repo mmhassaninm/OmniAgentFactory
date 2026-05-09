@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from services.swarm.orchestrator import swarm_orchestrator
+from core.swarm.orchestrator import swarm_orchestrator
 from services.vector_db import vector_memory
 from models.settings import get_settings
 import os

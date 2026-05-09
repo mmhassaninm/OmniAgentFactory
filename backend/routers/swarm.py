@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from services.swarm.orchestrator import swarm_orchestrator
+from core.swarm.orchestrator import swarm_orchestrator
 import logging
 
 router = APIRouter()
