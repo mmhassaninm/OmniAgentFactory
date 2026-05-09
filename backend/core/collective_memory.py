@@ -33,7 +33,7 @@ async def contribute_memory(
         "discovery": discovery[:1000],   # cap to keep docs small
         "context": context[:500],
         "score_delta": score_delta,
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(),
         "times_helped": 0,
     })
 

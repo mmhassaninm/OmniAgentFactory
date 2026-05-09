@@ -71,7 +71,7 @@ class PromptEvolver:
                         "version": 1,
                         "template_text": DEFAULT_TEMPLATE_V1,
                         "status": "active",
-                        "created_at": datetime.utcnow(),
+                        "created_at": datetime.now(),
                         "cycles_used": 0,
                         "avg_score_delta": 0.0,
                         "total_cycles": 0,
@@ -136,7 +136,7 @@ class PromptEvolver:
                 {"version": self._active_version, "status": "active"},
                 {
                     "$inc": {"cycles_used": 1, "total_cycles": 1},
-                    "$set": {"avg_score_delta": avg, "last_updated": datetime.utcnow()},
+                    "$set": {"avg_score_delta": avg, "last_updated": datetime.now()},
                 },
             )
         except Exception:
@@ -203,7 +203,7 @@ class PromptEvolver:
                 "version": new_version,
                 "template_text": new_template,
                 "status": "candidate",
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(),
                 "cycles_used": 0,
                 "avg_score_delta": 0.0,
                 "total_cycles": 0,
@@ -240,13 +240,13 @@ class PromptEvolver:
                 # Promote candidate → active
                 await db.prompt_templates.update_one(
                     {"version": self._active_version, "status": "active"},
-                    {"$set": {"status": "retired", "retired_at": datetime.utcnow(), "final_avg": active_avg}},
+                    {"$set": {"status": "retired", "retired_at": datetime.now(), "final_avg": active_avg}},
                 )
                 await db.prompt_templates.update_one(
                     {"version": self._candidate_version, "status": "candidate"},
                     {"$set": {
                         "status": "active",
-                        "promoted_at": datetime.utcnow(),
+                        "promoted_at": datetime.now(),
                         "beat_active_avg": active_avg,
                         "own_avg": cand_avg,
                         "improvement_pct": round((cand_avg - active_avg) / max(active_avg, 0.0001) * 100, 2),
@@ -256,7 +256,7 @@ class PromptEvolver:
                 # Log factory self-upgrade event
                 await db.factory_events.insert_one({
                     "event": "prompt_evolver_promoted_new_template",
-                    "timestamp": datetime.utcnow(),
+                    "timestamp": datetime.now(),
                     "old_version": self._active_version,
                     "new_version": self._candidate_version,
                     "improvement_pct": round((cand_avg - active_avg) / max(active_avg, 0.0001) * 100, 2),
@@ -271,7 +271,7 @@ class PromptEvolver:
                 # Retire the candidate
                 await db.prompt_templates.update_one(
                     {"version": self._candidate_version, "status": "candidate"},
-                    {"$set": {"status": "discarded", "discarded_at": datetime.utcnow(), "reason": "did not beat active"}},
+                    {"$set": {"status": "discarded", "discarded_at": datetime.now(), "reason": "did not beat active"}},
                 )
                 logger.info("[PROMPT_EVOLVER] Candidate v%d discarded (not better than active)", self._candidate_version)
 

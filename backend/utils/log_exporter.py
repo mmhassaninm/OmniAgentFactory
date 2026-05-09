@@ -26,7 +26,7 @@ async def export_thoughts_to_md(agent_id: str, agent_name: str, db):
         
         with open(filename, "w", encoding="utf-8") as f:
             f.write(f"# {agent_name} — Thought Log\n")
-            f.write(f"*Exported: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC*\n\n")
+            f.write(f"*Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} UTC*\n\n")
             f.write("---\n\n")
             
             for t in thoughts:

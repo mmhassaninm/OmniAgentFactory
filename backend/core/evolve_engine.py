@@ -393,7 +393,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                                 "score": score,
                                 "version": new_version,
                                 "status": AgentStatus.EVOLVING.value,
-                                "updated_at": datetime.utcnow(),
+                                "updated_at": datetime.now(),
                             }
                         },
                     ),
@@ -687,7 +687,7 @@ class EvolutionManager:
 
         await db.agents.update_one(
             {"id": agent_id},
-            {"$set": {"status": "paused_unsafe", "updated_at": datetime.utcnow()}},
+            {"$set": {"status": "paused_unsafe", "updated_at": datetime.now()}},
         )
         await log_thought(agent_id, "🛑 Hard stopped — will restart from last COMMIT", phase="general")
         await checkpoint_rollback(agent_id)
@@ -716,7 +716,7 @@ class EvolutionManager:
 
         await db.agents.update_one(
             {"id": agent_id},
-            {"$set": {"status": "paused", "updated_at": datetime.utcnow()}},
+            {"$set": {"status": "paused", "updated_at": datetime.now()}},
         )
         await log_thought(agent_id, "⏸ Paused safely — can resume from exact state", phase="general")
         return True

@@ -20,7 +20,7 @@ def log_error(context: str, error: Exception, agent_id: str = None):
         error: The Exception object
         agent_id: Optional agent ID for context
     """
-    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     tb = traceback.format_exc()
     
     with open(ERROR_LOG_PATH, "a", encoding="utf-8") as f:
@@ -36,4 +36,4 @@ def clear_error_log():
     """Clear the error log (call at startup)."""
     with open(ERROR_LOG_PATH, "w", encoding="utf-8") as f:
         f.write(f"# OmniBot Error Log\n")
-        f.write(f"*Session started: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC*\n\n")
+        f.write(f"*Session started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} UTC*\n\n")

@@ -16,6 +16,7 @@ import ThoughtLog from '../components/ThoughtLog'
 import KillSwitch from '../components/KillSwitch'
 import GenealogyTree from '../components/GenealogyTree'
 import { useState } from 'react'
+import { useLang } from '../i18n/LanguageContext'
 
 const STATUS_CLASSES: Record<string, string> = {
   evolving: 'status-evolving',
@@ -31,6 +32,7 @@ const STATUS_CLASSES: Record<string, string> = {
 export default function AgentDetail() {
   const { agentId } = useParams<{ agentId: string }>()
   const navigate = useNavigate()
+  const { t } = useLang()
   const { data: agent, isLoading } = useAgent(agentId || '')
   const { data: thoughtsData } = useAgentThoughts(agentId || '')
   const { data: versionsData } = useAgentVersions(agentId || '')
@@ -44,7 +46,6 @@ export default function AgentDetail() {
 
   const [isEditingBudget, setIsEditingBudget] = useState(false)
   const [editedBudgetLimit, setEditedBudgetLimit] = useState<number | ''>('')
-
   const [activeFilter, setActiveFilter] = useState('all')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     mission: false,
@@ -88,13 +89,13 @@ export default function AgentDetail() {
     activeFilter === 'all'
       ? allThoughts
       : activeFilter === 'cascade'
-        ? allThoughts.filter(t =>
-            (t.message || '').toLowerCase().includes('cascade') ||
-            (t.message || '').toLowerCase().includes('fallback'),
+        ? allThoughts.filter(th =>
+            (th.message || '').toLowerCase().includes('cascade') ||
+            (th.message || '').toLowerCase().includes('fallback'),
           )
-        : allThoughts.filter(t => t.phase === activeFilter)
+        : allThoughts.filter(th => th.phase === activeFilter)
 
-  const errorThoughts = allThoughts.filter(t => t.phase === 'error')
+  const errorThoughts = allThoughts.filter(th => th.phase === 'error')
 
   const getFilterCount = (f: string) => {
     if (f === 'testing') return thoughtSummary.test || 0
@@ -136,7 +137,7 @@ export default function AgentDetail() {
         className="flex items-center gap-2 text-sm text-text-muted hover:text-text-primary mb-6 transition-colors group"
       >
         <span className="group-hover:-translate-x-1 transition-transform">←</span>
-        Back to Factory
+        {t('detail.back')}
       </button>
 
       {/* ── SECTION 1: Identity Card (sticky) ──────────────────────────── */}
@@ -145,35 +146,33 @@ export default function AgentDetail() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1 flex-wrap">
               <h1 className="text-2xl font-black truncate">{agent.name}</h1>
-              <span
-                className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 ${STATUS_CLASSES[agent.status] || 'status-idle'}`}
-              >
+              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 ${STATUS_CLASSES[agent.status] || 'status-idle'}`}>
                 {agent.status}
               </span>
             </div>
             <p className="text-[10px] text-text-muted font-mono mb-3 truncate">{agent.id}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
               <span className="text-text-secondary">
-                Template:{' '}
+                {t('detail.template_label')}{' '}
                 <span className="text-text-primary font-medium">{agent.template || 'general'}</span>
               </span>
               <span className="text-text-secondary">
-                Created:{' '}
+                {t('detail.created_label')}{' '}
                 <span className="text-text-primary font-medium">
                   {new Date(agent.created_at).toLocaleDateString()}
                 </span>
               </span>
               <span className="text-text-secondary">
-                Version: <span className="text-accent-primary font-bold">v{agent.version}</span>
+                {t('detail.version_label')} <span className="text-accent-primary font-bold">v{agent.version}</span>
               </span>
               <span className="text-text-secondary">
-                Score:{' '}
+                {t('detail.score_label')}{' '}
                 <span className="font-bold" style={{ color: scoreColor }}>
                   {score}%
                 </span>
               </span>
               <span className="text-text-secondary">
-                Cycles:{' '}
+                {t('detail.cycles_label')}{' '}
                 <span className="text-text-primary font-medium">{agent.cycles_completed || 0}</span>
               </span>
             </div>
@@ -182,21 +181,13 @@ export default function AgentDetail() {
             <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
               <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(100,116,139,0.1)" strokeWidth="2" />
               <circle
-                cx="18"
-                cy="18"
-                r="15.9"
-                fill="none"
-                stroke={scoreColor}
-                strokeWidth="2.5"
+                cx="18" cy="18" r="15.9" fill="none"
+                stroke={scoreColor} strokeWidth="2.5"
                 strokeDasharray={`${score} ${100 - score}`}
-                strokeLinecap="round"
-                className="transition-all duration-1000"
+                strokeLinecap="round" className="transition-all duration-1000"
               />
             </svg>
-            <span
-              className="absolute inset-0 flex items-center justify-center text-sm font-black"
-              style={{ color: scoreColor }}
-            >
+            <span className="absolute inset-0 flex items-center justify-center text-sm font-black" style={{ color: scoreColor }}>
               {score}%
             </span>
           </div>
@@ -208,7 +199,7 @@ export default function AgentDetail() {
               className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-bold transition-colors flex items-center gap-2"
             >
               <span>💬</span>
-              <span>USE — Chat with this Agent</span>
+              <span>{t('detail.use_chat')}</span>
             </button>
           </div>
           <KillSwitch
@@ -225,7 +216,7 @@ export default function AgentDetail() {
 
       {/* ── SECTION 2: Mission Brief ─────────────────────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Mission Brief" sectionKey="mission" icon="🎯" />
+        <SectionHeader title={t('detail.mission')} sectionKey="mission" icon="🎯" />
         {!collapsed.mission && (
           <div className="space-y-4">
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20">
@@ -234,7 +225,7 @@ export default function AgentDetail() {
             {catalogParsed.summary && (
               <div>
                 <p className="text-[10px] text-text-muted uppercase font-bold tracking-wider mb-2">
-                  Summary
+                  {t('detail.summary')}
                 </p>
                 <p className="text-text-secondary text-sm leading-relaxed">{catalogParsed.summary}</p>
               </div>
@@ -242,7 +233,7 @@ export default function AgentDetail() {
             {catalogParsed.how_it_works && (
               <div>
                 <p className="text-[10px] text-text-muted uppercase font-bold tracking-wider mb-2">
-                  How It Works
+                  {t('detail.how_it_works')}
                 </p>
                 <ol className="space-y-1.5">
                   {(Array.isArray(catalogParsed.how_it_works)
@@ -263,46 +254,27 @@ export default function AgentDetail() {
 
       {/* ── SECTION 3: Performance Metrics (2×3 grid) ────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Performance Metrics" sectionKey="metrics" icon="📊" />
+        <SectionHeader title={t('detail.metrics')} sectionKey="metrics" icon="📊" />
         {!collapsed.metrics && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {/* Score Ring */}
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20 flex flex-col items-center">
               <div className="relative w-14 h-14 mb-2">
                 <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.9"
-                    fill="none"
-                    stroke="rgba(100,116,139,0.1)"
-                    strokeWidth="2.5"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.9"
-                    fill="none"
-                    stroke={scoreColor}
-                    strokeWidth="2.5"
-                    strokeDasharray={`${score} ${100 - score}`}
-                    strokeLinecap="round"
-                  />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(100,116,139,0.1)" strokeWidth="2.5" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke={scoreColor} strokeWidth="2.5" strokeDasharray={`${score} ${100 - score}`} strokeLinecap="round" />
                 </svg>
-                <span
-                  className="absolute inset-0 flex items-center justify-center text-xs font-black"
-                  style={{ color: scoreColor }}
-                >
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-black" style={{ color: scoreColor }}>
                   {score}%
                 </span>
               </div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider">Score</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider">{t('detail.score')}</div>
             </div>
 
             {/* Evolution Cycles */}
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20 flex flex-col items-center justify-center">
               <div className="text-3xl font-black text-accent-primary">{agent.cycles_completed || 0}</div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">Cycles</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">{t('detail.cycles')}</div>
             </div>
 
             {/* Total Tokens */}
@@ -310,13 +282,13 @@ export default function AgentDetail() {
               <div className="text-3xl font-black text-text-primary">
                 {((agent.total_tokens_used || 0) / 1000).toFixed(1)}K
               </div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">Tokens Today</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">{t('detail.tokens_today')}</div>
             </div>
 
             {/* Daily Budget Progress */}
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20 col-span-2 sm:col-span-1 flex flex-col justify-between min-h-[120px]">
               <div className="flex items-center justify-between mb-3 w-full">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Daily Budget</div>
+                <div className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">{t('detail.daily_budget')}</div>
                 {!isEditingBudget ? (
                   <button
                     onClick={() => {
@@ -325,7 +297,7 @@ export default function AgentDetail() {
                     }}
                     className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-all flex items-center gap-1 font-semibold bg-indigo-500/10 hover:bg-indigo-500/25 px-2 py-0.5 rounded-md border border-indigo-500/10"
                   >
-                    ✏️ Edit Limit
+                    {t('detail.edit_limit')}
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5">
@@ -342,18 +314,17 @@ export default function AgentDetail() {
                       disabled={updateBudgetMut.isPending}
                       className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold bg-emerald-500/10 hover:bg-emerald-500/25 px-2 py-0.5 rounded-md transition-colors disabled:opacity-50 border border-emerald-500/10"
                     >
-                      {updateBudgetMut.isPending ? 'Saving...' : '💾 Save'}
+                      {updateBudgetMut.isPending ? t('detail.saving') : t('detail.save')}
                     </button>
                     <button
                       onClick={() => setIsEditingBudget(false)}
                       className="text-[10px] text-text-muted hover:text-text-primary font-medium bg-bg-base/50 border border-border-default/15 px-2 py-0.5 rounded-md transition-colors"
                     >
-                      Cancel
+                      {t('detail.cancel')}
                     </button>
                   </div>
                 )}
               </div>
-
               {isEditingBudget ? (
                 <div className="space-y-3 w-full">
                   <div className="flex items-center gap-2">
@@ -365,7 +336,7 @@ export default function AgentDetail() {
                       placeholder="Limit (e.g. 100000)"
                       min="0"
                     />
-                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider">tokens</span>
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider">{t('detail.tokens')}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button
@@ -398,12 +369,12 @@ export default function AgentDetail() {
                       />
                     </div>
                     <div className="text-xs text-text-muted flex justify-between font-medium">
-                      <span>{agent.budget.utilization_pct || 0}% used</span>
-                      <span>{(agent.budget.max_daily || 0).toLocaleString()} tokens</span>
+                      <span>{agent.budget.utilization_pct || 0}% {t('detail.used')}</span>
+                      <span>{(agent.budget.max_daily || 0).toLocaleString()} {t('detail.tokens')}</span>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-text-muted italic">No budget data</div>
+                  <div className="text-xs text-text-muted italic">{t('detail.budget_none')}</div>
                 )
               )}
             </div>
@@ -411,13 +382,13 @@ export default function AgentDetail() {
             {/* Success Rate */}
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20 flex flex-col items-center justify-center">
               <div className="text-3xl font-black text-emerald-400">{agent.success_rate || 0}%</div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">Success Rate</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">{t('detail.success_rate')}</div>
             </div>
 
             {/* Interval */}
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20 flex flex-col items-center justify-center">
               <div className="text-3xl font-black text-text-primary">{agent.evolve_interval_seconds}s</div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">Interval</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1">{t('detail.interval')}</div>
             </div>
           </div>
         )}
@@ -425,29 +396,27 @@ export default function AgentDetail() {
 
       {/* ── SECTION 4: Provider Intelligence ─────────────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Provider Intelligence" sectionKey="provider" icon="🔌" />
+        <SectionHeader title={t('detail.provider')} sectionKey="provider" icon="🔌" />
         {!collapsed.provider && (
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20">
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Last Provider</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">{t('detail.last_provider')}</div>
               <div className="text-sm font-bold text-text-primary font-mono">
                 {cascadeStats.last_provider || '—'}
               </div>
             </div>
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20">
               <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
-                Cascade Switches
+                {t('detail.cascade_switches')}
               </div>
               <div className="text-2xl font-black text-amber-400">
                 {cascadeStats.total_switches || 0}
               </div>
             </div>
             <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20">
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">Health</div>
-              <div
-                className={`text-sm font-bold ${agent.status === 'error' ? 'text-red-400' : 'text-emerald-400'}`}
-              >
-                {agent.status === 'error' ? 'Degraded' : 'Healthy'}
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">{t('detail.health')}</div>
+              <div className={`text-sm font-bold ${agent.status === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>
+                {agent.status === 'error' ? t('detail.degraded') : t('detail.healthy')}
               </div>
             </div>
           </div>
@@ -456,7 +425,7 @@ export default function AgentDetail() {
 
       {/* ── SECTION 5: Live Thought Stream ───────────────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Live Thought Stream" sectionKey="thoughts" icon="💭" />
+        <SectionHeader title={t('detail.thoughts')} sectionKey="thoughts" icon="💭" />
         {!collapsed.thoughts && (
           <div>
             <div className="flex flex-wrap gap-2 mb-4">
@@ -484,11 +453,11 @@ export default function AgentDetail() {
 
       {/* ── SECTION 6: Evolution Timeline ────────────────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Evolution Timeline" sectionKey="timeline" icon="🧬" />
+        <SectionHeader title={t('detail.timeline')} sectionKey="timeline" icon="🧬" />
         {!collapsed.timeline && (
           <div>
             {versions.length === 0 ? (
-              <p className="text-xs text-text-muted italic">No committed versions yet</p>
+              <p className="text-xs text-text-muted italic">{t('detail.no_versions')}</p>
             ) : (
               <div className="overflow-x-auto pb-2">
                 <div className="flex items-center min-w-max">
@@ -519,10 +488,7 @@ export default function AgentDetail() {
                           </div>
                           <div className="text-[9px] text-text-muted">
                             {v.timestamp
-                              ? new Date(v.timestamp).toLocaleDateString('en', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                })
+                              ? new Date(v.timestamp).toLocaleDateString('en', { month: 'short', day: 'numeric' })
                               : ''}
                           </div>
                         </button>
@@ -548,7 +514,7 @@ export default function AgentDetail() {
 
       {/* ── SECTION 7: Agent Code Viewer ─────────────────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Agent Code" sectionKey="code" icon="💻" />
+        <SectionHeader title={t('detail.code')} sectionKey="code" icon="💻" />
         {!collapsed.code && (
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -561,11 +527,11 @@ export default function AgentDetail() {
                 }}
                 className="text-[10px] text-accent-primary hover:text-accent-primary/80 transition-colors"
               >
-                {copiedCode ? '✓ Copied' : 'Copy'}
+                {copiedCode ? t('detail.copied') : t('detail.copy')}
               </button>
             </div>
             <pre className="text-[11px] text-text-secondary font-mono bg-bg-base/50 rounded-lg p-3 border border-border-default/30 overflow-x-auto max-h-[300px] overflow-y-auto">
-              {agent.agent_code || 'No code yet'}
+              {agent.agent_code || t('detail.no_code')}
             </pre>
           </div>
         )}
@@ -573,24 +539,21 @@ export default function AgentDetail() {
 
       {/* ── SECTION 8: Known Limitations ─────────────────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Known Limitations" sectionKey="limitations" icon="⚠" />
+        <SectionHeader title={t('detail.limitations')} sectionKey="limitations" icon="⚠" />
         {!collapsed.limitations && (
           <div>
             {errorThoughts.length === 0 ? (
-              <p className="text-xs text-text-muted italic">No failures recorded yet</p>
+              <p className="text-xs text-text-muted italic">{t('detail.no_failures')}</p>
             ) : (
               <div className="space-y-2">
-                {errorThoughts.slice(0, 10).map((t: any, i: number) => (
-                  <div
-                    key={i}
-                    className="flex gap-2 text-xs bg-red-950/20 rounded-lg px-3 py-2 border border-red-500/10"
-                  >
+                {errorThoughts.slice(0, 10).map((th: any, i: number) => (
+                  <div key={i} className="flex gap-2 text-xs bg-red-950/20 rounded-lg px-3 py-2 border border-red-500/10">
                     <span className="text-red-400 shrink-0 mt-0.5">⚠</span>
                     <div className="flex-1 min-w-0">
-                      <span className="text-text-secondary break-words">{t.message}</span>
-                      {t.timestamp && (
+                      <span className="text-text-secondary break-words">{th.message}</span>
+                      {th.timestamp && (
                         <div className="text-[10px] text-text-muted mt-0.5">
-                          {new Date(t.timestamp).toLocaleString()}
+                          {new Date(th.timestamp).toLocaleString()}
                         </div>
                       )}
                     </div>
@@ -604,7 +567,7 @@ export default function AgentDetail() {
 
       {/* ── SECTION 9: Raw Catalog JSON (collapsed by default) ───────────── */}
       <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4">
-        <SectionHeader title="Raw Catalog JSON" sectionKey="catalog" icon="📋" />
+        <SectionHeader title={t('detail.catalog')} sectionKey="catalog" icon="📋" />
         {!collapsed.catalog && (
           <pre className="text-[11px] text-text-secondary font-mono bg-bg-base/50 rounded-lg p-3 border border-border-default/30 overflow-x-auto max-h-[300px] overflow-y-auto">
             {JSON.stringify(catalogParsed, null, 2)}
@@ -619,21 +582,21 @@ export default function AgentDetail() {
 
       {/* ── Danger Zone ──────────────────────────────────────────────────── */}
       <div className="bg-bg-surface rounded-2xl border border-red-500/10 p-5 mb-4">
-        <h2 className="text-sm font-bold text-red-400/70 uppercase tracking-wider mb-3">Danger Zone</h2>
+        <h2 className="text-sm font-bold text-red-400/70 uppercase tracking-wider mb-3">{t('detail.danger_zone')}</h2>
         {showDeleteConfirm ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-red-300">Permanently delete this agent?</span>
+            <span className="text-xs text-red-300">{t('detail.delete_confirm')}</span>
             <button
               onClick={handleDelete}
               className="px-3 py-1 text-xs bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors"
             >
-              Delete
+              {t('detail.delete')}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(false)}
               className="px-3 py-1 text-xs bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
             >
-              Cancel
+              {t('detail.cancel')}
             </button>
           </div>
         ) : (
@@ -641,7 +604,7 @@ export default function AgentDetail() {
             onClick={() => setShowDeleteConfirm(true)}
             className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
           >
-            Delete this agent →
+            {t('detail.delete_agent')}
           </button>
         )}
       </div>

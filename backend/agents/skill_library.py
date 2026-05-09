@@ -84,11 +84,11 @@ class SkillLibrary:
                         "code": code,
                         "description": description,
                         "success_rate": success_rate,
-                        "updated_at": datetime.utcnow(),
+                        "updated_at": datetime.now(),
                     },
                     "$addToSet": {"used_by": agent_id},
                     "$setOnInsert": {
-                        "created_at": datetime.utcnow(),
+                        "created_at": datetime.now(),
                     },
                 },
                 upsert=True,
@@ -146,7 +146,7 @@ class SkillLibrary:
 
         await db.skills.update_one(
             {"name": name},
-            {"$set": {"success_rate": new_rate, "updated_at": datetime.utcnow()}},
+            {"$set": {"success_rate": new_rate, "updated_at": datetime.now()}},
         )
 
     async def delete_skill(self, name: str) -> bool:

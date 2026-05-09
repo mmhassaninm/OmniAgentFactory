@@ -1,5 +1,24 @@
 # MODIFICATION HISTORY
 
+## [2026-05-09] — Added validation for Cerebras, Cloudflare, LlamaCloud
+- Files changed: settings.py, Settings.tsx
+- Approach: Added specific validation logic for each provider in _validate_single_key, updated KEY_DEFINITIONS label for Cloudflare, updated placeholders in KEY_META
+- Outcome: success
+- Notes: Cerebras uses LiteLLM, Cloudflare requires TOKEN|ACCOUNT_ID format, LlamaCloud uses httpx GET. Backend restart required (Docker not running currently).
+
+## [2026-05-09] — Added 3 providers: Cerebras, Cloudflare, LlamaCloud
+- Files changed: model_router.py, config.py, .env.example, Settings.tsx
+- Approach: Extended cascader with 3 new free providers, added rate limits, env vars, and Settings UI entries
+- Outcome: success
+- Notes: Cloudflare requires Account ID + API Token. Cerebras is fastest (sub-second inference). LlamaCloud optimized for Llama models.
+
+## [2026-05-09] — Full Integration: Arabic i18n + Security + Browser + Revenue
+- Files changed : `frontend/src/i18n/translations.ts`, `frontend/src/pages/Factory.tsx`, `frontend/src/components/AgentCard.tsx`, `frontend/src/pages/Settings.tsx`, `frontend/src/pages/AgentDetail.tsx`, `frontend/src/pages/AgentPreview.tsx`, `.gitignore`, `README.md`, `backend/tools/browser_tool.py`, `backend/core/revenue_engine.py`, `backend/agents/templates/revenue_agent.py`, `backend/core/config.py`, `.env.example`, `start_omnibot.bat`
+- Approach      : (1) Added 80+ translation keys (en+ar) covering Factory, AgentCard, Settings, AgentDetail, AgentPreview, and Revenue Engine. (2) Updated all 5 components to import `useLang()` and replace every hardcoded visible string with `t("key")`. STATUS_LABELS in AgentCard now computed inside component body using t(). TEMPLATES array moved inside Factory component to allow t() access. (3) Added 4th Revenue Agent template to create-agent modal (4-column grid). (4) Added Revenue Engine section to Settings.tsx with PayPal.me input, price input, browser automation toggle. (5) Replaced .gitignore with military-grade version blocking .env, secrets, logs, __pycache__, chroma_data, ERROR_LOG.md, etc. (6) Created README.md. (7) Created `backend/tools/browser_tool.py` using Playwright for web search, page content, and screenshots. (8) Created `backend/core/revenue_engine.py` with payment message generator and pitch helper. (9) Created `backend/agents/templates/revenue_agent.py` with revenue agent system prompt. (10) Added `paypal_me_link`, `default_service_price`, `revenue_mode` to `backend/core/config.py`. (11) Added revenue vars to `.env.example`. (12) Added clean kill block at top of `start_omnibot.bat`.
+- Outcome       : success
+- Notes         : Build: 266 modules, 0 errors. All components fully translated. .env confirmed in .gitignore. Revenue Engine wired end-to-end (config → engine → frontend UI). Browser tool uses Playwright (requires `pip install playwright && playwright install chromium`).
+
+
 ## [2026-05-09] — Fix black screen: Factory.tsx missing useLang() destructure + backend integrations
 - Files changed : `frontend/src/pages/Factory.tsx`, `backend/main.py`, `backend/core/evolve_engine.py`
 - Approach      : **Root cause of black screen**: Factory.tsx imported `useLang` from LanguageContext but never called it in the component body. Lines 112/117/120 referenced `lang` and `setLang` directly, causing `ReferenceError` at runtime that crashed the React tree. Fix: added `const { lang, setLang } = useLang()` at the top of the Factory component. **Backend wiring**: (1) Added `clear_error_log()` call in `main.py` lifespan startup so ERROR_LOG.md is reset on every session. (2) Added `export_thoughts_to_md()` call in `evolve_engine.py` after every successful COMMIT, writing thought log to `logs/exports/{agent_name}.md`. Both backend calls are wrapped in try/except so failures never break the core loop.
@@ -215,3 +234,14 @@
 - Outcome       : success
 - Notes         : The dynamic chat output is confirmed fixed (responses 1 and 3 are genuinely different). Rollback safety layers and FAILURE_TAX exponential backoffs were live-validated during QuantumSEO evolution. All artifacts (including a premium walkthrough.md) are generated and embedded with screenshots and high-fidelity browser recording.
 
+## [2026-05-09] — Integrated Cryptographic Key Vault settings page
+- Files changed : `backend/routers/settings.py`, `frontend/src/pages/KeyVault.tsx`, `frontend/src/App.tsx`, `frontend/src/pages/Factory.tsx`, `frontend/src/pages/Settings.tsx`
+- Approach      : (1) Added full AES-256 (Fernet) encryption backend endpoints with auto-seeding logic, active validation, secure single-key decryptions, and index-dropping migrations for duplicate keys. (2) Constructed a TypeScript Key Vault UI page with high-fidelity dark styling, profile switchers, key countdown reveals, modal registers, and a JetBrains Mono Activity Log. (3) Ran complete Docker-compose rebuild and E2E subagent automated validation.
+- Outcome       : success
+- Notes         : Dropped legacy database index env_name_1 in MongoDB during seeding, preventing any duplicate key errors from older schema instances. E2E browser checks verified all user interactions perfectly.
+
+## [2026-05-09] — Key Vault Profiles support & Settings page cleanup
+- Files changed : backend/routers/settings.py, frontend/src/pages/Settings.tsx, backend/main.py, backend/routers/settings.py, frontend/src/pages/KeyVault.tsx
+- Approach      : (1) Added Add/Delete account profiles support in KeyVault sidebar + MODAL creation; cascade-delete profile and all keys from MongoDB. (2) Removed all legacy API key configuration input panels from Settings.tsx and replaced with premium "Centralized Cryptographic Key Vault" migration CTA card. (3) Isolated all backend legacy routers inside individual resilient try-except blocks to prevent third-party database schema bugs (e.g. SQLite ChromaDB topics) from blocking healthy router startups. (4) Re-ran uvicorn on port 3001 and successfully executed complete browser subagent E2E testing of profiles, keys registration, symmetric decryption timers, and clean settings page updates.
+- Outcome       : success
+- Notes         : Individual router try-except wrappers inside main.py are exceptionally resilient and prevent external dependency failures from blocking settings and key management. All browser checks successfully completed and visually verified via output screenshots.

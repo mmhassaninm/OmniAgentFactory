@@ -1,5 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useLang } from "../i18n/LanguageContext";
+
+const formatTime = (ts: string) => {
+  if (!ts) return "";
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return ts;
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch {
+    return ts;
+  }
+};
 
 interface Thought {
   timestamp: string;
@@ -36,6 +48,7 @@ const phaseIcons: Record<string, string> = {
 
 export default function AgentPreview() {
   const { agentId } = useParams<{ agentId: string }>();
+  const { t } = useLang();
   const [data, setData] = useState<PreviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const thoughtsEndRef = useRef<HTMLDivElement>(null);
@@ -47,13 +60,13 @@ export default function AgentPreview() {
       const json = await res.json();
       setData(json);
     } catch (e) {
-      setError("Cannot load preview data");
+      setError(t("preview.error_msg"));
     }
   };
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 2000); // refresh every 2s
+    const interval = setInterval(fetchData, 2000);
     return () => clearInterval(interval);
   }, [agentId]);
 
@@ -63,12 +76,12 @@ export default function AgentPreview() {
 
   if (error) return (
     <div style={{ padding: "2rem", color: "var(--color-text-danger)", fontFamily: "monospace" }}>
-      {error} — <Link to="/" style={{ color: "var(--color-text-info)" }}>Back to Factory</Link>
+      {error} — <Link to="/" style={{ color: "var(--color-text-info)" }}>{t("preview.back")}</Link>
     </div>
   );
 
   if (!data) return (
-    <div style={{ padding: "2rem", color: "var(--color-text-secondary)" }}>Loading preview...</div>
+    <div style={{ padding: "2rem", color: "var(--color-text-secondary)" }}>{t("preview.loading")}</div>
   );
 
   const { agent, thoughts, score_history } = data;
@@ -76,6 +89,12 @@ export default function AgentPreview() {
   const phaseIcon = phaseIcons[data.current_phase] || "💤";
   const scorePercent = Math.round(agent.score * 100);
   const maxScore = Math.max(...score_history.map(s => s.score), 0.01);
+
+  const getPhaseDescription = (phase: string): string => {
+    const key = `preview.phase.${phase}` as const;
+    const result = t(key);
+    return result !== key ? result : "";
+  };
 
   return (
     <div style={{
@@ -89,7 +108,7 @@ export default function AgentPreview() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
         <div>
           <Link to="/" style={{ color: "var(--color-text-secondary)", fontSize: "13px", textDecoration: "none" }}>
-            ← Factory
+            {t("preview.back")}
           </Link>
           <h1 style={{ fontSize: "20px", fontWeight: 500, margin: "4px 0 0" }}>
             {phaseIcon} {agent.name}
@@ -107,7 +126,7 @@ export default function AgentPreview() {
             animation: data.evolving ? "pulse 1.5s infinite" : "none",
           }} />
           <span style={{ fontSize: "12px", color: data.evolving ? "#10b981" : "#6b7280" }}>
-            {data.evolving ? "LIVE EVOLVING" : "IDLE"}
+            {data.evolving ? t("preview.live") : t("preview.idle")}
           </span>
         </div>
       </div>
@@ -122,16 +141,12 @@ export default function AgentPreview() {
           borderRadius: "12px",
           padding: "1.25rem",
         }}>
-          <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 8px" }}>CURRENT PHASE</p>
+          <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 8px" }}>{t("preview.phase")}</p>
           <div style={{ fontSize: "28px", fontWeight: 700, color: phaseColor }}>
             {phaseIcon} {data.current_phase.toUpperCase()}
           </div>
           <p style={{ fontSize: "12px", color: "var(--color-text-secondary)", marginTop: "8px" }}>
-            {data.current_phase === "draft" && "Generating a new improved version..."}
-            {data.current_phase === "test" && "Evaluating the new version..."}
-            {data.current_phase === "commit" && "Saving successful evolution..."}
-            {data.current_phase === "idle" && "Waiting for next evolution cycle..."}
-            {data.current_phase === "error" && "An error occurred — retrying..."}
+            {getPhaseDescription(data.current_phase)}
           </p>
         </div>
 
@@ -158,10 +173,10 @@ export default function AgentPreview() {
             </text>
           </svg>
           <div>
-            <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 4px" }}>SCORE</p>
-            <p style={{ fontSize: "14px", fontWeight: 500, margin: "0 0 4px" }}>Version {agent.version}</p>
+            <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 4px" }}>{t("preview.score")}</p>
+            <p style={{ fontSize: "14px", fontWeight: 500, margin: "0 0 4px" }}>{t("preview.version_label")} {agent.version}</p>
             <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: 0 }}>
-              Best: {Math.round(maxScore * 100)}%
+              {t("preview.best")}: {Math.round(maxScore * 100)}%
             </p>
           </div>
         </div>
@@ -176,7 +191,7 @@ export default function AgentPreview() {
           padding: "1.25rem",
           marginBottom: "1rem",
         }}>
-          <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 12px" }}>SCORE EVOLUTION</p>
+          <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 12px" }}>{t("preview.evolution")}</p>
           <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "60px" }}>
             {score_history.map((s) => (
               <div key={s.version} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -204,15 +219,15 @@ export default function AgentPreview() {
         overflowY: "auto",
       }}>
         <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 12px" }}>
-          LIVE THOUGHT STREAM {data.evolving && "● LIVE"}
+          {t("preview.thoughts")} {data.evolving && "● LIVE"}
         </p>
         {thoughts.length === 0 && (
           <p style={{ color: "var(--color-text-secondary)", fontSize: "13px" }}>
-            No thoughts yet. Start evolution to see the agent's mind.
+            {t("preview.no_thoughts")}
           </p>
         )}
-        {thoughts.map((t, i) => {
-          const color = phaseColors[t.phase] || "#6b7280";
+        {thoughts.map((th, i) => {
+          const color = phaseColors[th.phase] || "#6b7280";
           return (
             <div key={i} style={{
               display: "flex", gap: "12px", marginBottom: "10px",
@@ -223,7 +238,7 @@ export default function AgentPreview() {
                 fontSize: "10px", color: "var(--color-text-secondary)",
                 minWidth: "60px", paddingTop: "2px",
               }}>
-                {t.timestamp.split("T")[1]?.split(".")[0] || t.timestamp}
+                {formatTime(th.timestamp)}
               </span>
               <div style={{ flex: 1 }}>
                 <span style={{
@@ -231,19 +246,19 @@ export default function AgentPreview() {
                   background: `${color}20`, padding: "1px 6px",
                   borderRadius: "4px", marginRight: "8px",
                 }}>
-                  {(t.phase || "").toUpperCase()}
+                  {(th.phase || "").toUpperCase()}
                 </span>
-                {t.model_used && (
+                {th.model_used && (
                   <span style={{
                     fontSize: "10px", color: "var(--color-text-secondary)",
                     background: "var(--color-background-tertiary)",
                     padding: "1px 6px", borderRadius: "4px", marginRight: "8px",
                   }}>
-                    {t.model_used}
+                    {th.model_used}
                   </span>
                 )}
                 <span style={{ fontSize: "13px", color: "var(--color-text-primary)" }}>
-                  {t.message}
+                  {th.message}
                 </span>
               </div>
             </div>
@@ -260,7 +275,7 @@ export default function AgentPreview() {
         padding: "1.25rem",
         marginTop: "1rem",
       }}>
-        <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 8px" }}>AGENT GOAL</p>
+        <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", margin: "0 0 8px" }}>{t("preview.goal")}</p>
         <p style={{ fontSize: "13px", lineHeight: 1.6, margin: 0, color: "var(--color-text-primary)" }}>
           {agent.goal}
         </p>

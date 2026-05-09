@@ -65,7 +65,7 @@ class MetaImprover:
                 current_prompt_version = await self._get_current_prompt_version(db)
                 avg_rate = await self._compute_recent_avg_improvement(db)
                 await db.factory_meta_scores.insert_one({
-                    "timestamp": datetime.utcnow(),
+                    "timestamp": datetime.now(),
                     "cycle_number": self._cycle_counter,
                     "avg_improvement_rate": avg_rate,
                     "prompt_version": current_prompt_version,
@@ -95,7 +95,7 @@ class MetaImprover:
             if new_template and len(new_template) > 50:
                 # Store the candidate
                 await db.prompt_ab_tests.insert_one({
-                    "started_at": datetime.utcnow(),
+                    "started_at": datetime.now(),
                     "status": "running",
                     "old_template": current_template,
                     "new_template": new_template,
@@ -140,7 +140,7 @@ class MetaImprover:
                 await db.prompt_templates.insert_one({
                     "template_text": self._ab_candidate_template,
                     "status": "active",
-                    "created_at": datetime.utcnow(),
+                    "created_at": datetime.now(),
                     "promoted_from_ab": True,
                     "old_avg_score_delta": old_avg,
                     "new_avg_score_delta": new_avg,
@@ -149,7 +149,7 @@ class MetaImprover:
                 # Log to MODIFICATION_HISTORY equivalent
                 await db.factory_events.insert_one({
                     "event": "factory_self_upgraded_evolution_prompt",
-                    "timestamp": datetime.utcnow(),
+                    "timestamp": datetime.now(),
                     "old_avg": old_avg,
                     "new_avg": new_avg,
                     "improvement_pct": round((new_avg - old_avg) / max(old_avg, 0.0001) * 100, 2),
@@ -165,7 +165,7 @@ class MetaImprover:
                     "winner": winner,
                     "old_avg": old_avg,
                     "new_avg": new_avg,
-                    "completed_at": datetime.utcnow(),
+                    "completed_at": datetime.now(),
                     "old_scores": self._ab_old_scores,
                     "new_scores": self._ab_new_scores,
                 }},

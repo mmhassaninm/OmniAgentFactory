@@ -48,7 +48,7 @@ async def log_thought(
 
     thought = {
         "agent_id": agent_id,
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(),
         "phase": phase,
         "message": message,
         "model_used": model_used,

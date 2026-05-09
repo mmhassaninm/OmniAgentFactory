@@ -219,7 +219,7 @@ class NightModeScheduler:
                     "agent_id": agent_id,
                     "agent_name": agent_name,
                     "code": new_code,
-                    "generated_at": datetime.utcnow(),
+                    "generated_at": datetime.now(),
                     "source": "deep_reflection",
                     "used": False,
                 })
@@ -245,7 +245,7 @@ class NightModeScheduler:
             from datetime import timedelta
 
             db = get_db()
-            yesterday = datetime.utcnow() - timedelta(hours=24)
+            yesterday = datetime.now() - timedelta(hours=24)
 
             # Gather recent thoughts tagged as commits (successes)
             success_thoughts = await db.thoughts.find(
@@ -301,13 +301,13 @@ class NightModeScheduler:
                         "discovery": f"[CONSOLIDATED] {insight}",
                         "context": "general",
                         "score_delta": 0.1,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.now(),
                         "times_helped": 0,
                         "tag": "consolidated",
                     })
 
             # Prune stale collective memory entries (times_helped < 2, older than 7 days)
-            prune_cutoff = datetime.utcnow() - timedelta(days=7)
+            prune_cutoff = datetime.now() - timedelta(days=7)
             prune_result = await db.collective_memory.delete_many({
                 "times_helped": {"$lt": 2},
                 "timestamp": {"$lt": prune_cutoff},
@@ -356,7 +356,7 @@ class NightModeScheduler:
                     if improvement < 0.01:  # flat for 10 snapshots
                         await db.agents.update_one(
                             {"id": agent_id},
-                            {"$set": {"status": "archived", "archived_at": datetime.utcnow()}},
+                            {"$set": {"status": "archived", "archived_at": datetime.now()}},
                         )
                         await log_thought(
                             agent_id,
@@ -403,7 +403,7 @@ class NightModeScheduler:
                 {
                     "role": "user",
                     "content": (
-                        f"Morning Report for OmniBot Agent Factory — {datetime.utcnow().strftime('%Y-%m-%d')}\n\n"
+                        f"Morning Report for OmniBot Agent Factory — {datetime.now().strftime('%Y-%m-%d')}\n\n"
                         f"Factory Stats: {total_agents} total agents, {evolving} evolving, {ghosts} ghost agents\n"
                         f"Best Performer: {best_agent.get('name', '?') if best_agent else 'none'} (score={best_agent.get('score', 0):.2f if best_agent else 0})\n\n"
                         f"Self-Awareness Insights:\n"
@@ -421,8 +421,8 @@ class NightModeScheduler:
             briefing = await call_model(messages, task_type="fast")
 
             report = {
-                "generated_at": datetime.utcnow(),
-                "date": datetime.utcnow().strftime("%Y-%m-%d"),
+                "generated_at": datetime.now(),
+                "date": datetime.now().strftime("%Y-%m-%d"),
                 "briefing": briefing,
                 "stats": {
                     "total_agents": total_agents,

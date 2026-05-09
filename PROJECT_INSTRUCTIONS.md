@@ -45,3 +45,12 @@ Key rules:
 - `_MONGO_FAILED` sentinel signals exhausted MongoDB retries — never treat as agent-not-found.
 - MODEL_ROUTER_ERROR sleep is 90s (not 60s).
 - The outer `except Exception` always ends with `continue`, never `return` or re-raise (except `CancelledError`).
+ 
+## CRYPTOGRAPHIC KEY VAULT & DATABASE MIGRATIONS
+1. **Credential Storage Security**:
+   - All external API keys and secret developer credentials MUST be encrypted symmetrically using `cryptography.fernet.Fernet` before writing them to MongoDB.
+   - Raw credentials must never be returned in plain text via the default REST routes. Masking (e.g., showing only the prefix and suffix with standard `••••••••` bullets) must be used on the frontend and default GET list responses.
+   - Decrypted access values must only be fetched via dedicated `/reveal` routes with secure verification.
+2. **MongoDB Index Migration Handling**:
+   - When migrating schemas on existing collections, legacy unique indexes (e.g., `env_name_1` or old lookup constraints) must be proactively checked and dropped during collection seeding or startup initialization to prevent `E11000 duplicate key` conflicts when inserting new document formats with empty/null fields.
+

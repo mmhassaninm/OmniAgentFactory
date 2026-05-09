@@ -1,24 +1,13 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useControlAgent, useEvolveAgent, useResumeAgent, useFixAgent, Agent } from '../hooks/useAgent'
 import { useAgentSocket } from '../hooks/useSocket'
 import ThoughtLog from './ThoughtLog'
 import KillSwitch from './KillSwitch'
+import { useLang } from '../i18n/LanguageContext'
 
 interface AgentCardProps {
   agent: Agent
   onShowCatalog: (agentId: string) => void
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  evolving: 'EVOLVING',
-  paused: 'PAUSED',
-  paused_safe: 'PAUSED',
-  paused_unsafe: 'PAUSED (UNSAFE)',
-  stopped: 'STOPPED',
-  idle: 'IDLE',
-  testing: 'TESTING',
-  error: 'ERROR',
 }
 
 const STATUS_CLASSES: Record<string, string> = {
@@ -34,6 +23,7 @@ const STATUS_CLASSES: Record<string, string> = {
 
 export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
   const navigate = useNavigate()
+  const { t } = useLang()
   const controlMut = useControlAgent()
   const evolveMut = useEvolveAgent()
   const resumeMut = useResumeAgent()
@@ -41,6 +31,18 @@ export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
   const { thoughts } = useAgentSocket(agent.id)
 
   const score = Math.round((agent.score || 0) * 100)
+
+  const STATUS_LABELS: Record<string, string> = {
+    evolving: t('agent.status.evolving'),
+    paused: t('agent.status.paused'),
+    paused_safe: t('agent.status.paused'),
+    paused_unsafe: t('agent.status.paused_unsafe'),
+    stopped: t('agent.status.stopped'),
+    idle: t('agent.status.idle'),
+    testing: t('agent.status.testing'),
+    error: t('agent.status.error'),
+  }
+
   const statusLabel = STATUS_LABELS[agent.status] || agent.status.toUpperCase()
   const statusClass = STATUS_CLASSES[agent.status] || 'status-idle'
 
@@ -112,9 +114,9 @@ export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
         </div>
 
         <div className="flex-1 text-[10px] text-text-muted">
-          <div>Performance Score</div>
+          <div>{t('agent.performance_score')}</div>
           <div className="font-mono text-text-secondary">
-            Created {new Date(agent.created_at).toLocaleDateString()}
+            {t('agent.created_date')} {new Date(agent.created_at).toLocaleDateString()}
           </div>
         </div>
       </div>
@@ -139,13 +141,13 @@ export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
       <div className="mt-2 pt-2 border-t border-border-default/30 flex items-center gap-2">
         <button
           onClick={() => navigate(`/agent/${agent.id}/chat`)}
-          title="Chat with this agent"
+          title={t('agent.use_title')}
           className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg
                      bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 text-[10px] font-bold
                      transition-colors border border-teal-500/20"
         >
           <span>💬</span>
-          <span>USE</span>
+          <span>{t('agent.use')}</span>
         </button>
         <button
           onClick={() => onShowCatalog(agent.id)}
@@ -153,7 +155,7 @@ export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
                      transition-colors flex items-center justify-center gap-1 py-1.5"
         >
           <span>📖</span>
-          <span>Catalog</span>
+          <span>{t('agent.catalog')}</span>
         </button>
         <button
           onClick={() => window.open(`/agent/${agent.id}/preview`, '_blank')}
@@ -161,7 +163,7 @@ export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
                      transition-colors flex items-center justify-center gap-1 py-1.5"
         >
           <span>👁</span>
-          <span>Preview</span>
+          <span>{t('agent.preview')}</span>
         </button>
       </div>
     </div>

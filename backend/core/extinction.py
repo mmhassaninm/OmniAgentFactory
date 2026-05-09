@@ -60,7 +60,7 @@ async def trigger_extinction_event(db, evolution_manager=None) -> dict:
     for agent in culled:
         await db.agents.update_one(
             {"_id": agent["_id"]},
-            {"$set": {"status": "extinct", "extinct_at": datetime.utcnow()}},
+            {"$set": {"status": "extinct", "extinct_at": datetime.now()}},
         )
 
         # Stop evolution if running
@@ -74,7 +74,7 @@ async def trigger_extinction_event(db, evolution_manager=None) -> dict:
 
     # Log the extinction event
     await db.extinction_events.insert_one({
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(),
         "total_agents": len(all_agents),
         "survivor_ids": [a.get("id") for a in survivors],
         "culled_ids": [a.get("id") for a in culled],

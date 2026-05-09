@@ -203,6 +203,9 @@ class SmartRateLimitManager:
             "gemini":         {"rpm": 12,  "rpd": 1400,  "tpm": 800000},
             "github":         {"rpm": 12,  "rpd": 120,   "tpm": 80000},
             "huggingface":    {"rpm": 8,   "rpd": 1600,  "tpm": 400000},
+            "cerebras":       {"rpm": 24,  "rpd": 900,   "tpm": 900000},
+            "cloudflare":     {"rpm": 48,  "rpd": 10000, "tpm": 2000000},
+            "llamacloud":     {"rpm": 16,  "rpd": 2000,  "tpm": 400000},
             "gemini_studio":  {"rpm": 12,  "rpd": 1400,  "tpm": 800000},
             "anthropic":      {"rpm": 40,  "rpd": 2000,  "tpm": 160000},
             "ollama":         {"rpm": 999, "rpd": 999999, "tpm": 999999},
@@ -219,7 +222,7 @@ class SmartRateLimitManager:
         Returns (can_call, wait_seconds).
         If can_call is False, wait_seconds indicates how long to wait.
         """
-        now = datetime.utcnow()
+        now = datetime.now()
         limits = self.limits.get(provider, {"rpm": 10, "rpd": 500})
         
         # Clean minute window
@@ -248,7 +251,7 @@ class SmartRateLimitManager:
     
     def record_call(self, provider: str):
         """Record that a call was made to this provider."""
-        now = datetime.utcnow()
+        now = datetime.now()
         key = provider
         if key not in self._minute_counts:
             self._minute_counts[key] = []
@@ -305,6 +308,27 @@ CASCADER_MODELS = {
         "base_url": "https://text.pollinations.ai/openai",
         "requires_key": False,
     },
+    "cerebras": {
+        "primary": "cerebras/llama-4-scout-17b-16e-instruct",
+        "fallback": "cerebras/llama-3.3-70b-versatile",
+        "code_primary": "cerebras/llama-3.3-70b-versatile",
+        "fast_primary": "cerebras/llama-4-scout-17b-16e-instruct",
+        "base_url": "https://api.cerebras.ai/v1",
+    },
+    "cloudflare": {
+        "primary": "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "fallback": "cloudflare/@cf/mistral/mistral-7b-instruct-v0.2",
+        "code_primary": "cloudflare/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+        "fast_primary": "cloudflare/@cf/meta/llama-3.1-8b-instruct",
+        "base_url": "https://api.cloudflare.com/client/v4/accounts/{ACCOUNT_ID}/ai/v1",
+    },
+    "llamacloud": {
+        "primary": "llamacloud/llama-3.3-70b-instruct",
+        "fallback": "llamacloud/llama-3.1-8b-instruct",
+        "code_primary": "llamacloud/llama-3.3-70b-instruct",
+        "fast_primary": "llamacloud/llama-3.1-8b-instruct",
+        "base_url": "https://api.cloud.llamaindex.ai/api/v1",
+    },
     "openai": [
         "openai/gpt-4o-mini"
     ],
@@ -324,6 +348,9 @@ PROVIDER_PRIORITY = [
     "gemini",
     "github",
     "huggingface",
+    "cerebras",
+    "cloudflare", 
+    "llamacloud",
     "gemini_studio",
     "anthropic",
     "pollinations",
@@ -414,6 +441,28 @@ class ModelRouter:
             KeyState(api_key="ollama", key_hash=hash_key("ollama"), provider="ollama", env_name="OLLAMA_BASE_URL")
         ]
 
+        # New free providers
+        self._keys["github"] = [
+            KeyState(api_key=k, key_hash=hash_key(k), provider="github", env_name=f"GITHUB_TOKEN_{i+1}")
+            for i, k in enumerate(settings.github_tokens)
+        ]
+        self._keys["huggingface"] = [
+            KeyState(api_key=k, key_hash=hash_key(k), provider="huggingface", env_name=f"HF_KEY_{i+1}")
+            for i, k in enumerate(settings.huggingface_keys)
+        ]
+        self._keys["cerebras"] = [
+            KeyState(api_key=k, key_hash=hash_key(k), provider="cerebras", env_name=f"CEREBRAS_KEY_{i+1}")
+            for i, k in enumerate(settings.cerebras_keys)
+        ]
+        self._keys["cloudflare"] = [
+            KeyState(api_key=k, key_hash=hash_key(k), provider="cloudflare", env_name=f"CLOUDFLARE_KEY_{i+1}")
+            for i, k in enumerate(settings.cloudflare_keys)
+        ]
+        self._keys["llamacloud"] = [
+            KeyState(api_key=k, key_hash=hash_key(k), provider="llamacloud", env_name=f"LLAMACLOUD_KEY_{i+1}")
+            for i, k in enumerate(settings.llamacloud_keys)
+        ]
+
         total_keys = sum(len(v) for v in self._keys.values())
         logger.info(
             "[MODEL_ROUTER] Initialized with %d total keys across %d providers (.env)",
@@ -440,7 +489,7 @@ class ModelRouter:
 
             # Rebuild key lists from MongoDB
             provider_keys: Dict[str, List[Tuple[str, str]]] = {
-                "groq": [], "openrouter": [], "gemini": [], "openai": [], "anthropic": [], "ollama": []
+                "groq": [], "openrouter": [], "gemini": [], "openai": [], "anthropic": [], "ollama": [], "github": [], "huggingface": [], "cerebras": [], "cloudflare": [], "llamacloud": []
             }
             ollama_url = None
 
@@ -457,6 +506,16 @@ class ModelRouter:
                     provider_keys["openai"].append((env_name, value))
                 elif env_name in ("ANTHROPIC_KEY", "ANTHROPIC_KEY_1"):
                     provider_keys["anthropic"].append((env_name, value))
+                elif env_name.startswith("GITHUB_TOKEN_"):
+                    provider_keys["github"].append((env_name, value))
+                elif env_name.startswith("HF_KEY_"):
+                    provider_keys["huggingface"].append((env_name, value))
+                elif env_name.startswith("CEREBRAS_KEY_"):
+                    provider_keys["cerebras"].append((env_name, value))
+                elif env_name.startswith("CLOUDFLARE_KEY_"):
+                    provider_keys["cloudflare"].append((env_name, value))
+                elif env_name.startswith("LLAMACLOUD_KEY_"):
+                    provider_keys["llamacloud"].append((env_name, value))
                 elif env_name == "OLLAMA_BASE_URL":
                     ollama_url = value
 
@@ -467,7 +526,7 @@ class ModelRouter:
                 return
 
             # Rebuild KeyState objects
-            for provider in ["groq", "openrouter", "gemini", "openai", "anthropic"]:
+            for provider in ["groq", "openrouter", "gemini", "openai", "anthropic", "github", "huggingface", "cerebras", "cloudflare", "llamacloud"]:
                 if provider_keys[provider]:
                     self._keys[provider] = [
                         KeyState(api_key=k, key_hash=hash_key(k), provider=provider, env_name=env)
@@ -519,7 +578,7 @@ class ModelRouter:
 
     async def _reset_expired_exhaustions(self):
         """Automatically checks failure timestamps and clears 60m+ exhausted state items."""
-        now = datetime.utcnow()
+        now = datetime.now()
         expired = []
         for env_name, last_fail in list(self._key_last_failure.items()):
             if now - last_fail > timedelta(minutes=60):
@@ -537,6 +596,7 @@ class ModelRouter:
         model: str,
         messages: list,
         max_tokens: Optional[int] = None,
+        base_url: Optional[str] = None,
     ) -> Tuple[Optional[str], Optional[any]]:
         """
         Attempt a single LiteLLM call on a specific key/model.
@@ -554,6 +614,13 @@ class ModelRouter:
                 kwargs["api_base"] = get_settings().ollama_base_url
             elif provider == "openrouter":
                 kwargs["api_base"] = "https://openrouter.ai/api/v1"
+            if base_url:
+                if provider == "cloudflare":
+                    base_url = base_url.replace(
+                        "{ACCOUNT_ID}", 
+                        get_settings().cloudflare_account_id
+                    )
+                kwargs["api_base"] = base_url
             if max_tokens:
                 kwargs["max_tokens"] = max_tokens
 
@@ -675,7 +742,7 @@ class ModelRouter:
                             asyncio.create_task(self.save_stats_to_db())
                             return content
                         self._exhausted_keys.add(key_state.env_name)
-                        self._key_last_failure[key_state.env_name] = datetime.utcnow()
+                        self._key_last_failure[key_state.env_name] = datetime.now()
                         await self._log_cascade(
                             f"[CASCADE] ✗ Key exhausted: {key_state.env_name} → cooling down for 60m",
                             agent_id=agent_id,
@@ -687,15 +754,22 @@ class ModelRouter:
                     if not models:
                         continue
 
+                    base_url = None
+                    if isinstance(models, dict):
+                        base_url = models.get("base_url")
+                        models = [models["primary"], models["fallback"]]
+                    else:
+                        models = models[:2]  # for list providers
+
                     # Try primary then secondary fallback model with this key
-                    for model in models[:2]:
+                    for model in models:
                         await self._log_cascade(
                             f"[CASCADE] Trying: {model} ({key_state.env_name})",
                             agent_id=agent_id
                         )
 
                         content, result = await self._try_provider(
-                            provider, key_state, model, messages, max_tokens
+                            provider, key_state, model, messages, max_tokens, base_url
                         )
 
                         if content is not None:
@@ -726,7 +800,7 @@ class ModelRouter:
 
                     # Both models failed with this key -> Mark Key as Exhausted
                     self._exhausted_keys.add(key_state.env_name)
-                    self._key_last_failure[key_state.env_name] = datetime.utcnow()
+                    self._key_last_failure[key_state.env_name] = datetime.now()
                     await self._log_cascade(
                         f"[CASCADE] ✗ Key exhausted: {key_state.env_name} → cooling down for 60m",
                         agent_id=agent_id,
@@ -786,13 +860,20 @@ class ModelRouter:
                     "latency_ms": 0,
                     "keys_active": 0,
                     "keys_exhausted": 0,
-                    "last_checked": datetime.utcnow().isoformat()
+                    "last_checked": datetime.now().isoformat()
                 }
                 continue
 
             models = CASCADER_MODELS.get(provider, [])
             if not models:
                 continue
+
+            base_url = None
+            if isinstance(models, dict):
+                base_url = models.get("base_url")
+                models = [models["primary"], models["fallback"]]
+            else:
+                models = models[:2]  # for list providers
 
             test_messages = [{"role": "user", "content": "hello"}]
             status = "offline"
@@ -845,6 +926,13 @@ class ModelRouter:
                         }
                         if provider == "ollama":
                             health_kwargs["api_base"] = get_settings().ollama_base_url
+                        if base_url:
+                            if provider == "cloudflare":
+                                base_url = base_url.replace(
+                                    "{ACCOUNT_ID}", 
+                                    get_settings().cloudflare_account_id
+                                )
+                            health_kwargs["api_base"] = base_url
 
                         await litellm.acompletion(**health_kwargs)
                         latency_ms = int((time_module.time() - start_time) * 1000)
@@ -886,7 +974,7 @@ class ModelRouter:
                 "latency_ms": latency_ms,
                 "keys_active": active_keys_count,
                 "keys_exhausted": exhausted_keys_count,
-                "last_checked": datetime.utcnow().isoformat()
+                "last_checked": datetime.now().isoformat()
             }
 
             # Save to database
@@ -926,7 +1014,7 @@ class ModelRouter:
                             "calls_today": key_state.tokens_today,
                             "tokens_today": key_state.tokens_today,
                             "last_error": key_state.last_error,
-                            "updated_at": datetime.utcnow(),
+                            "updated_at": datetime.now(),
                         }},
                         upsert=True,
                     )

@@ -10,7 +10,7 @@ def get_datetime(timezone: str = "UTC") -> str:
         day_name = now.strftime('%A')
         return f"Current date/time in {timezone}: {fmt} ({day_name})"
     except Exception:
-        now = datetime.utcnow()
+        now = datetime.now()
         fmt = now.strftime('%Y-%m-%d %H:%M:%S UTC')
         day_name = now.strftime('%A')
         return f"Current date/time (UTC, requested '{timezone}' was invalid): {fmt} ({day_name})"

@@ -56,8 +56,8 @@ class BaseAgent:
         self.evolve_interval_seconds = evolve_interval_seconds
         self.agent_code = agent_code
         self.test_cases = test_cases or []
-        self.created_at = created_at or datetime.utcnow()
-        self.updated_at = datetime.utcnow()
+        self.created_at = created_at or datetime.now()
+        self.updated_at = datetime.now()
 
         # Runtime state (not persisted)
         self._current_thought: Optional[str] = None

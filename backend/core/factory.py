@@ -153,7 +153,7 @@ class AgentFactory:
     async def update_agent(self, agent_id: str, updates: dict) -> bool:
         """Update agent configuration."""
         db = get_db()
-        updates["updated_at"] = datetime.utcnow()
+        updates["updated_at"] = datetime.now()
         result = await db.agents.update_one({"id": agent_id}, {"$set": updates})
         return result.modified_count > 0
 
@@ -231,7 +231,7 @@ class AgentFactory:
                 "catalog_text": catalog_text,
                 "version": agent_doc.get("version", 0),
                 "score": agent_doc.get("score", 0),
-                "generated_at": datetime.utcnow(),
+                "generated_at": datetime.now(),
                 "version_history": [
                     {
                         "version": v.get("version"),

@@ -138,28 +138,62 @@ app.add_middleware(
 )
 
 # ── Legacy Routers (existing chat system) ───────────────────────────────
-# Wrapped in try/except so factory starts even if legacy modules have issues
+# Wrapped in individual try/except blocks so a single failing router doesn't prevent other healthy routers from loading
 try:
     from routers.chat import router as chat_router
-    from routers.models import router as models_router
-    from routers.swarm import router as swarm_router
-    from routers.neuro import router as neuro_router
-    from routers.settings import router as settings_router
-    from routers.providers import router as providers_router
-    from routers.tools import router as tools_router
-    from routers.agent import router as agent_router
-
     app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])
-    app.include_router(models_router, prefix="/api/models", tags=["Models"])
-    app.include_router(swarm_router, prefix="/api/hive", tags=["Swarm Hub"])
-    app.include_router(neuro_router, prefix="/api/neuro", tags=["Neuro Stream"])
-    app.include_router(settings_router, prefix="/api/settings", tags=["Settings"])
-    app.include_router(providers_router, prefix="/api/providers", tags=["Providers"])
-    app.include_router(tools_router, prefix="/api/tools", tags=["Tools"])
-    app.include_router(agent_router, prefix="/api/agent", tags=["Agent"])
-    logger.info("Legacy routers loaded successfully")
+    logger.info("✓ Legacy Chat router loaded")
 except Exception as e:
-    logger.warning("Legacy routers failed to load (factory will still work): %s", e)
+    logger.warning("Legacy Chat router failed to load: %s", e)
+
+try:
+    from routers.models import router as models_router
+    app.include_router(models_router, prefix="/api/models", tags=["Models"])
+    logger.info("✓ Legacy Models router loaded")
+except Exception as e:
+    logger.warning("Legacy Models router failed to load: %s", e)
+
+try:
+    from routers.swarm import router as swarm_router
+    app.include_router(swarm_router, prefix="/api/hive", tags=["Swarm Hub"])
+    logger.info("✓ Legacy Swarm router loaded")
+except Exception as e:
+    logger.warning("Legacy Swarm router failed to load: %s", e)
+
+try:
+    from routers.neuro import router as neuro_router
+    app.include_router(neuro_router, prefix="/api/neuro", tags=["Neuro Stream"])
+    logger.info("✓ Legacy Neuro router loaded")
+except Exception as e:
+    logger.warning("Legacy Neuro router failed to load: %s", e)
+
+try:
+    from routers.settings import router as settings_router
+    app.include_router(settings_router, prefix="/api/settings", tags=["Settings"])
+    logger.info("✓ Legacy Settings router loaded")
+except Exception as e:
+    logger.warning("Legacy Settings router failed to load: %s", e)
+
+try:
+    from routers.providers import router as providers_router
+    app.include_router(providers_router, prefix="/api/providers", tags=["Providers"])
+    logger.info("✓ Legacy Providers router loaded")
+except Exception as e:
+    logger.warning("Legacy Providers router failed to load: %s", e)
+
+try:
+    from routers.tools import router as tools_router
+    app.include_router(tools_router, prefix="/api/tools", tags=["Tools"])
+    logger.info("✓ Legacy Tools router loaded")
+except Exception as e:
+    logger.warning("Legacy Legacy Tools router failed to load: %s", e)
+
+try:
+    from routers.agent import router as agent_router
+    app.include_router(agent_router, prefix="/api/agent", tags=["Agent"])
+    logger.info("✓ Legacy Agent router loaded")
+except Exception as e:
+    logger.warning("Legacy Agent router failed to load: %s", e)
 
 # ── Agent Factory Routers (new) ─────────────────────────────────────────
 from api.agents import router as factory_agents_router

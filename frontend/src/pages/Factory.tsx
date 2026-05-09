@@ -28,15 +28,9 @@ async function fetchJson(url: string) {
   return res.json()
 }
 
-const TEMPLATES = [
-  { value: 'general', label: '🤖 General Purpose', desc: 'Versatile agent for any task' },
-  { value: 'code', label: '💻 Code Generator', desc: 'Specialized in code generation & analysis' },
-  { value: 'research', label: '🔬 Research Agent', desc: 'Web research & information synthesis' },
-]
-
 export default function Factory() {
   const navigate = useNavigate()
-  const { lang, setLang } = useLang()
+  const { lang, setLang, t } = useLang()
   const { data: agentsData, isLoading } = useAgents()
   const { data: factoryStatus } = useFactoryStatus()
   const { connected: wsConnected, events: factoryEvents } = useFactorySocket()
@@ -72,6 +66,13 @@ export default function Factory() {
     setShowCreate(false)
   }
 
+  const TEMPLATES = [
+    { value: 'general', emoji: '🤖', label: 'General Purpose', descKey: 'create.template.general' },
+    { value: 'code', emoji: '💻', label: 'Code Generator', descKey: 'create.template.code' },
+    { value: 'research', emoji: '🔬', label: 'Research Agent', descKey: 'create.template.research' },
+    { value: 'revenue', emoji: '💰', label: 'Revenue Agent', descKey: 'create.template.revenue' },
+  ]
+
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
       {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -80,10 +81,10 @@ export default function Factory() {
           <div>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
               <span className="gradient-text">OmniBot</span>
-              <span className="text-text-muted font-light ml-2 text-lg sm:text-xl">Agent Factory</span>
+              <span className="text-text-muted font-light ml-2 text-lg sm:text-xl">{t('factory.title')}</span>
             </h1>
             <p className="text-text-muted text-sm mt-1">
-              Create, evolve, and manage autonomous AI agents
+              {t('factory.subtitle_real')}
             </p>
           </div>
 
@@ -92,20 +93,20 @@ export default function Factory() {
             {isNightMode && (
               <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
                              bg-indigo-950/50 text-indigo-300 border border-indigo-500/30">
-                🌙 Night Mode
+                🌙 {t('factory.night_mode')}
               </span>
             )}
 
             {/* WebSocket status */}
             <span className={`flex items-center gap-1.5 text-xs ${wsConnected ? 'text-emerald-400' : 'text-text-muted'}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse-glow' : 'bg-slate-600'}`} />
-              {wsConnected ? 'Live' : 'Connecting...'}
+              {wsConnected ? t('factory.live') : t('factory.connecting')}
             </span>
 
             {/* Active agents counter */}
             <div className="glass px-3 py-1.5 rounded-lg text-xs">
               <span className="text-accent-primary font-bold">{activeCount}</span>
-              <span className="text-text-muted">/{maxConcurrent} evolving</span>
+              <span className="text-text-muted">/{maxConcurrent} {t('agent.status.evolving').toLowerCase()}</span>
             </div>
 
             {/* Language toggle */}
@@ -130,7 +131,19 @@ export default function Factory() {
                          transition-all duration-200"
             >
               <span>⚙</span>
-              <span>Settings</span>
+              <span>{t('factory.settings_btn')}</span>
+            </button>
+
+            {/* Key Vault button */}
+            <button
+              onClick={() => navigate('/settings/keys')}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
+                         bg-bg-panel border border-border-default text-text-secondary
+                         hover:border-[#00d4ff]/40 hover:text-[#00d4ff]
+                         transition-all duration-200 shadow-[0_0_10px_rgba(0,212,255,0.02)] hover:shadow-[0_0_15px_rgba(0,212,255,0.1)]"
+            >
+              <span>🔐</span>
+              <span>Key Vault</span>
             </button>
 
             {/* Create button */}
@@ -142,7 +155,7 @@ export default function Factory() {
                          transition-all duration-300 hover:translate-y-[-1px]"
             >
               <span className="text-lg leading-none">+</span>
-              <span>New Agent</span>
+              <span>{t('factory.new_agent')}</span>
             </button>
           </div>
         </div>
@@ -153,17 +166,17 @@ export default function Factory() {
           <div className="flex items-center gap-3">
             <span className="text-xl animate-bounce">⚠️</span>
             <div>
-              <strong className="font-extrabold text-rose-400">CRITICAL SYSTEM WARNING: ALL PROVIDERS OFFLINE</strong>
+              <strong className="font-extrabold text-rose-400">{t('factory.critical_warning')}</strong>
               <p className="text-xs text-rose-300/80 mt-0.5">
-                Every single API credential in your settings is either unconfigured, failed health pings, or rate-limited. Evolving agents will stall until providers recover or keys are added.
+                {t('factory.critical_desc')}
               </p>
             </div>
           </div>
-          <button 
-            onClick={() => navigate('/settings')}
+          <button
+            onClick={() => navigate('/settings/keys')}
             className="px-3.5 py-1.5 rounded-lg text-xs font-black bg-rose-500 text-black hover:bg-rose-400 active:scale-[0.98] transition-all shrink-0 ml-4 shadow-[0_0_15px_rgba(244,63,94,0.4)] border border-rose-400"
           >
-            Configure Keys
+            {t('factory.configure_keys')}
           </button>
         </div>
       )}
@@ -184,16 +197,15 @@ export default function Factory() {
         <div className="flex items-center justify-center py-24">
           <div className="text-center">
             <div className="text-4xl animate-spin-slow mb-4">⚙</div>
-            <p className="text-text-muted">Loading agents...</p>
+            <p className="text-text-muted">{t('factory.loading')}</p>
           </div>
         </div>
       ) : agents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="text-6xl mb-4 opacity-30">🏭</div>
-          <h2 className="text-xl font-bold text-text-primary mb-2">No agents yet</h2>
+          <h2 className="text-xl font-bold text-text-primary mb-2">{t('factory.no_agents_title')}</h2>
           <p className="text-text-muted mb-6 max-w-md">
-            Create your first agent to start the factory. Agents evolve autonomously
-            to improve their performance over time.
+            {t('factory.no_agents_desc')}
           </p>
           <button
             onClick={() => setShowCreate(true)}
@@ -202,7 +214,7 @@ export default function Factory() {
                        hover:shadow-[0_0_20px_rgba(124,58,237,0.3)]
                        transition-all duration-300"
           >
-            Create First Agent
+            {t('factory.create_first')}
           </button>
         </div>
       ) : (
@@ -222,19 +234,19 @@ export default function Factory() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="glass-strong rounded-2xl max-w-lg w-full animate-slide-up">
             <div className="px-6 py-4 border-b border-border-default/50">
-              <h2 className="text-lg font-bold gradient-text">Create New Agent</h2>
-              <p className="text-xs text-text-muted mt-1">Define your agent's purpose and let the factory evolve it</p>
+              <h2 className="text-lg font-bold gradient-text">{t('create.title')}</h2>
+              <p className="text-xs text-text-muted mt-1">{t('create.subtitle')}</p>
             </div>
 
             <div className="p-6 space-y-4">
               {/* Name */}
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">Agent Name</label>
+                <label className="block text-xs font-medium text-text-secondary mb-1.5">{t('create.name')}</label>
                 <input
                   type="text"
                   value={newAgent.name}
                   onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                  placeholder="e.g., Data Analyst, Code Reviewer"
+                  placeholder={t('create.name_placeholder')}
                   className="w-full px-4 py-2.5 rounded-lg bg-bg-panel border border-border-default
                              text-text-primary text-sm placeholder:text-text-muted
                              focus:outline-none focus:border-accent-secondary/50 transition-colors"
@@ -244,11 +256,11 @@ export default function Factory() {
 
               {/* Goal */}
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">Agent Goal</label>
+                <label className="block text-xs font-medium text-text-secondary mb-1.5">{t('create.goal')}</label>
                 <textarea
                   value={newAgent.goal}
                   onChange={(e) => setNewAgent({ ...newAgent, goal: e.target.value })}
-                  placeholder="Describe what this agent should achieve..."
+                  placeholder={t('create.goal_placeholder')}
                   rows={3}
                   className="w-full px-4 py-2.5 rounded-lg bg-bg-panel border border-border-default
                              text-text-primary text-sm placeholder:text-text-muted resize-none
@@ -258,8 +270,8 @@ export default function Factory() {
 
               {/* Template */}
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">Template</label>
-                <div className="grid grid-cols-3 gap-2">
+                <label className="block text-xs font-medium text-text-secondary mb-1.5">{t('create.template')}</label>
+                <div className="grid grid-cols-4 gap-2">
                   {TEMPLATES.map((tmpl) => (
                     <button
                       key={tmpl.value}
@@ -270,8 +282,8 @@ export default function Factory() {
                           : 'border-border-default bg-bg-panel hover:border-border-default/80'
                       }`}
                     >
-                      <div className="text-lg mb-1">{tmpl.label.split(' ')[0]}</div>
-                      <div className="text-[10px] text-text-muted">{tmpl.desc}</div>
+                      <div className="text-lg mb-1">{tmpl.emoji}</div>
+                      <div className="text-[10px] text-text-muted">{t(tmpl.descKey)}</div>
                     </button>
                   ))}
                 </div>
@@ -285,7 +297,7 @@ export default function Factory() {
                 className="px-4 py-2 text-sm text-text-muted hover:text-text-primary rounded-lg
                            hover:bg-bg-elevated transition-all"
               >
-                Cancel
+                {t('create.cancel')}
               </button>
               <button
                 onClick={handleCreate}
@@ -296,7 +308,7 @@ export default function Factory() {
                            disabled:opacity-40 disabled:cursor-not-allowed
                            transition-all duration-200"
               >
-                {createAgent.isPending ? 'Creating...' : 'Create Agent'}
+                {createAgent.isPending ? t('create.creating') : t('create.submit')}
               </button>
             </div>
           </div>

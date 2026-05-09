@@ -37,7 +37,7 @@ async def record_cycle(
             "score_delta": score_delta,
             "roi": roi,
             "committed": committed,
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(),
         })
     except Exception as e:
         logger.debug("[ROI] Failed to record cycle for agent %s: %s", agent_id[:8], e)

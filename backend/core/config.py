@@ -50,6 +50,10 @@ class Settings:
         self.huggingface_keys: List[str] = _collect_keys("HF_KEY")
         self.google_ai_studio_keys: List[str] = _collect_keys("GOOGLE_AI_STUDIO_KEY")
         self.nvidia_nim_keys: List[str] = _collect_keys("NVIDIA_NIM_KEY")
+        self.cerebras_keys: List[str] = _collect_keys("CEREBRAS_KEY")
+        self.cloudflare_account_id: str = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+        self.cloudflare_keys: List[str] = _collect_keys("CLOUDFLARE_KEY")
+        self.llamacloud_keys: List[str] = _collect_keys("LLAMACLOUD_KEY")
 
         # ── Local Models ────────────────────────
         self.ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -76,6 +80,11 @@ class Settings:
         # ── Budget ──────────────────────────────
         self.max_tokens_per_key_per_day: int = int(os.getenv("MAX_TOKENS_PER_KEY_PER_DAY", "100000"))
 
+        # ── Revenue Engine ───────────────────────
+        self.paypal_me_link: str = os.getenv("PAYPAL_ME_LINK", "").strip()
+        self.default_service_price: int = int(os.getenv("DEFAULT_SERVICE_PRICE", "25"))
+        self.revenue_mode: bool = os.getenv("REVENUE_MODE", "false").lower() == "true"
+
     def is_night_mode(self) -> bool:
         """Check if current local time falls within the night mode window."""
         from datetime import datetime
@@ -96,6 +105,13 @@ class Settings:
             "anthropic": {"configured": self.anthropic_key is not None},
             "openai": {"configured": self.openai_key is not None},
             "ollama": {"base_url": self.ollama_base_url},
+            "github": {"key_count": len(self.github_tokens)},
+            "huggingface": {"key_count": len(self.huggingface_keys)},
+            "google_ai_studio": {"key_count": len(self.google_ai_studio_keys)},
+            "nvidia_nim": {"key_count": len(self.nvidia_nim_keys)},
+            "cerebras": {"key_count": len(self.cerebras_keys)},
+            "cloudflare": {"account_id_configured": bool(self.cloudflare_account_id), "key_count": len(self.cloudflare_keys)},
+            "llamacloud": {"key_count": len(self.llamacloud_keys)},
         }
 
 

@@ -141,7 +141,7 @@ async def process_dead_agent(db, agent_id: str) -> Optional[dict]:
                         "discovery": f"[FAILURE LESSON] {lesson}",
                         "context": agent.get("goal", ""),
                         "score_delta": 0.0,
-                        "timestamp": datetime.utcnow(),
+                        "timestamp": datetime.now(),
                         "times_helped": 0,
                         "tag": "failure_lesson",
                         "source_goal": agent.get("goal", ""),
@@ -160,7 +160,7 @@ async def process_dead_agent(db, agent_id: str) -> Optional[dict]:
             "total_versions": agent.get("version", 0),
             "autopsy": autopsy,
             "lessons_count": lessons_stored,
-            "died_at": datetime.utcnow(),
+            "died_at": datetime.now(),
             "resurrected": False,
         }
         await db.ghost_agents.insert_one(ghost_record)
@@ -174,9 +174,9 @@ async def process_dead_agent(db, agent_id: str) -> Optional[dict]:
                     "ghost_data": {
                         "fundamental_problem": autopsy.get("fundamental_problem", ""),
                         "lessons": autopsy.get("lessons", []),
-                        "died_at": datetime.utcnow(),
+                        "died_at": datetime.now(),
                     },
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(),
                 }
             },
         )
@@ -245,7 +245,7 @@ async def resurrect_ghost(db, agent_id: str) -> Optional[dict]:
         # Mark ghost as resurrected
         await db.ghost_agents.update_one(
             {"agent_id": agent_id},
-            {"$set": {"resurrected": True, "resurrected_as": new_agent.agent_id, "resurrected_at": datetime.utcnow()}},
+            {"$set": {"resurrected": True, "resurrected_as": new_agent.agent_id, "resurrected_at": datetime.now()}},
         )
 
         logger.info("[DEAD_LETTER] Ghost %s resurrected as %s", agent_id[:8], new_agent.agent_id[:8])

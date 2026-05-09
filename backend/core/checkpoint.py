@@ -47,7 +47,7 @@ async def checkpoint_draft(
         "agent_code": agent_code,
         "agent_config": agent_config,
         "performance_score": current_score,
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(),
         "commit_message": f"Draft v{version} — evolution attempt",
     }
 
@@ -71,7 +71,7 @@ async def checkpoint_testing(agent_id: str) -> bool:
     if latest_draft:
         await db.snapshots.update_one(
             {"_id": latest_draft["_id"]},
-            {"$set": {"status": SnapshotStatus.TESTING, "timestamp": datetime.utcnow()}},
+            {"$set": {"status": SnapshotStatus.TESTING, "timestamp": datetime.now()}},
         )
         logger.info("Checkpoint TESTING: agent=%s v%d", agent_id, latest_draft["version"])
         return True
@@ -112,7 +112,7 @@ async def checkpoint_commit(
             "agent_code": new_code,
             "agent_config": {},
             "performance_score": new_score,
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(),
             "commit_message": commit_message or f"Direct commit v{version}",
         }
         await db.snapshots.insert_one(snapshot)
@@ -127,7 +127,7 @@ async def checkpoint_commit(
                 "status": SnapshotStatus.COMMITTED,
                 "agent_code": new_code,
                 "performance_score": new_score,
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.now(),
                 "commit_message": commit_message or f"Evolved to v{version} — score {new_score:.2f}",
             }
         },
@@ -140,7 +140,7 @@ async def checkpoint_commit(
             "$set": {
                 "version": version,
                 "score": new_score,
-                "updated_at": datetime.utcnow(),
+                "updated_at": datetime.now(),
             }
         },
     )
@@ -163,7 +163,7 @@ async def checkpoint_rollback(agent_id: str) -> Optional[dict]:
             "agent_id": agent_id,
             "status": {"$in": [SnapshotStatus.DRAFT, SnapshotStatus.TESTING]},
         },
-        {"$set": {"status": SnapshotStatus.FAILED, "timestamp": datetime.utcnow()}},
+        {"$set": {"status": SnapshotStatus.FAILED, "timestamp": datetime.now()}},
     )
 
     # Get last committed version
@@ -181,7 +181,7 @@ async def checkpoint_rollback(agent_id: str) -> Optional[dict]:
                     "version": last_commit["version"],
                     "score": last_commit["performance_score"],
                     "status": "idle",
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(),
                 }
             },
         )

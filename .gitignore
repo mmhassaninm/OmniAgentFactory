@@ -1,60 +1,92 @@
-# Logs
-logs
+# OmniBot — Security-First .gitignore
+
+# === SECRETS & CREDENTIALS (NEVER COMMIT) ===
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+*_credentials.json
+_secrets.json
+service_account.json
+
+# === SENSITIVE DATA ===
+ERROR_LOG.md
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+backend/logs/
+exports/
 Project_Docs/Logs/*
+Project_Docs/Secrets/*
 
-# Dependency directories
-node_modules/
-jspm_packages/
-.venv/
-venv/
-env/
-
-# OmniBot Security / Environment Variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*
-*.pem
-*.key
-*.cert
-certificates/
-keys/
-secrets/
-
-# Databases and Local Data
-*.sqlite
+# === DATABASE ===
 *.db
-backend/data/*
+*.sqlite
+*.sqlite3
 *.rdb
 *.bson
+chroma_data/
+data/
+backend/data/*
 mongodb_data/
 
-# OS/System Files
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+venv/
+env/
+.venv/
+pip-log.txt
+
+# === NODE / FRONTEND ===
+node_modules/
+frontend/node_modules/
+jspm_packages/
+frontend/dist/
+.npm
+*.tsbuildinfo
+
+# === OS FILES ===
 .DS_Store
 Thumbs.db
 desktop.ini
+*.swp
+*.swo
+*~
 
-# Project_Docs and Vault Secrets
-Project_Docs/Secrets/*
+# === EDITOR ===
+.vscode/settings.json
+.idea/
+*.suo
+.ntvs
+*.njsproj
+*.sln
 .vibelab_config
 .vibelab_drafts/
 
-# IDEs and Editors
-.idea/
-.vscode/
-*.swp
-*.swo
+# === DOCKER ===
+docker-compose.override.yml
 
-# Build outputs
-dist/
-build/
+# === SENSITIVE RUNTIME FILES ===
+*.pid
+nohup.out
+
+# === BUILD OUTPUTS ===
 out/
 coverage/

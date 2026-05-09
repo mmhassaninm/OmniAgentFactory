@@ -63,35 +63,41 @@ async def connect_db(max_retries: int = 10, retry_delay: float = 10.0) -> AsyncI
 
 
 async def _setup_indexes(db: AsyncIOMotorDatabase):
-    """Create indexes for all collections."""
+    """Create indexes for all collections safely."""
+    async def make_index(coll, *args, **kwargs):
+        try:
+            await coll.create_index(*args, **kwargs)
+        except Exception as e:
+            logger.warning("Safe index creation skipped on %s: %s", coll.name, e)
+
     # agents: unique id
-    await db.agents.create_index("id", unique=True)
-    await db.agents.create_index("status")
+    await make_index(db.agents, "id", unique=True)
+    await make_index(db.agents, "status")
 
     # snapshots: agent_id + version compound, latest lookup
-    await db.snapshots.create_index([("agent_id", 1), ("version", -1)])
-    await db.snapshots.create_index([("agent_id", 1), ("status", 1)])
+    await make_index(db.snapshots, [("agent_id", 1), ("version", -1)])
+    await make_index(db.snapshots, [("agent_id", 1), ("status", 1)])
 
     # thoughts: agent timeline
-    await db.thoughts.create_index([("agent_id", 1), ("timestamp", -1)])
+    await make_index(db.thoughts, [("agent_id", 1), ("timestamp", -1)])
 
     # skills: unique name
-    await db.skills.create_index("name", unique=True)
+    await make_index(db.skills, "name", unique=True)
 
     # model_stats: provider + key hash
-    await db.model_stats.create_index([("provider", 1), ("key_hash", 1)], unique=True)
+    await make_index(db.model_stats, [("provider", 1), ("key_hash", 1)], unique=True)
 
     # economy: agent_id
-    await db.economy.create_index("agent_id", unique=True)
+    await make_index(db.economy, "agent_id", unique=True)
 
     # Performance optimization indexes
-    await db.agents.create_index([("status", 1), ("created_at", -1)])
-    await db.thoughts.create_index([("phase", 1), ("timestamp", -1)])
-    await db.api_keys.create_index("env_name", unique=True)
-    await db.checkpoints.create_index([("agent_id", 1), ("version", -1)])
-    await db.agent_conversations.create_index([("agent_id", 1), ("timestamp", -1)])
+    await make_index(db.agents, [("status", 1), ("created_at", -1)])
+    await make_index(db.thoughts, [("phase", 1), ("timestamp", -1)])
+    await make_index(db.api_keys, "env_name", unique=True)
+    await make_index(db.checkpoints, [("agent_id", 1), ("version", -1)])
+    await make_index(db.agent_conversations, [("agent_id", 1), ("timestamp", -1)])
 
-    logger.info("MongoDB indexes created/verified for all collections")
+    logger.info("MongoDB indexes verified for all collections")
 
 
 def get_db() -> AsyncIOMotorDatabase:

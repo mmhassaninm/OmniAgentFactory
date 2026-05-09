@@ -39,7 +39,7 @@ class TokenBudgetGovernor:
     ):
         """Record token usage for an agent."""
         db = get_db()
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
 
         await db.economy.update_one(
             {"agent_id": agent_id},
@@ -51,13 +51,13 @@ class TokenBudgetGovernor:
                 "$set": {
                     "last_reset_date": today,
                     "last_model": model,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(),
                 },
                 "$setOnInsert": {
                     "agent_id": agent_id,
                     "balance": 0,
                     "earned_total": 0,
-                    "created_at": datetime.utcnow(),
+                    "created_at": datetime.now(),
                 },
             },
             upsert=True,
@@ -92,7 +92,7 @@ class TokenBudgetGovernor:
                 "earned_total": 0,
                 "spent_total": 0,
                 "tokens_today": 0,
-                "last_reset_date": datetime.utcnow().strftime("%Y-%m-%d"),
+                "last_reset_date": datetime.now().strftime("%Y-%m-%d"),
             }
         return economy
 

@@ -443,7 +443,7 @@ async def update_agent_budget(agent_id: str, req: UpdateBudgetRequest):
     db = get_db()
     await db.economy.update_one(
         {"agent_id": agent_id},
-        {"$set": {"daily_limit": req.daily_token_limit, "updated_at": datetime.utcnow()}},
+        {"$set": {"daily_limit": req.daily_token_limit, "updated_at": datetime.now()}},
         upsert=True
     )
     return {"status": "success", "agent_id": agent_id, "daily_token_limit": req.daily_token_limit}

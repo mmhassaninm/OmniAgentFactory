@@ -114,7 +114,7 @@ async def websocket_agent_thoughts(websocket: WebSocket, agent_id: str):
             # Keep connection alive — listen for pings
             data = await websocket.receive_text()
             if data == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": datetime.utcnow().isoformat()})
+                await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
     except WebSocketDisconnect:
         manager.disconnect_agent(agent_id, websocket)
         logger.info("WebSocket disconnected for agent %s", agent_id)
@@ -128,7 +128,7 @@ async def websocket_factory(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
             if data == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": datetime.utcnow().isoformat()})
+                await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
     except WebSocketDisconnect:
         manager.disconnect_factory(websocket)
         logger.info("WebSocket disconnected for factory viewer")

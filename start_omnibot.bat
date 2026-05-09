@@ -1,4 +1,13 @@
 @echo off
+echo [OmniBot] Stopping previous session...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3001 :5173 :27017 :8000" 2^>nul') do (
+    taskkill /F /PID %%a 2>nul
+)
+taskkill /F /IM python.exe /T 2>nul
+taskkill /F /IM node.exe /T 2>nul
+echo [OmniBot] Clean. Starting in 2s...
+timeout /t 2 /nobreak >nul
+
 setlocal
 echo ====================================================
 echo                 OMNIBOT LAUNCH SEQUENCE
@@ -8,14 +17,6 @@ REM Set absolute base path from bat location
 set "BASE_DIR=%~dp0"
 cd /d "%BASE_DIR%"
 
-echo [OmniBot] Killing existing server processes...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":3001 :5173 :27017 :8000"') do (
-    taskkill /F /PID %%a 2>nul
-)
-taskkill /F /IM python.exe /T 2>nul
-taskkill /F /IM node.exe /T 2>nul
-echo [OmniBot] All previous processes terminated.
-timeout /t 2 /nobreak >nul
 echo [OmniBot] Starting fresh session...
 
 :: Kill any processes on OmniBot ports before starting fresh

@@ -53,7 +53,7 @@ async def register_agent_birth(
         "parent_version": parent_version,
         "bred_from_agents": bred_from_agents or [],
         "generation": generation,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(),
         "score_at_creation": score_at_creation,
         "children": [],
     }

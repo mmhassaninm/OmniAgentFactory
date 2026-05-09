@@ -1,126 +1,63 @@
 # OmniBot — Autonomous Agent Factory
 
-> Create, evolve, and manage AI agents that continuously improve themselves.
+An AI-powered agent factory that creates, evolves, and manages autonomous agents. Built with FastAPI, React, MongoDB, and LiteLLM.
 
-## 🏗️ Architecture
+## Features
 
-```
-┌──────────────────────────────────────────────────────┐
-│                   FRONTEND (React+TS+Tailwind)       │
-│  Factory Dashboard  │  Agent Cards  │  Thought Logs  │
-└──────────────┬───────────────────────┬───────────────┘
-               │ REST API             │ WebSocket
-┌──────────────▼───────────────────────▼───────────────┐
-│                 FASTAPI BACKEND                       │
-│  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ │
-│  │ Factory │ │ Evolution│ │Checkpoint│ │  Model  │ │
-│  │ (CRUD)  │ │ Engine   │ │ System   │ │ Router  │ │
-│  └─────────┘ └──────────┘ └──────────┘ └─────────┘ │
-│  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ │
-│  │  Skill  │ │  Night   │ │  Budget  │ │  Kill   │ │
-│  │ Library │ │ Scheduler│ │ Governor │ │ Switch  │ │
-│  └─────────┘ └──────────┘ └──────────┘ └─────────┘ │
-└──────┬──────────────┬──────────────┬─────────────────┘
-       │              │              │
-┌──────▼──────┐ ┌─────▼─────┐ ┌─────▼──────┐
-│  MongoDB    │ │ ChromaDB  │ │  LiteLLM   │
-│  (Storage)  │ │ (Vectors) │ │  (Models)  │
-└─────────────┘ └───────────┘ └────────────┘
-```
+- **Infinite Evolution** — agents improve themselves continuously
+- **Multi-Provider Cascader** — Groq, OpenRouter, Gemini, GitHub Models, HuggingFace
+- **Revenue Engine** — agents that generate real income
+- **Arabic/English UI** — full RTL support
+- **Live Preview** — watch agents think in real-time
+- **Military-Grade Security** — no secrets leave your machine
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
-- At least one API key (Groq, OpenRouter, Gemini, or Anthropic)
+- Python 3.11+
+- Node.js 20+
+- MongoDB (local or Atlas)
 
 ### Setup
 
-1. **Clone and configure:**
-   ```bash
+1. Clone the repository
+2. Copy environment template:
+   ```
    cp .env.example .env
-   # Edit .env and add your API keys
+   ```
+3. Fill in your API keys in `.env` (never commit this file)
+4. Start the factory:
+   ```
+   start_omnibot.bat
    ```
 
-2. **Start all services:**
-   ```bash
-   docker-compose up -d --build
-   ```
+### Environment Variables
 
-3. **Open the dashboard:**
-   ```
-   http://localhost:5173
-   ```
+See `.env.example` for all required variables. **Never commit your `.env` file.**
 
-### Local Development (without Docker)
+## Getting Free API Keys
 
-**Backend:**
-```bash
-cd backend
-pip install -r requirements.txt
-python -m uvicorn main:app --host 0.0.0.0 --port 3001 --reload
-```
+| Provider | Free Tier | Get Key |
+|---|---|---|
+| Groq | 14,400 req/day | console.groq.com |
+| OpenRouter | 200 req/day | openrouter.ai |
+| Google AI Studio | 1B tokens/month | aistudio.google.com |
+| GitHub Models | 150 req/day | github.com/settings/tokens |
 
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## Architecture
 
-**MongoDB:**
-```bash
-# Must be running on localhost:27017
-# Install via: https://www.mongodb.com/try/download/community
-```
+- **Backend**: FastAPI + Python 3.11
+- **Frontend**: React + TypeScript + Tailwind
+- **Database**: MongoDB + ChromaDB
+- **AI Gateway**: LiteLLM (multi-provider)
 
-## 🧬 Core Systems
+## Security Notes
 
-| System | Description |
-|--------|-------------|
-| **Model Router** | Multi-provider LLM gateway with key rotation (Groq→OpenRouter→Gemini→Anthropic→Ollama) |
-| **Checkpoint** | 3-phase evolution cycle (DRAFT→TEST→COMMIT) with crash recovery |
-| **Evolution Engine** | Continuous agent improvement loop with automated testing |
-| **Kill Switch** | 3 stop modes: Hard Stop, Soft Stop (after commit), Pause |
-| **Skill Library** | Shared function repository discovered during evolution |
-| **Night Scheduler** | Free-tier models only during 00:00-07:00 with reduced concurrency |
-| **Catalog** | Auto-generated documentation for each agent |
-| **Budget Governor** | Per-agent daily token limits |
+- API keys are stored locally in `.env` only
+- No credentials are logged or transmitted
+- `.gitignore` blocks all sensitive files
+- `ERROR_LOG.md` stays local (not committed)
 
-## 📡 API Endpoints
+## License
 
-### Agent CRUD
-- `POST /api/factory/agents` — Create agent
-- `GET /api/factory/agents` — List agents
-- `GET /api/factory/agents/{id}` — Get agent detail
-- `DELETE /api/factory/agents/{id}` — Delete agent
-
-### Factory Control
-- `POST /api/factory/agents/{id}/evolve` — Start evolution
-- `POST /api/factory/agents/{id}/control` — Kill Switch (`hard_stop`, `soft_stop`, `pause`)
-- `POST /api/factory/agents/{id}/resume` — Resume
-- `POST /api/factory/agents/{id}/fix` — Inject priority fix
-- `GET /api/factory/status` — Factory health
-
-### WebSocket
-- `ws://localhost:3001/ws/thoughts/{agent_id}` — Agent thought stream
-- `ws://localhost:3001/ws/factory` — Factory-wide events
-
-## 🌙 Night Mode
-
-Automatically active between 00:00–07:00 (configurable):
-- Uses only free-tier models
-- Reduces max concurrent agents
-- Doubles evolution interval for efficiency
-- All logs prefixed with `[NIGHT]`
-
-## 📝 Environment Variables
-
-See [.env.example](.env.example) for all configuration options.
-
-## 🛡️ Safety
-
-- **Never crashes** — model router always recovers from failures
-- **Never loses data** — checkpoint system rolls back on crash
-- **Budget controls** — per-agent daily token limits prevent runaway costs
-- **3 stop modes** — from graceful to immediate emergency stop
+MIT License — use freely, build boldly.

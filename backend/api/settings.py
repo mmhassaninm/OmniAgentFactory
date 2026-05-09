@@ -35,6 +35,17 @@ KEY_DEFINITIONS = [
     {"env_name": "OPENAI_KEY_1", "provider": "openai", "label": "OpenAI Key #1"},
     {"env_name": "ANTHROPIC_KEY_1", "provider": "anthropic", "label": "Anthropic Key #1"},
     {"env_name": "OLLAMA_BASE_URL", "provider": "ollama", "label": "Ollama Base URL"},
+    {"env_name": "GITHUB_TOKEN_1", "provider": "github", "label": "GitHub Token #1"},
+    {"env_name": "GITHUB_TOKEN_2", "provider": "github", "label": "GitHub Token #2"},
+    {"env_name": "HF_KEY_1", "provider": "huggingface", "label": "HuggingFace Key #1"},
+    {"env_name": "HF_KEY_2", "provider": "huggingface", "label": "HuggingFace Key #2"},
+    {"env_name": "GOOGLE_AI_STUDIO_KEY_1", "provider": "google_ai_studio", "label": "Google AI Studio Key #1"},
+    {"env_name": "GOOGLE_AI_STUDIO_KEY_2", "provider": "google_ai_studio", "label": "Google AI Studio Key #2"},
+    {"env_name": "NVIDIA_NIM_KEY_1", "provider": "nvidia_nim", "label": "NVIDIA NIM Key #1"},
+    {"env_name": "CEREBRAS_KEY_1", "provider": "cerebras", "label": "Cerebras API Key #1"},
+    {"env_name": "CLOUDFLARE_ACCOUNT_ID", "provider": "cloudflare", "label": "Cloudflare Account ID"},
+    {"env_name": "CLOUDFLARE_KEY_1", "provider": "cloudflare", "label": "Cloudflare (Token|AccountID) #1"},
+    {"env_name": "LLAMACLOUD_KEY_1", "provider": "llamacloud", "label": "LlamaCloud API Key #1"},
 ]
 
 
@@ -117,6 +128,62 @@ async def _validate_single_key(env_name: str, api_key: str) -> dict:
         except Exception as e:
             return {"status": "invalid", "message": f"✗ Connection error: {str(e)[:100]}"}
 
+    elif provider == "cerebras":
+        import litellm
+        try:
+            response = await litellm.acompletion(
+                model="cerebras/llama-3.3-70b",
+                messages=[{"role": "user", "content": "Ping"}],
+                api_key=api_key,
+                max_tokens=1,
+                timeout=8,
+            )
+            return {"status": "valid", "message": "✓ Cerebras key verified"}
+        except Exception as e:
+            return {"status": "invalid", "message": f"✗ Cerebras validation failed: {str(e)[:100]}"}
+
+    elif provider == "cloudflare":
+        if "|" not in api_key:
+            return {"status": "invalid", "message": "✗ Format must be: API_TOKEN|ACCOUNT_ID"}
+        token, account_id = api_key.split("|", 1)
+        import httpx
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.post(
+                    f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
+                    headers={"Authorization": f"Bearer {token}"},
+                    json={"messages": [{"role": "user", "content": "hi"}], "max_tokens": 1},
+                    timeout=10
+                )
+                if r.status_code == 200:
+                    return {"status": "valid", "message": "✓ Cloudflare Workers AI verified"}
+                elif r.status_code == 401:
+                    return {"status": "invalid", "message": "✗ Invalid API token"}
+                elif r.status_code == 403:
+                    return {"status": "invalid", "message": "✗ Wrong Account ID or insufficient permissions"}
+                else:
+                    return {"status": "invalid", "message": f"✗ Cloudflare error: {r.status_code}"}
+        except Exception as e:
+            return {"status": "invalid", "message": f"✗ Cloudflare connection error: {str(e)[:100]}"}
+
+    elif provider == "llamacloud":
+        import httpx
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.get(
+                    "https://cloud.llamaindex.ai/api/v1/pipelines",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    timeout=8
+                )
+                if r.status_code == 200:
+                    return {"status": "valid", "message": "✓ LlamaCloud key verified"}
+                elif r.status_code == 401:
+                    return {"status": "invalid", "message": "✗ Invalid LlamaCloud API key"}
+                else:
+                    return {"status": "invalid", "message": f"✗ LlamaCloud error: {r.status_code}"}
+        except Exception as e:
+            return {"status": "invalid", "message": f"✗ LlamaCloud connection error: {str(e)[:100]}"}
+
     # For other cloud providers, use LiteLLM for lightweight checks
     import litellm
     test_models = {
@@ -124,6 +191,7 @@ async def _validate_single_key(env_name: str, api_key: str) -> dict:
         "gemini": "gemini/gemini-2.0-flash",
         "openai": "openai/gpt-4o-mini",
         "anthropic": "anthropic/claude-3-5-haiku-20241022",
+        "cerebras": "cerebras/llama-3.3-70b",
     }
 
     model = test_models.get(provider)
@@ -230,7 +298,7 @@ async def save_keys(req: SaveKeysRequest):
         existing_statuses[env_name] = {
             "status": res["status"],
             "message": res["message"],
-            "checked_at": datetime.utcnow()
+            "checked_at": datetime.now()
         }
 
     # Save to MongoDB
@@ -240,9 +308,9 @@ async def save_keys(req: SaveKeysRequest):
             "$set": {
                 "keys": existing_keys,
                 "statuses": existing_statuses,
-                "updated_at": datetime.utcnow(),
+                "updated_at": datetime.now(),
             },
-            "$setOnInsert": {"created_at": datetime.utcnow()},
+            "$setOnInsert": {"created_at": datetime.now()},
         },
         upsert=True,
     )
@@ -333,7 +401,7 @@ async def validate_key_endpoint(env_name: str, req: Optional[ValidateKeyRequest]
         existing_statuses[env_name] = {
             "status": "valid",
             "message": res["message"],
-            "checked_at": datetime.utcnow()
+            "checked_at": datetime.now()
         }
         await db.api_keys.update_one(
             {"_id": "provider_keys"},
@@ -341,7 +409,7 @@ async def validate_key_endpoint(env_name: str, req: Optional[ValidateKeyRequest]
                 "$set": {
                     "keys": existing_keys,
                     "statuses": existing_statuses,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(),
                 }
             },
             upsert=True
@@ -359,14 +427,14 @@ async def validate_key_endpoint(env_name: str, req: Optional[ValidateKeyRequest]
         existing_statuses[env_name] = {
             "status": res["status"],
             "message": res["message"],
-            "checked_at": datetime.utcnow()
+            "checked_at": datetime.now()
         }
         await db.api_keys.update_one(
             {"_id": "provider_keys"},
             {
                 "$set": {
                     "statuses": existing_statuses,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(),
                 }
             },
             upsert=True

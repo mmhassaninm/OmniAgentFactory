@@ -36,7 +36,7 @@ class FactoryMirror:
         """
         cached = await db.factory_mirror_cache.find_one({"_id": "mirror_snapshot"})
         if cached:
-            age = datetime.utcnow() - cached.get("generated_at", datetime.min)
+            age = datetime.now() - cached.get("generated_at", datetime.min)
             if age < timedelta(minutes=CACHE_TTL_MINUTES):
                 return cached.get("insights", {})
 
@@ -44,7 +44,7 @@ class FactoryMirror:
 
         await db.factory_mirror_cache.update_one(
             {"_id": "mirror_snapshot"},
-            {"$set": {"insights": insights, "generated_at": datetime.utcnow()}},
+            {"$set": {"insights": insights, "generated_at": datetime.now()}},
             upsert=True,
         )
 
@@ -69,14 +69,14 @@ class FactoryMirror:
                 results[key] = {
                     "question": question,
                     "answer": answer,
-                    "generated_at": datetime.utcnow().isoformat(),
+                    "generated_at": datetime.now().isoformat(),
                 }
             except Exception as e:
                 logger.debug("[MIRROR] Failed to answer '%s': %s", question, e)
                 results[key] = {
                     "question": question,
                     "answer": "Insufficient data to answer this question yet.",
-                    "generated_at": datetime.utcnow().isoformat(),
+                    "generated_at": datetime.now().isoformat(),
                 }
 
         return results
@@ -106,7 +106,7 @@ class FactoryMirror:
     async def _gather_factory_stats(self, db) -> dict:
         """Collect raw statistics from MongoDB to feed into the mirror questions."""
         stats = {}
-        now = datetime.utcnow()
+        now = datetime.now()
         yesterday = now - timedelta(hours=24)
 
         try:

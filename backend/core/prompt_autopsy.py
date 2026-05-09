@@ -73,7 +73,7 @@ async def analyze_failure(
             "confidence": float(autopsy_data.get("confidence", 0.5)),
             "score_before": score_before,
             "score_after": score_after,
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(),
         }
 
         await db.prompt_autopsies.insert_one(doc)
