@@ -18,7 +18,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, Field
 
 from core.database import get_db
@@ -312,7 +312,7 @@ def _extract_behavior_description(code: str) -> str:
 
 
 @router.post("/{agent_id}/run")
-async def run_agent(agent_id: str, req: RunAgentRequest):
+async def run_agent(agent_id: str, req: RunAgentRequest, background_tasks: BackgroundTasks):
     """Execute an agent dynamically via LLM using its goal and evolved behavior context."""
     db = get_db()
     agent_doc = await db.agents.find_one({"id": agent_id})
@@ -410,6 +410,18 @@ your full capabilities. Never give generic responses."""
         "execution_time_ms": elapsed_ms,
     })
 
+    # Fire and forget rule extraction — does NOT block the chat response
+    try:
+        from services.rule_extractor import extract_rules_from_message
+        background_tasks.add_task(
+            extract_rules_from_message,
+            agent_id=agent_id,
+            user_message=req.message,
+            db=db
+        )
+    except Exception as e:
+        logger.warning("Failed to queue rule extraction background task: %s", e)
+
     return RunAgentResponse(result=result, execution_time_ms=elapsed_ms, version=version)
 
 
@@ -500,3 +512,115 @@ async def get_agent_preview_data(agent_id: str, db=Depends(get_db)):
         "current_phase": agent.get("current_phase", "idle"),
         "evolving": agent.get("status") == "evolving",
     }
+
+
+# ── Conversational Rule Management Endpoints ─────────────────────────────────
+
+class AddRuleRequest(BaseModel):
+    rule: str = Field(..., min_length=1, max_length=5000)
+    category: str = "behavior"
+    priority: str = "medium"
+
+
+class UpdateRuleRequest(BaseModel):
+    rule: Optional[str] = None
+    category: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+
+
+@router.get("/{agent_id}/rules")
+async def get_agent_rules(agent_id: str):
+    """Retrieve all rules learned or manually added for an agent."""
+    db = get_db()
+    agent = await db.agents.find_one({"id": agent_id})
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    rules = agent.get("learned_rules", [])
+    return {"rules": rules, "count": len(rules)}
+
+
+@router.post("/{agent_id}/rules")
+async def add_agent_rule(agent_id: str, req: AddRuleRequest):
+    """Manually add an evolutionary rule for an agent."""
+    import uuid
+    db = get_db()
+    agent = await db.agents.find_one({"id": agent_id})
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    new_rule = {
+        "id": str(uuid.uuid4()),
+        "rule": req.rule,
+        "category": req.category,
+        "priority": req.priority,
+        "source_message": "Manually entered by user",
+        "extracted_at": datetime.now(),
+        "applied_cycles": 0,
+        "status": "pending"
+    }
+    
+    await db.agents.update_one(
+        {"id": agent_id},
+        {"$push": {"learned_rules": new_rule}}
+    )
+    
+    return {"status": "success", "rule": new_rule}
+
+
+@router.patch("/{agent_id}/rules/{rule_id}")
+async def update_agent_rule(agent_id: str, rule_id: str, req: UpdateRuleRequest):
+    """Modify an existing rule's text, category, priority, or status."""
+    db = get_db()
+    agent = await db.agents.find_one({"id": agent_id})
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    rules = agent.get("learned_rules", [])
+    rule_found = False
+    
+    for r in rules:
+        if r.get("id") == rule_id:
+            rule_found = True
+            if req.rule is not None:
+                r["rule"] = req.rule
+            if req.category is not None:
+                r["category"] = req.category
+            if req.priority is not None:
+                r["priority"] = req.priority
+            if req.status is not None:
+                r["status"] = req.status
+            break
+            
+    if not rule_found:
+        raise HTTPException(status_code=404, detail="Rule not found")
+        
+    await db.agents.update_one(
+        {"id": agent_id},
+        {"$set": {"learned_rules": rules}}
+    )
+    
+    return {"status": "success"}
+
+
+@router.delete("/{agent_id}/rules/{rule_id}")
+async def delete_agent_rule(agent_id: str, rule_id: str):
+    """Delete a learned rule from the agent."""
+    db = get_db()
+    agent = await db.agents.find_one({"id": agent_id})
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    rules = agent.get("learned_rules", [])
+    updated_rules = [r for r in rules if r.get("id") != rule_id]
+    
+    if len(rules) == len(updated_rules):
+        raise HTTPException(status_code=404, detail="Rule not found")
+        
+    await db.agents.update_one(
+        {"id": agent_id},
+        {"$set": {"learned_rules": updated_rules}}
+    )
+    
+    return {"status": "success"}

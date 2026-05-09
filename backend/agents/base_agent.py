@@ -273,6 +273,8 @@ class BaseAgent:
             "evolve_interval_seconds": self.evolve_interval_seconds,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "learned_rules": getattr(self, "learned_rules", []),
+            "user_feedback_log": getattr(self, "user_feedback_log", []),
         }
 
     @classmethod
@@ -284,7 +286,7 @@ class BaseAgent:
         except ValueError:
             status = AgentStatus.IDLE
 
-        return cls(
+        agent = cls(
             agent_id=data.get("id"),
             name=data.get("name", "Unnamed Agent"),
             goal=data.get("goal", "No goal defined"),
@@ -297,6 +299,9 @@ class BaseAgent:
             test_cases=data.get("test_cases", []),
             created_at=data.get("created_at"),
         )
+        agent.learned_rules = data.get("learned_rules", [])
+        agent.user_feedback_log = data.get("user_feedback_log", [])
+        return agent
 
     # ── Pause/Resume State ──────────────────────────────────────────────────
 

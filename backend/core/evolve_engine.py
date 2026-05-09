@@ -142,12 +142,29 @@ def build_improvement_prompt(
             "Score was low or has room for improvement. It may have failed certain test cases or missed details.\n"
         )
 
+    # Fetch and sort pending learned rules
+    agent_dict = agent if isinstance(agent, dict) else agent.to_dict()
+    pending_rules = [
+        r for r in agent_dict.get("learned_rules", [])
+        if r.get("status") == "pending"
+    ]
+    priority_order = {"high": 1, "medium": 2, "low": 3}
+    pending_rules.sort(key=lambda r: priority_order.get(r.get("priority", "medium").lower(), 2))
+
+    rules_section = ""
+    if pending_rules:
+        rules_section = "\n--- CONVERSATIONAL RULES EXTRACTED FROM USER (MANDATORY TO IMPLEMENT) ---\n"
+        for i, rule in enumerate(pending_rules, 1):
+            rules_section += f"{i}. [{rule.get('category', 'behavior').upper()}] (Priority: {rule.get('priority', 'medium').upper()}): {rule.get('rule')}\n"
+        rules_section += "-------------------------------------------------------------\n"
+
     user_content = f"""You are evolving agent: {agent.name}
 Goal: {agent.goal}
 Current version: v{agent.version}
 Current score: {agent.current_score:.2f}/1.0
 Evolution cycle: #{cycle_number}
 
+{rules_section}
 {wisdom_section}
 PREVIOUS VERSION CODE:
 {agent.agent_code or 'No code yet — create the initial implementation.'}
@@ -579,6 +596,9 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     ),
                 )
 
+                # Flip pending learned rules to applied
+                await _mark_rules_applied(agent_id, db)
+
                 # Contribute successful pattern to collective memory
                 score_delta = score - agent.current_score
                 try:
@@ -967,3 +987,30 @@ def get_evolution_manager() -> EvolutionManager:
     if _manager is None:
         _manager = EvolutionManager()
     return _manager
+
+
+async def _mark_rules_applied(agent_id: str, db):
+    """
+    On successful evolution commit, flip all 'pending' rules to 'applied'.
+    """
+    try:
+        agent = await db.agents.find_one({"id": agent_id})
+        if not agent:
+            return
+        
+        learned_rules = agent.get("learned_rules", [])
+        updated = False
+        for rule in learned_rules:
+            if rule.get("status") == "pending":
+                rule["status"] = "applied"
+                rule["applied_cycles"] = rule.get("applied_cycles", 0) + 1
+                updated = True
+        
+        if updated:
+            await db.agents.update_one(
+                {"id": agent_id},
+                {"$set": {"learned_rules": learned_rules}}
+            )
+            logger.info(f"[RULES] Marked pending rules as applied for agent {agent_id}")
+    except Exception as e:
+        logger.warning(f"Failed to mark rules as applied for agent {agent_id}: {e}")

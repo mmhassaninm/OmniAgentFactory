@@ -203,3 +203,81 @@ export function useUpdateAgentBudget() {
     },
   })
 }
+
+
+export function useAgentRules(agentId: string) {
+  return useQuery({
+    queryKey: ['rules', agentId],
+    queryFn: () => fetchJson(`${API_BASE}/agents/${agentId}/rules`),
+    refetchInterval: 2000,
+    enabled: !!agentId,
+  })
+}
+
+export function useAddAgentRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      agentId,
+      rule,
+      category,
+      priority,
+    }: {
+      agentId: string
+      rule: string
+      category: string
+      priority: string
+    }) =>
+      fetchJson(`${API_BASE}/agents/${agentId}/rules`, {
+        method: 'POST',
+        body: JSON.stringify({ rule, category, priority }),
+      }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['rules', variables.agentId] })
+      qc.invalidateQueries({ queryKey: ['agent', variables.agentId] })
+    },
+  })
+}
+
+export function useUpdateAgentRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      agentId,
+      ruleId,
+      rule,
+      category,
+      priority,
+      status,
+    }: {
+      agentId: string
+      ruleId: string
+      rule?: string
+      category?: string
+      priority?: string
+      status?: string
+    }) =>
+      fetchJson(`${API_BASE}/agents/${agentId}/rules/${ruleId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ rule, category, priority, status }),
+      }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['rules', variables.agentId] })
+      qc.invalidateQueries({ queryKey: ['agent', variables.agentId] })
+    },
+  })
+}
+
+export function useDeleteAgentRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ agentId, ruleId }: { agentId: string; ruleId: string }) =>
+      fetchJson(`${API_BASE}/agents/${agentId}/rules/${ruleId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['rules', variables.agentId] })
+      qc.invalidateQueries({ queryKey: ['agent', variables.agentId] })
+    },
+  })
+}

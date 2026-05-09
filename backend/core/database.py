@@ -73,6 +73,7 @@ async def _setup_indexes(db: AsyncIOMotorDatabase):
     # agents: unique id
     await make_index(db.agents, "id", unique=True)
     await make_index(db.agents, "status")
+    await make_index(db.agents, "learned_rules.status")
 
     # snapshots: agent_id + version compound, latest lookup
     await make_index(db.snapshots, [("agent_id", 1), ("version", -1)])

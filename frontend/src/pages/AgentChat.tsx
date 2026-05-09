@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, KeyboardEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { useAgent, useRunAgent, useAgentConversations, useEvolveAgent } from '../hooks/useAgent'
+import { useAgent, useRunAgent, useAgentConversations, useEvolveAgent, useAgentRules } from '../hooks/useAgent'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -18,6 +18,8 @@ export default function AgentChat() {
   const { data: historyData } = useAgentConversations(agentId || '')
   const runAgent = useRunAgent()
   const evolveMut = useEvolveAgent()
+  const { data: rulesData } = useAgentRules(agentId || '')
+  const pendingRulesCount = rulesData?.rules?.filter((r: any) => r.status === 'pending').length || 0
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -156,6 +158,22 @@ export default function AgentChat() {
       </div>
 
       {/* ── Banners ─────────────────────────────────────────────────────── */}
+      {pendingRulesCount > 0 && (
+        <div className="mx-4 mt-3 px-4 py-2.5 rounded-xl bg-indigo-950/40 border border-indigo-500/20 text-xs text-indigo-300 flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <span className="animate-pulse">💡</span>
+            <span>
+              Evolve Engine has <span className="text-accent-primary font-bold">{pendingRulesCount} pending conversational rule{pendingRulesCount > 1 ? 's' : ''}</span> queued for the next evolution cycle.
+            </span>
+          </span>
+          <button
+            onClick={() => navigate(`/agent/${agentId}`)}
+            className="text-[10px] bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 font-bold px-2 py-1 rounded transition-colors shrink-0"
+          >
+            Manage Rules →
+          </button>
+        </div>
+      )}
       {isEvolving && (
         <div className="mx-4 mt-3 px-4 py-2.5 rounded-xl bg-purple-950/40 border border-purple-500/20 text-xs text-purple-300 flex items-center gap-2">
           <span>⚡</span>

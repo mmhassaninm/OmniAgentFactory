@@ -320,3 +320,16 @@
 - Outcome       : success
 - Notes         : All upgraded files compile perfectly on Python 3.11 with zero syntax warnings, and all frontend components verify with 0 TypeScript issues.
 
+## [2026-05-10] — Backend Circular Import Startup Fix
+- Files changed : backend/core/evolve_engine.py
+- Approach      : Relocated `SECURITY_DIRECTIVE` string definition to the top of `evolve_engine.py` (before relative project imports).
+- Outcome       : success
+- Notes         : Solves a circular dependency loop during FastAPI application initialization (main.py -> api/factory -> core/evolve_engine -> core/swarm -> core/swarm/coder -> core/evolve_engine) where `SECURITY_DIRECTIVE` was imported before its lower-level declaration was reached. The server now loads cleanly and finishes startup initialization in 8 seconds.
+
+## [2026-05-10] — Conversational Rule Extraction & Evolution Feedback Loop
+- Files changed : backend/agents/base_agent.py, backend/core/database.py, backend/api/agents.py, backend/core/evolve_engine.py, backend/services/rule_extractor.py, frontend/src/hooks/useAgent.ts, frontend/src/pages/AgentDetail.tsx, frontend/src/pages/AgentChat.tsx
+- Approach      : (1) Added `learned_rules` and `user_feedback_log` fields to BaseAgent models. (2) Added a compound index on `learned_rules.status` inside the database setup sequence. (3) Built `backend/services/rule_extractor.py` utilizing `route_completion` to perform structured rule extraction in low-temperature JSON parsing. (4) Integrated non-blocking `BackgroundTasks` rule extraction hook after user->agent chats inside `POST /api/agents/{agent_id}/run`. (5) Modified the evolution prompt builder to sort and prepend pending learned rules as mandatory instructions, and automatically flag rules as `applied` upon successful evolution cycles. (6) Implemented 4 new rules management API endpoints and a beautiful, premium "Learned Conversational Rules" frontend card with full delete, toggle-applied, and custom-addition capabilities, complete with alert banners in chat areas.
+- Outcome       : success
+- Notes         : The system compiles perfectly with 0 syntax errors. The loop successfully extracts instructions without introducing any conversational lag.
+
+

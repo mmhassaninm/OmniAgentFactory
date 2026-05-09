@@ -10,6 +10,10 @@ import {
   useDeleteAgent,
   useAgentBudget,
   useUpdateAgentBudget,
+  useAgentRules,
+  useAddAgentRule,
+  useUpdateAgentRule,
+  useDeleteAgentRule,
 } from '../hooks/useAgent'
 import { useAgentSocket } from '../hooks/useSocket'
 import ThoughtLog from '../components/ThoughtLog'
@@ -47,10 +51,22 @@ export default function AgentDetail() {
   const [isEditingBudget, setIsEditingBudget] = useState(false)
   const [editedBudgetLimit, setEditedBudgetLimit] = useState<number | ''>('')
   const [activeFilter, setActiveFilter] = useState('all')
+
+  const { data: rulesData } = useAgentRules(agentId || '')
+  const addRuleMut = useAddAgentRule()
+  const updateRuleMut = useUpdateAgentRule()
+  const deleteRuleMut = useDeleteAgentRule()
+
+  const [newRuleText, setNewRuleText] = useState('')
+  const [newRuleCategory, setNewRuleCategory] = useState('behavior')
+  const [newRulePriority, setNewRulePriority] = useState('medium')
+  const [showAddRule, setShowAddRule] = useState(false)
+
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     mission: false,
     metrics: false,
     provider: false,
+    rules: false,
     thoughts: false,
     timeline: false,
     code: false,
@@ -419,6 +435,172 @@ export default function AgentDetail() {
                 {agent.status === 'error' ? t('detail.degraded') : t('detail.healthy')}
               </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── SECTION 4.5: Learned Conversational Rules ────────────────────── */}
+      <div className="bg-bg-surface rounded-2xl border border-border-default/20 p-5 mb-4 shadow-md transition-all">
+        <SectionHeader title="Learned Conversational Rules" sectionKey="rules" icon="💡" />
+        {!collapsed.rules && (
+          <div className="space-y-4">
+            {/* Header / Summary stats */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs text-text-secondary">
+                These rules were automatically extracted from your chat conversations or added manually to shape the agent's evolutionary goals.
+              </span>
+              <button
+                onClick={() => setShowAddRule(!showAddRule)}
+                className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5"
+              >
+                <span>{showAddRule ? 'Cancel' : '+ Add Rule'}</span>
+              </button>
+            </div>
+
+            {/* Manual Rule addition form */}
+            {showAddRule && (
+              <div className="bg-bg-base/60 rounded-xl p-4 border border-border-default/30 space-y-3 animate-fadeIn">
+                <p className="text-xs font-bold text-text-primary">Add Custom Instruction/Rule</p>
+                <div>
+                  <textarea
+                    value={newRuleText}
+                    onChange={e => setNewRuleText(e.target.value)}
+                    placeholder="e.g. Always respond in formal English with a technical tone."
+                    rows={2}
+                    className="w-full bg-bg-base border border-border-default/40 rounded-xl px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent-primary transition-all"
+                  />
+                </div>
+                <div className="flex gap-4 flex-wrap">
+                  <div className="flex-1 min-w-[120px]">
+                    <label className="block text-[10px] text-text-muted uppercase font-bold tracking-wider mb-1">Category</label>
+                    <select
+                      value={newRuleCategory}
+                      onChange={e => setNewRuleCategory(e.target.value)}
+                      className="w-full bg-bg-base border border-border-default/40 rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-none"
+                    >
+                      <option value="behavior">Behavior / Tone</option>
+                      <option value="prompt">Prompt Directive</option>
+                      <option value="code">Code Constraint</option>
+                      <option value="constraint">Strict Hard Boundary</option>
+                      <option value="ui">UI/UX Change</option>
+                    </select>
+                  </div>
+                  <div className="flex-1 min-w-[120px]">
+                    <label className="block text-[10px] text-text-muted uppercase font-bold tracking-wider mb-1">Priority</label>
+                    <select
+                      value={newRulePriority}
+                      onChange={e => setNewRulePriority(e.target.value)}
+                      className="w-full bg-bg-base border border-border-default/40 rounded-lg px-2 py-1.5 text-xs text-text-primary focus:outline-none"
+                    >
+                      <option value="high">🔥 High</option>
+                      <option value="medium">⚡ Medium</option>
+                      <option value="low">💤 Low</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    disabled={!newRuleText.trim() || addRuleMut.isPending}
+                    onClick={async () => {
+                      await addRuleMut.mutateAsync({
+                        agentId: agent.id,
+                        rule: newRuleText,
+                        category: newRuleCategory,
+                        priority: newRulePriority,
+                      })
+                      setNewRuleText('')
+                      setShowAddRule(false)
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-colors"
+                  >
+                    {addRuleMut.isPending ? 'Adding...' : 'Save Instruction'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* List of rules */}
+            {(!rulesData?.rules || rulesData.rules.length === 0) ? (
+              <div className="bg-bg-base/30 rounded-xl p-5 border border-border-default/10 text-center">
+                <span className="text-xl">💡</span>
+                <p className="text-xs text-text-muted italic mt-1">No conversational rules extracted yet. Chat with the agent or add one manually above!</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
+                {rulesData.rules.map((rule: any) => {
+                  const isPending = rule.status === 'pending'
+                  const priorityClass = rule.priority === 'high' ? 'bg-red-500/10 text-red-400 border-red-500/20' : rule.priority === 'medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                  const statusClass = isPending ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  
+                  return (
+                    <div
+                      key={rule.id}
+                      className="group bg-bg-base/40 rounded-xl p-3 border border-border-default/15 flex items-start justify-between gap-3 hover:border-border-default/40 transition-all shadow-sm"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                          {/* Priority badge */}
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${priorityClass} uppercase tracking-wider shrink-0`}>
+                            {rule.priority}
+                          </span>
+                          {/* Category badge */}
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border border-border-default/30 text-text-muted bg-bg-surface shrink-0 uppercase tracking-wider">
+                            {rule.category}
+                          </span>
+                          {/* Status badge */}
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${statusClass} uppercase tracking-wider shrink-0`}>
+                            {rule.status}
+                          </span>
+                        </div>
+                        <p className="text-sm text-text-secondary font-medium leading-relaxed break-words">
+                          {rule.rule}
+                        </p>
+                        {rule.source_message && rule.source_message !== 'Manually entered by user' && (
+                          <div className="text-[10px] text-text-muted font-mono mt-1 italic truncate">
+                            Source: "{rule.source_message}"
+                          </div>
+                        )}
+                        {rule.extracted_at && (
+                          <div className="text-[9px] text-text-muted mt-0.5">
+                            Added: {new Date(rule.extracted_at).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() =>
+                            updateRuleMut.mutate({
+                              agentId: agent.id,
+                              ruleId: rule.id,
+                              status: isPending ? 'applied' : 'pending',
+                            })
+                          }
+                          title={isPending ? 'Mark as Applied' : 'Mark as Pending'}
+                          className={`p-1.5 rounded-lg border border-border-default/30 hover:border-border-default/60 bg-bg-surface text-xs transition-colors`}
+                        >
+                          {isPending ? '✓' : '⟲'}
+                        </button>
+                        <button
+                          disabled={deleteRuleMut.isPending}
+                          onClick={() =>
+                            deleteRuleMut.mutate({
+                              agentId: agent.id,
+                              ruleId: rule.id,
+                            })
+                          }
+                          title="Delete rule"
+                          className="p-1.5 rounded-lg border border-red-500/15 hover:border-red-500/50 bg-bg-surface text-red-400 text-xs transition-colors"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
