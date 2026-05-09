@@ -1,0 +1,206 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════
+   OmniBot Agent Factory — Design System
+   Neural Dark theme with premium glassmorphism
+   ═══════════════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-bg-base: #06080d;
+  --color-bg-panel: #0c1017;
+  --color-bg-card: #111827;
+  --color-bg-elevated: #1a2035;
+  --color-bg-hover: #1e2a45;
+
+  --color-accent-primary: #00d4ff;
+  --color-accent-secondary: #7c3aed;
+  --color-accent-tertiary: #6366f1;
+  --color-accent-success: #10b981;
+  --color-accent-warning: #f59e0b;
+  --color-accent-error: #ef4444;
+
+  --color-text-primary: #f0f4f8;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --color-border-default: #1e293b;
+  --color-border-accent: #7c3aed40;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ── Global Base ──────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent-secondary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-primary);
+}
+
+/* ── Glassmorphism Utilities ──────────────────────────────────────── */
+
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(124, 58, 237, 0.15);
+}
+
+.glass-strong {
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+}
+
+/* ── Glow Effects ─────────────────────────────────────────────────── */
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.15),
+              0 0 40px rgba(0, 212, 255, 0.05);
+}
+
+.glow-secondary {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.15),
+              0 0 40px rgba(124, 58, 237, 0.05);
+}
+
+.glow-success {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.glow-error {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+/* ── Animations ───────────────────────────────────────────────────── */
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* ── Status Badge Styles ──────────────────────────────────────────── */
+
+.status-evolving {
+  background: linear-gradient(135deg, #10b98130, #06b6d430);
+  color: #10b981;
+  border: 1px solid #10b98150;
+}
+
+.status-paused {
+  background: linear-gradient(135deg, #f59e0b30, #f5920b30);
+  color: #f59e0b;
+  border: 1px solid #f59e0b50;
+}
+
+.status-stopped {
+  background: linear-gradient(135deg, #64748b30, #47556930);
+  color: #94a3b8;
+  border: 1px solid #64748b50;
+}
+
+.status-testing {
+  background: linear-gradient(135deg, #7c3aed30, #6366f130);
+  color: #a78bfa;
+  border: 1px solid #7c3aed50;
+}
+
+.status-error {
+  background: linear-gradient(135deg, #ef444430, #dc262630);
+  color: #ef4444;
+  border: 1px solid #ef444450;
+}
+
+.status-idle {
+  background: linear-gradient(135deg, #64748b20, #47556920);
+  color: #64748b;
+  border: 1px solid #64748b30;
+}
+
+/* ── Gradient Text ────────────────────────────────────────────────── */
+
+.gradient-text {
+  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Background Grid Pattern ──────────────────────────────────────── */
+
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}

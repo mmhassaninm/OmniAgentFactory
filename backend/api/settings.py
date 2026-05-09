@@ -1,0 +1,406 @@
+"""
+OmniBot — API Key Settings Routes
+
+POST /api/factory/settings/keys   — Save API keys to MongoDB
+GET  /api/factory/settings/keys   — Get configured keys (masked)
+POST /api/factory/settings/keys/test — Test a specific key
+"""
+
+import logging
+from datetime import datetime
+from typing import Optional, Dict, List
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+from core.config import hash_key
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
+
+# ── Key definition: which keys we support ───────────────────────────────
+
+KEY_DEFINITIONS = [
+    {"env_name": "GROQ_KEY_1", "provider": "groq", "label": "Groq API Key #1"},
+    {"env_name": "GROQ_KEY_2", "provider": "groq", "label": "Groq API Key #2"},
+    {"env_name": "GROQ_KEY_3", "provider": "groq", "label": "Groq API Key #3"},
+    {"env_name": "GROQ_KEY_4", "provider": "groq", "label": "Groq API Key #4"},
+    {"env_name": "OPENROUTER_KEY_1", "provider": "openrouter", "label": "OpenRouter API Key #1"},
+    {"env_name": "OPENROUTER_KEY_2", "provider": "openrouter", "label": "OpenRouter API Key #2"},
+    {"env_name": "OPENROUTER_KEY_3", "provider": "openrouter", "label": "OpenRouter API Key #3"},
+    {"env_name": "OPENROUTER_KEY_4", "provider": "openrouter", "label": "OpenRouter API Key #4"},
+    {"env_name": "GEMINI_KEY_1", "provider": "gemini", "label": "Google Gemini Key #1"},
+    {"env_name": "GEMINI_KEY_2", "provider": "gemini", "label": "Google Gemini Key #2"},
+    {"env_name": "OPENAI_KEY_1", "provider": "openai", "label": "OpenAI Key #1"},
+    {"env_name": "ANTHROPIC_KEY_1", "provider": "anthropic", "label": "Anthropic Key #1"},
+    {"env_name": "OLLAMA_BASE_URL", "provider": "ollama", "label": "Ollama Base URL"},
+]
+
+
+class SaveKeysRequest(BaseModel):
+    keys: Dict[str, str]  # { "GROQ_KEY_1": "gsk_xxx", "OPENROUTER_KEY_1": "sk-or-xxx", ... }
+
+
+class TestKeyRequest(BaseModel):
+    provider: str
+    api_key: str
+
+
+class ValidateKeyRequest(BaseModel):
+    api_key: Optional[str] = None
+
+
+def _mask_key(key: str) -> str:
+    """Mask a key for display: show first 6 and last 4 chars."""
+    if not key or len(key) < 12:
+        return "****" if key else ""
+    return key[:6] + "•" * (len(key) - 10) + key[-4:]
+
+
+async def _validate_single_key(env_name: str, api_key: str) -> dict:
+    """Validate a single API key by calling its provider."""
+    defn = next((d for d in KEY_DEFINITIONS if d["env_name"] == env_name), None)
+    if not defn:
+        return {"status": "invalid", "message": f"Unknown key definition: {env_name}"}
+
+    provider = defn["provider"]
+    api_key = api_key.strip()
+    if not api_key:
+        return {"status": "unverified", "message": "Key is empty."}
+
+    if provider == "ollama":
+        import httpx
+        url = api_key
+        if not url.startswith(("http://", "https://")):
+            url = f"http://{url}"
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.get(f"{url}/api/tags", timeout=5)
+                if r.status_code == 200:
+                    return {"status": "valid", "message": "✓ Ollama server reachable and working"}
+                else:
+                    return {"status": "invalid", "message": f"✗ Ollama returned status {r.status_code}"}
+        except Exception as e:
+            try:
+                async with httpx.AsyncClient() as client:
+                    r = await client.get(url, timeout=5)
+                    return {"status": "valid", "message": "✓ Ollama base URL reachable"}
+            except Exception as ex:
+                return {"status": "invalid", "message": f"✗ Cannot reach Ollama: {str(ex)[:100]}"}
+
+    # OpenRouter: bypass LiteLLM — call /api/v1/models directly via httpx
+    if provider == "openrouter":
+        import httpx
+        import time as _time
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "https://omnibot.local",
+            "X-Title": "OmniBot",
+        }
+        try:
+            _start = _time.time()
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get("https://openrouter.ai/api/v1/auth/key", headers=headers)
+            latency_ms = int((_time.time() - _start) * 1000)
+            if resp.status_code == 200:
+                return {"status": "valid", "message": f"✓ OpenRouter key verified ({latency_ms}ms)"}
+            elif resp.status_code == 401:
+                return {"status": "invalid", "message": "✗ Invalid API key — check your OpenRouter key"}
+            else:
+                return {"status": "invalid", "message": f"✗ OpenRouter returned HTTP {resp.status_code}"}
+        except httpx.TimeoutException:
+            return {"status": "invalid", "message": "✗ OpenRouter request timed out (8s)"}
+        except Exception as e:
+            return {"status": "invalid", "message": f"✗ Connection error: {str(e)[:100]}"}
+
+    # For other cloud providers, use LiteLLM for lightweight checks
+    import litellm
+    test_models = {
+        "groq": "groq/llama-3.1-8b-instant",
+        "gemini": "gemini/gemini-2.0-flash",
+        "openai": "openai/gpt-4o-mini",
+        "anthropic": "anthropic/claude-3-5-haiku-20241022",
+    }
+
+    model = test_models.get(provider)
+    if not model:
+        return {"status": "valid", "message": "✓ Key saved (validation not supported for this provider)"}
+
+    try:
+        response = await litellm.acompletion(
+            model=model,
+            messages=[{"role": "user", "content": "Say hello in one word."}],
+            api_key=api_key,
+            max_tokens=1,
+            timeout=8,
+        )
+        content = response.choices[0].message.content or ""
+        return {"status": "valid", "message": "✓ Key verified and working"}
+    except Exception as e:
+        err_msg = str(e)
+        if "AuthenticationError" in err_msg or "401" in err_msg or "Invalid API Key" in err_msg:
+            err_msg = "Invalid API Key or unauthorized access"
+        elif "RateLimitError" in err_msg or "429" in err_msg:
+            return {"status": "valid", "message": "✓ Key verified (Rate limited but valid)"}
+        return {"status": "invalid", "message": f"✗ Key rejected by provider: {err_msg[:120]}"}
+
+
+@router.get("/keys")
+async def get_keys():
+    """Get all configured keys with masked values and status."""
+    from core.database import get_db
+    db = get_db()
+
+    # Load keys from MongoDB
+    stored = await db.api_keys.find_one({"_id": "provider_keys"})
+    stored_keys = stored.get("keys", {}) if stored else {}
+    stored_statuses = stored.get("statuses", {}) if stored else {}
+
+    # Build response with definitions + stored status
+    result = []
+    for defn in KEY_DEFINITIONS:
+        env_name = defn["env_name"]
+        raw = stored_keys.get(env_name, "")
+        
+        status_info = stored_statuses.get(env_name, {}) if isinstance(stored_statuses, dict) else {}
+        status = status_info.get("status", "unverified") if raw else "unverified"
+        message = status_info.get("message", "") if raw else ""
+        checked_at = status_info.get("checked_at", None) if raw else None
+
+        result.append({
+            "env_name": env_name,
+            "provider": defn["provider"],
+            "label": defn["label"],
+            "is_set": bool(raw),
+            "masked_value": _mask_key(raw) if raw else "",
+            "key_hash": hash_key(raw) if raw else "",
+            "status": status,
+            "status_message": message,
+            "checked_at": checked_at.isoformat() if checked_at else None,
+        })
+
+    return {"keys": result}
+
+
+@router.post("/keys")
+async def save_keys(req: SaveKeysRequest):
+    """Save API keys to MongoDB. Only non-empty values are stored."""
+    from core.database import get_db
+    db = get_db()
+
+    # Load existing keys so we can merge
+    stored = await db.api_keys.find_one({"_id": "provider_keys"})
+    existing_keys = stored.get("keys", {}) if stored else {}
+    existing_statuses = stored.get("statuses", {}) if stored else {}
+
+    # Merge: update existing with new values, skip empty strings (clear key)
+    modified_keys = []
+    for env_name, value in req.keys.items():
+        value = value.strip()
+        if value:
+            if existing_keys.get(env_name) != value:
+                existing_keys[env_name] = value
+                modified_keys.append(env_name)
+        elif env_name in existing_keys and value == "":
+            del existing_keys[env_name]
+            if env_name in existing_statuses:
+                del existing_statuses[env_name]
+
+    # Sync ANTHROPIC_KEY with ANTHROPIC_KEY_1 for backward compatibility
+    if "ANTHROPIC_KEY_1" in req.keys:
+        val = req.keys["ANTHROPIC_KEY_1"].strip()
+        if val:
+            if existing_keys.get("ANTHROPIC_KEY") != val:
+                existing_keys["ANTHROPIC_KEY"] = val
+                if "ANTHROPIC_KEY" not in modified_keys:
+                    modified_keys.append("ANTHROPIC_KEY")
+        elif "ANTHROPIC_KEY" in existing_keys:
+            del existing_keys["ANTHROPIC_KEY"]
+            if "ANTHROPIC_KEY" in existing_statuses:
+                del existing_statuses["ANTHROPIC_KEY"]
+
+    # Run auto-validation for any newly saved/modified keys
+    for env_name in modified_keys:
+        val = existing_keys[env_name]
+        res = await _validate_single_key(env_name, val)
+        existing_statuses[env_name] = {
+            "status": res["status"],
+            "message": res["message"],
+            "checked_at": datetime.utcnow()
+        }
+
+    # Save to MongoDB
+    await db.api_keys.update_one(
+        {"_id": "provider_keys"},
+        {
+            "$set": {
+                "keys": existing_keys,
+                "statuses": existing_statuses,
+                "updated_at": datetime.utcnow(),
+            },
+            "$setOnInsert": {"created_at": datetime.utcnow()},
+        },
+        upsert=True,
+    )
+
+    # Reload the model router with new keys
+    try:
+        from core.model_router import get_model_router
+        router_instance = get_model_router()
+        await router_instance.reload_keys_from_db()
+        logger.info("Model router reloaded with %d keys from MongoDB",
+                     sum(len(v) for v in router_instance._keys.values()))
+    except Exception as e:
+        logger.warning("Model router reload failed: %s", e)
+
+    logger.info("API keys saved to MongoDB (%d keys configured)",
+                len([v for v in existing_keys.values() if v]))
+
+    return {
+        "status": "saved",
+        "keys_configured": len([v for v in existing_keys.values() if v]),
+    }
+
+
+@router.post("/keys/test")
+async def test_key(req: TestKeyRequest):
+    """Test a specific API key by making a minimal call (legacy endpoint)."""
+    import litellm
+
+    # Map provider to a test model
+    test_models = {
+        "groq": "groq/llama-3.1-8b-instant",
+        "openrouter": "openrouter/google/gemini-2.0-flash-001",
+        "gemini": "gemini/gemini-2.0-flash",
+        "anthropic": "anthropic/claude-3-5-haiku-20241022",
+    }
+
+    model = test_models.get(req.provider)
+    if not model:
+        return {"status": "skip", "message": f"No test model for provider: {req.provider}"}
+
+    try:
+        response = await litellm.acompletion(
+            model=model,
+            messages=[{"role": "user", "content": "Say hello in one word."}],
+            api_key=req.api_key,
+            timeout=15,
+            max_tokens=10,
+        )
+        content = response.choices[0].message.content or ""
+        return {"status": "ok", "message": f"Key works! Response: {content.strip()[:50]}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)[:200]}
+
+
+@router.post("/keys/validate/{env_name}")
+async def validate_key_endpoint(env_name: str, req: Optional[ValidateKeyRequest] = None):
+    """Validate a specific API key (either passed in body or loaded from DB)."""
+    from core.database import get_db
+    db = get_db()
+
+    # Load existing keys
+    stored = await db.api_keys.find_one({"_id": "provider_keys"})
+    existing_keys = stored.get("keys", {}) if stored else {}
+    existing_statuses = stored.get("statuses", {}) if stored else {}
+
+    # 1. Determine key value to test
+    api_key = None
+    is_raw_passed = False
+    if req and req.api_key:
+        api_key = req.api_key.strip()
+        is_raw_passed = True
+    else:
+        api_key = existing_keys.get(env_name, "").strip()
+
+    if not api_key:
+        raise HTTPException(status_code=400, detail=f"Key {env_name} is not configured and no value was provided.")
+
+    # 2. Run validation
+    res = await _validate_single_key(env_name, api_key)
+
+    # 3. If valid and raw key was passed, save the key to MongoDB
+    # If it was an already stored key, save the status regardless of result
+    if res["status"] == "valid" and is_raw_passed:
+        existing_keys[env_name] = api_key
+        # Sync ANTHROPIC_KEY
+        if env_name == "ANTHROPIC_KEY_1":
+            existing_keys["ANTHROPIC_KEY"] = api_key
+        existing_statuses[env_name] = {
+            "status": "valid",
+            "message": res["message"],
+            "checked_at": datetime.utcnow()
+        }
+        await db.api_keys.update_one(
+            {"_id": "provider_keys"},
+            {
+                "$set": {
+                    "keys": existing_keys,
+                    "statuses": existing_statuses,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+            upsert=True
+        )
+        # Reload the model router with new keys
+        try:
+            from core.model_router import get_model_router
+            router_instance = get_model_router()
+            await router_instance.reload_keys_from_db()
+        except Exception as e:
+            logger.warning("Model router reload failed: %s", e)
+            
+    elif not is_raw_passed:
+        # Validating stored key: update its status in DB
+        existing_statuses[env_name] = {
+            "status": res["status"],
+            "message": res["message"],
+            "checked_at": datetime.utcnow()
+        }
+        await db.api_keys.update_one(
+            {"_id": "provider_keys"},
+            {
+                "$set": {
+                    "statuses": existing_statuses,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+            upsert=True
+        )
+
+    return res
+
+
+@router.get("/provider-health")
+async def get_provider_health():
+    """Get status/latency health metrics for all API providers."""
+    from core.model_router import get_model_router
+    try:
+        router_instance = get_model_router()
+        health_dict = await router_instance.check_provider_health()
+        return list(health_dict.values())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to check provider health: {str(e)}")
+
+
+@router.post("/reload-router")
+async def reload_router_endpoint():
+    """Manually trigger reloading API keys from MongoDB into ModelRouter."""
+    from core.model_router import get_model_router
+    try:
+        router_instance = get_model_router()
+        await router_instance.reload_keys_from_db()
+        
+        # Calculate active provider keys
+        keys_loaded = sum(len(v) for v in router_instance._keys.values())
+        providers_active = sum(1 for v in router_instance._keys.values() if len(v) > 0)
+        
+        return {
+            "status": "reloaded",
+            "providers_active": providers_active,
+            "keys_loaded": keys_loaded
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reload model router: {str(e)}")
+

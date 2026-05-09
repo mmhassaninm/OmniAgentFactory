@@ -1,0 +1,33 @@
+# ── Core Framework ──────────────────────
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv
+
+# ── Database ────────────────────────────
+motor
+pymongo
+chromadb
+numpy<2.0
+
+# ── AI / LLM ───────────────────────────
+litellm
+langgraph
+
+# ── Scheduling ──────────────────────────
+apscheduler
+
+# ── HTTP & Web ──────────────────────────
+httpx
+requests
+beautifulsoup4
+duckduckgo-search
+
+# ── Security ───────────────────────────
+cryptography
+
+# ── Utilities ──────────────────────────
+psutil
+docker
+sentence-transformers
+websockets
