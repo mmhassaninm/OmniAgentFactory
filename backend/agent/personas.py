@@ -4,7 +4,20 @@ Agent Personas — Direction 7 of Phase 5.
 Four specialized system-prompt personas that override AGENT_SYSTEM in loop.py
 when a persona is selected. Each persona emphasizes different tools and reasoning styles.
 """
+import os
 from typing import Optional
+
+SOULS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "souls")
+
+def _load_soul(name: str, fallback: str) -> str:
+    path = os.path.join(SOULS_DIR, f"{name}_soul.md")
+    try:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+    except Exception:
+        pass
+    return fallback
 
 PERSONAS: dict[str, dict] = {
     "research": {
@@ -84,6 +97,33 @@ RULES:
 5. If you cannot complete the task after using all available tools, say TASK_COMPLETE and explain why.
 6. Be concise in your thinking. Don't repeat yourself.
 7. LANGUAGE: Match the user's language (Arabic → Arabic, English → English).""",
+    },
+
+    "planner": {
+        "name": "Planner Agent",
+        "icon": "📝",
+        "color": "#3b82f6",    # blue
+        "description": "Task breakdown and planning",
+        "preferred_tools": [],
+        "system_prompt": _load_soul("planner", "You are the Planner. Break tasks into steps."),
+    },
+
+    "executor": {
+        "name": "Executor Agent",
+        "icon": "⚡",
+        "color": "#ef4444",    # red
+        "description": "Execution and tool handling",
+        "preferred_tools": ["run_python", "run_command", "read_file", "write_draft"],
+        "system_prompt": _load_soul("executor", "You are the Executor. Run plans step by step."),
+    },
+
+    "watcher": {
+        "name": "Watcher Agent",
+        "icon": "👁️",
+        "color": "#8b5cf6",    # violet
+        "description": "Strict security and rule enforcement",
+        "preferred_tools": [],
+        "system_prompt": _load_soul("watcher", "You are the Watcher. Apply rules, not opinions."),
     },
 }
 

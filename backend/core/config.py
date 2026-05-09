@@ -89,6 +89,18 @@ class Settings:
         self.telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
         self.telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
+        # ── Infinite Dev Loop Orchestrator ──────
+        self.enable_dev_loop: bool = os.getenv("ENABLE_DEV_LOOP", "false").lower() == "true"
+        self.dev_loop_interval_minutes: int = int(os.getenv("DEV_LOOP_INTERVAL_MINUTES", "60"))
+
+    @property
+    def ENABLE_DEV_LOOP(self) -> bool:
+        return self.enable_dev_loop
+
+    @property
+    def DEV_LOOP_INTERVAL_MINUTES(self) -> int:
+        return self.dev_loop_interval_minutes
+
     def is_night_mode(self) -> bool:
         """Check if current local time falls within the night mode window."""
         from datetime import datetime

@@ -22,6 +22,7 @@ import AgentPreview from './pages/AgentPreview'
 import Settings from './pages/Settings'
 import KeyVault from './pages/KeyVault'
 import ModelHub from './pages/ModelHub'
+import DevLoopDashboard from './pages/DevLoopDashboard'
 import { LanguageProvider } from './i18n/LanguageContext'
 import { PreLoader } from './components/PreLoader'
 
@@ -38,6 +39,9 @@ export default function App() {
               <Route element={<MainLayout />}>
                 <Route path="/" element={<Navigate to="/factory" replace />} />
                 <Route path="/factory" element={<Factory />} />
+                
+                <Route path="/dev-loop" element={<DevLoopDashboard />} />
+                <Route path="/devloop" element={<DevLoopDashboard />} />
                 
                 {/* Support both new /agents/:id and legacy /agent/:agentId routes */}
                 <Route path="/agents/:agentId" element={<AgentDetail />} />

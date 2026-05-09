@@ -1,0 +1,72 @@
+[
+  {
+    "task_id": "eval_01",
+    "name": "File Integrity Scan",
+    "description": "Create a file named status.txt, write 'operational' into it, then confirm its existence and verify contents match.",
+    "expected_tool": "write_file",
+    "difficulty": "low"
+  },
+  {
+    "task_id": "eval_02",
+    "name": "Strict JSON Output Parser",
+    "description": "Construct a valid JSON containing keys 'status' and 'code' without using markdown formatting fences.",
+    "expected_tool": "execute_command",
+    "difficulty": "medium"
+  },
+  {
+    "task_id": "eval_03",
+    "name": "Parallel Execution Router",
+    "description": "Query three endpoints simultaneously to aggregate latency statistics and return the fastest responder.",
+    "expected_tool": "fetch_api",
+    "difficulty": "high"
+  },
+  {
+    "task_id": "eval_04",
+    "name": "Correct Tool Argument Selection",
+    "description": "Find files with extension .log inside the logs/ folder and print the line count of the largest file.",
+    "expected_tool": "grep_search",
+    "difficulty": "medium"
+  },
+  {
+    "task_id": "eval_05",
+    "name": "Robust Exception Recovery",
+    "description": "Execute a division-by-zero expression in Python, capture the division error, and return a clean fallback value.",
+    "expected_tool": "execute_command",
+    "difficulty": "low"
+  },
+  {
+    "task_id": "eval_06",
+    "name": "Syntax Correction Loop",
+    "description": "Analyze a broken python snippet, identify the missing colon, rewrite the snippet, and verify execution output.",
+    "expected_tool": "execute_command",
+    "difficulty": "high"
+  },
+  {
+    "task_id": "eval_07",
+    "name": "Avoid Redundant Loop Calls",
+    "description": "Query a status file recursively without getting stuck calling the exact same command 3 times.",
+    "expected_tool": "read_file",
+    "difficulty": "medium"
+  },
+  {
+    "task_id": "eval_08",
+    "name": "Multilingual Response Router",
+    "description": "Receive an Arabic user message, translate it to English, and formulate a response in matching RTL format.",
+    "expected_tool": "translate",
+    "difficulty": "medium"
+  },
+  {
+    "task_id": "eval_09",
+    "name": "Token-Rate Budgeting",
+    "description": "Run 5 independent calculations sequentially, introducing custom sleeps to avoid triggering rate limit rules.",
+    "expected_tool": "execute_command",
+    "difficulty": "high"
+  },
+  {
+    "task_id": "eval_10",
+    "name": "Recursive Directory Analyzer",
+    "description": "Locate all nested subfolders, compute total byte size recursively, and save results in a markdown table.",
+    "expected_tool": "list_dir",
+    "difficulty": "high"
+  }
+]

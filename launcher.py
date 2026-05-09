@@ -1,29 +1,62 @@
-import os
 import sys
+import os
+from pathlib import Path
+
+# --- Silent Redirection for pythonw.exe ---
+PROJECT_ROOT = str(Path(__file__).parent.resolve())
+LOG_DIR = Path(PROJECT_ROOT) / "Project_Docs" / "Logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+# Redirect stdout and stderr to log files (REQUIRED for pythonw.exe)
+# Must happen BEFORE any other import that might print
+_log_file = open(LOG_DIR / "omnibot.log", "a", encoding="utf-8", buffering=1)
+_err_file = open(LOG_DIR / "omnibot_errors.log", "a", encoding="utf-8", buffering=1)
+sys.stdout = _log_file
+sys.stderr = _err_file
+
+# --- Other Imports ---
 import subprocess
 import time
 import signal
 import psutil
+import logging
+from datetime import datetime
 from PIL import Image, ImageDraw
 import pystray
-from pystray import MenuItem as item
-import winshell
-from win32com.client import Dispatch
+import threading
+
+# Configure Standard Logging
+logging.basicConfig(
+    filename=str(LOG_DIR / "omnibot.log"),
+    level=logging.INFO,
+    format="[%(asctime)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    encoding="utf-8"
+)
+log = logging.getLogger("OmniBot")
+
+def log_message(msg: str):
+    log.info(msg)
+    try:
+        _log_file.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+        _log_file.flush()
+    except Exception:
+        pass
 
 # --- Configuration ---
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(PROJECT_ROOT, "Project_Docs", "Logs", "omnibot.log")
-SHORTCUT_NAME = "NexusOS Control Center"
+SHORTCUT_NAME = "OmniBot Factory"
 SHORTCUT_PATH = os.path.join(os.environ["USERPROFILE"], "Desktop", f"{SHORTCUT_NAME}.lnk")
 ICON_PATH = os.path.join(PROJECT_ROOT, "launcher_icon.png")
 
 # Process Targets
-TARGET_PORT_PYTHON = 8000
 TARGET_PORT_BACKEND = 3001
 TARGET_PORT_FRONTEND = 5173
 
-# --- Utility Functions ---
+# Global Processes List and Tray Icon
+_processes: list[subprocess.Popen] = []
+_tray_icon = None
 
+# --- LM Studio VRAM Management ---
 def manage_lm_studio(action="startup"):
     """
     Dynamically load/unload models in LM Studio to manage VRAM.
@@ -43,13 +76,13 @@ def manage_lm_studio(action="startup"):
             with urllib.request.urlopen(req, timeout=5) as response:
                 m_data = json.loads(response.read().decode('utf-8'))
                 models = m_data if isinstance(m_data, list) else m_data.get("data", [])
-        except:
+        except Exception:
             req = urllib.request.Request(f"{base_url}/v1/models", method="GET")
             try:
                 with urllib.request.urlopen(req, timeout=5) as response:
                     data = json.loads(response.read().decode('utf-8'))
                     models = data.get("data", [])
-            except: pass
+            except Exception: pass
 
         loaded_ids = [m['id'] for m in models]
         log_message(f"Current VRAM: {loaded_ids}")
@@ -62,7 +95,7 @@ def manage_lm_studio(action="startup"):
                     r = urllib.request.Request(base_url + endpoint, data=p, headers={'Content-Type': 'application/json'}, method="POST")
                     with urllib.request.urlopen(r, timeout=3) as res:
                         if res.status == 200: break
-                except: pass
+                except Exception: pass
         
         if action == "startup":
             embed_model = "text-embedding-bge-m3"
@@ -71,37 +104,28 @@ def manage_lm_studio(action="startup"):
             r = urllib.request.Request(f"{base_url}/v1/embeddings", data=p, headers={'Content-Type': 'application/json'}, method="POST")
             try:
                 with urllib.request.urlopen(r, timeout=10) as res: pass
-            except: pass
+            except Exception: pass
                 
     except Exception as e:
         log_message(f"Critical error during LM Studio Memory Management: {e}")
 
+# --- Process Lifecycle Management ---
+DETACHED_FLAGS = 0
+if sys.platform == "win32":
+    DETACHED_FLAGS = subprocess.CREATE_NO_WINDOW
 
-def create_default_icon():
-    """Generates a simple default icon if none exists."""
-    width = 64
-    height = 64
-    color1 = (45, 45, 45)  # Dark Gray
-    color2 = (0, 255, 127) # Spring Green (OmniBot primary)
-    
-    image = Image.new('RGB', (width, height), color1)
-    dc = ImageDraw.Draw(image)
-    dc.ellipse([10, 10, width-10, height-10], fill=color2)
-    image.save(ICON_PATH)
-    return image
-
-def get_icon():
-    if os.path.exists(ICON_PATH):
-        return Image.open(ICON_PATH)
-    return create_default_icon()
-
-def log_message(message):
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    formatted_msg = f"[{timestamp}] {message}\n"
-    print(formatted_msg.strip())
-    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(formatted_msg)
+def launch_process(cmd: list, cwd: str, out_log: str, err_log: str, shell: bool = False):
+    out = open(out_log, "a", encoding="utf-8")
+    err = open(err_log, "a", encoding="utf-8")
+    return subprocess.Popen(
+        cmd,
+        cwd=cwd,
+        stdout=out,
+        stderr=err,
+        creationflags=DETACHED_FLAGS,  # ← NO black window
+        shell=shell,
+        close_fds=True
+    )
 
 def kill_processes():
     """Ruthlessly terminates all project-related processes."""
@@ -122,7 +146,7 @@ def kill_processes():
             if name in target_names:
                 # Check if the process is related to OmniBot
                 cmd_str = " ".join(cmdline) if cmdline else ""
-                if "OmniBot" in cmd_str or "main:app" in cmd_str or "src/server.js" in cmd_str or "vite" in cmd_str:
+                if "OmniBot" in cmd_str or "main:app" in cmd_str or "src/server.js" in cmd_str or "vite" in cmd_str or "launcher.py" in cmd_str:
                     log_message(f"Killing process {proc.info['pid']} ({name})")
                     proc.kill()
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -136,21 +160,23 @@ def kill_processes():
                     p = psutil.Process(conn.pid)
                     log_message(f"Killing process {conn.pid} bound to port {port}")
                     p.kill()
-                except:
+                except Exception:
                     pass
     
     # Unload LM Studio models to free VRAM before exit
-    manage_lm_studio(action="shutdown")
+    try:
+        manage_lm_studio(action="shutdown")
+    except Exception:
+        pass
     
     log_message("Cleanup complete. 100% clean state achieved.")
 
-def wait_for_service(url: str, name: str, max_wait: int = 60) -> bool:
+def wait_for_service(name: str, url: str, timeout: int = 60) -> bool:
     """Wait until a service is actually responding, not just launched."""
     import urllib.request
     start = time.time()
-    while time.time() - start < max_wait:
+    while time.time() - start < timeout:
         try:
-            # Using urllib Request to handle potential redirect or basic validation
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=2) as response:
                 if response.status == 200 or response.status == 302:
@@ -159,123 +185,175 @@ def wait_for_service(url: str, name: str, max_wait: int = 60) -> bool:
         except Exception:
             log_message(f"Waiting for {name}... ({int(time.time() - start)}s)")
             time.sleep(2)
-    log_message(f"ERROR: {name} failed to start within {max_wait}s")
+    log_message(f"ERROR: {name} failed to start within {timeout}s")
     return False
 
-def launch_services():
-    """Launch all OmniBot services in high-stealth mode."""
-    log_message("Launching OmniBot services...")
-    
-    # 1. FastApi Backend
+def launch_backend():
     backend_dir = os.path.join(PROJECT_ROOT, "backend")
     venv_python = os.path.join(backend_dir, ".venv", "Scripts", "python.exe")
     if not os.path.exists(venv_python):
-        venv_python = "python" # Fallback to system python if venv not found
-        
-    log_message("Starting Unified Python FastAPI Backend...")
-    backend_process = subprocess.Popen(
-        [venv_python, "-m", "uvicorn", "main:app", "--port", "3001", "--host", "127.0.0.1"],
-        cwd=backend_dir,
-        stdout=open(os.path.join(PROJECT_ROOT, "backend_out.log"), "w"),
-        stderr=open(os.path.join(PROJECT_ROOT, "backend_err.log"), "w"),  # capture errors!
-        creationflags=subprocess.CREATE_NO_WINDOW,
-    )
-
-    # 2. Frontend
-    log_message("Starting Frontend Server...")
-    frontend_process = subprocess.Popen(
-        ["npm", "run", "dev"],
-        cwd=os.path.join(PROJECT_ROOT, "frontend"),
-        stdout=open(os.path.join(PROJECT_ROOT, "frontend_out.log"), "w"),
-        stderr=open(os.path.join(PROJECT_ROOT, "frontend_err.log"), "w"),  # capture errors!
-        shell=True,
-        creationflags=subprocess.CREATE_NO_WINDOW,
-    )
-
-    log_message("Services launched. Waiting for initialization...")
+        venv_python = "python" # Fallback to system python
     
-    # Wait until services are ready
-    backend_ready = wait_for_service(f"http://127.0.0.1:{TARGET_PORT_BACKEND}/api/health", "Backend", max_wait=60)
-    frontend_ready = wait_for_service(f"http://127.0.0.1:{TARGET_PORT_FRONTEND}", "Frontend", max_wait=60)
+    log_message("Starting Unified Python FastAPI Backend...")
+    cmd = [venv_python, "-m", "uvicorn", "main:app", "--port", "3001", "--host", "127.0.0.1"]
+    out_log = os.path.join(PROJECT_ROOT, "backend_out.log")
+    err_log = os.path.join(PROJECT_ROOT, "backend_err.log")
+    return launch_process(cmd, backend_dir, out_log, err_log)
 
-    if backend_ready and frontend_ready:
-        log_message("All services ready — Opening UI...")
-        # Manage LM Studio VRAM
-        manage_lm_studio(action="startup")
-        import webbrowser
-        webbrowser.open(f"http://localhost:{TARGET_PORT_FRONTEND}/factory")
-    else:
-        log_message("STARTUP FAILED — Check logs above for errors")
-        # Show which service failed
-        if not backend_ready:
-            log_message("Backend failed to start. Check: backend_err.log")
-        if not frontend_ready:
-            log_message("Frontend failed to start. Check: npm/node errors")
+def launch_frontend():
+    log_message("Starting Frontend Server...")
+    cmd = ["npm", "run", "dev"]
+    cwd = os.path.join(PROJECT_ROOT, "frontend")
+    out_log = os.path.join(PROJECT_ROOT, "frontend_out.log")
+    err_log = os.path.join(PROJECT_ROOT, "frontend_err.log")
+    return launch_process(cmd, cwd, out_log, err_log, shell=True)
 
-def create_shortcut():
-    """Creates a desktop shortcut for the launcher."""
-    if not os.path.exists(SHORTCUT_PATH):
-        # Remove old shortcut if it exists
-        old_shortcut = os.path.join(os.environ["USERPROFILE"], "Desktop", "OmniBot.lnk")
-        if os.path.exists(old_shortcut):
-            try: os.remove(old_shortcut)
-            except: pass
+# --- System Tray Implementation ---
+def _create_tray_image() -> Image.Image:
+    """Create tray icon — use existing .ico if available, else generate"""
+    icon_paths = [
+        Path(PROJECT_ROOT) / "assets" / "icon.ico",
+        Path(PROJECT_ROOT) / "assets" / "icon.png", 
+        Path(PROJECT_ROOT) / "frontend" / "public" / "favicon.ico",
+        Path(PROJECT_ROOT) / "launcher_icon.png"
+    ]
+    for path in icon_paths:
+        if path.exists():
+            try:
+                return Image.open(str(path)).resize((64, 64))
+            except Exception:
+                pass
+    
+    # Generate a simple icon if none found
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([4, 4, 60, 60], fill=(99, 102, 241))  # indigo circle
+    draw.text((18, 18), "OB", fill="white")
+    return img
 
-        log_message(f"Creating Desktop Shortcut: {SHORTCUT_NAME}...")
-        try:
-            shell = Dispatch('WScript.Shell')
-            shortcut = shell.CreateShortCut(SHORTCUT_PATH)
-            shortcut.Targetpath = sys.executable.replace("python.exe", "pythonw.exe")
-            shortcut.Arguments = f'"{os.path.abspath(__file__)}"'
-            shortcut.WorkingDirectory = PROJECT_ROOT
-            shortcut.IconLocation = ICON_PATH if os.path.exists(ICON_PATH) else sys.executable
-            shortcut.save()
-            log_message("Shortcut created successfully.")
-        except Exception as e:
-            log_message(f"Failed to create shortcut: {e}")
-
-# --- Menu Actions ---
-
-def on_show_log(icon, item):
-    log_message("Opening log file...")
-    subprocess.Popen(["notepad.exe", LOG_FILE])
-
-def on_restart(icon, item):
-    log_message("--- RESTART TRIGGERED ---")
-    kill_processes()
-    launch_services()
-
-def on_exit(icon, item):
-    log_message("--- EXIT TRIGGERED ---")
-    kill_processes()
+def _graceful_shutdown(icon, item=None):
+    """Called ONLY when user clicks Exit in tray menu."""
+    log_message("[TRAY] Exit requested — shutting down all services...")
+    
+    # Stop tray icon first
     icon.stop()
-    sys.exit(0)
+    
+    # Kill all subprocesses cleanly
+    for proc in _processes:
+        try:
+            if proc.poll() is None:  # still running
+                proc.terminate()
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    log_message(f"[TRAY] Force killed PID {proc.pid}")
+        except Exception as e:
+            log_message(f"[TRAY] Error stopping process: {e}")
+            
+    # Run absolute ruthless cleanup
+    try:
+        kill_processes()
+    except Exception as e:
+        log_message(f"[TRAY] Error during final process cleanup: {e}")
+    
+    log_message("[TRAY] All services stopped. Goodbye.")
+    _log_file.flush()
+    _log_file.close()
+    
+    # Exit the application
+    os._exit(0)
+
+def _open_dashboard(icon, item):
+    """Open browser to dashboard."""
+    import webbrowser
+    webbrowser.open("http://localhost:5173/factory")
+
+def _show_status(icon, item):
+    """Show current status in a notification."""
+    running = sum(1 for p in _processes if p.poll() is None)
+    icon.notify(
+        f"OmniBot Factory\n{running}/{len(_processes)} services running",
+        "Status"
+    )
+
+def start_tray_icon():
+    """Start system tray icon in background thread."""
+    global _tray_icon
+    
+    image = _create_tray_image()
+    
+    menu = pystray.Menu(
+        pystray.MenuItem("OmniBot Factory", None, enabled=False),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Open Dashboard", _open_dashboard, default=True),
+        pystray.MenuItem("Show Status", _show_status),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Exit", _graceful_shutdown),
+    )
+    
+    _tray_icon = pystray.Icon(
+        name="OmniBot",
+        icon=image,
+        title="OmniBot Factory",
+        menu=menu
+    )
+    
+    # Run tray in its own thread — NEVER block main thread
+    tray_thread = threading.Thread(target=_tray_icon.run, daemon=False)
+    tray_thread.start()
+    log_message("[TRAY] System tray icon started")
+    return tray_thread
 
 # --- Main Entry ---
-
 def main():
-    log_message("OmniBot Launcher Starting...")
+    log_message("="*50)
+    log_message("OmniBot Factory Starting (Silent Mode)")
+    log_message("="*50)
     
-    # Run cleanup first
+    # 1. Kill any existing processes on ports 3001 and 5173
     kill_processes()
     
-    # Ensure shortcut exists
-    create_shortcut()
+    # 2. Launch backend and frontend (silent, no console window)
+    backend_proc = launch_backend()
+    frontend_proc = launch_frontend()
+    _processes.extend([backend_proc, frontend_proc])
     
-    # Start services
-    launch_services()
+    # 3. Wait for services to be ready
+    backend_ready = wait_for_service("Backend", "http://localhost:3001/api/health", timeout=60)
+    frontend_ready = wait_for_service("Frontend", "http://localhost:5173", timeout=60)
     
-    # Create System Tray Icon
-    menu = (
-        item('Show Log', on_show_log),
-        item('Restart', on_restart),
-        item('Exit', on_exit),
-    )
+    # 4. Start system tray (user's only way to interact/exit)
+    start_tray_icon()
     
-    icon = pystray.Icon("OmniBot", get_icon(), "OmniBot Control Center", menu)
+    # 5. Open browser if both services ready
+    if backend_ready and frontend_ready:
+        # Manage LM Studio VRAM
+        try:
+            manage_lm_studio(action="startup")
+        except Exception:
+            pass
+        import webbrowser
+        webbrowser.open("http://localhost:5173/factory")
+        log_message("All services ready — Dashboard opened")
+    else:
+        log_message("Some services failed to start — check logs")
     
-    log_message("Launcher is active in System Tray.")
-    icon.run()
+    # 6. Keep main thread alive (monitor processes)
+    while True:
+        try:
+            time.sleep(30)
+            
+            # Check if processes are still alive, restart if died
+            for i, proc in enumerate(_processes):
+                if proc.poll() is not None:  # process died
+                    log_message(f"[MONITOR] Process with PID {proc.pid} died — restarting...")
+                    if i == 0:  # backend
+                        _processes[0] = launch_backend()
+                    elif i == 1:  # frontend
+                        _processes[1] = launch_frontend()
+        except Exception as e:
+            log_message(f"[MONITOR] Exception in health monitor loop: {e}")
 
 if __name__ == "__main__":
     main()

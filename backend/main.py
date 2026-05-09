@@ -113,6 +113,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Sleep/Wake controller failed: %s", e)
 
+    # Start the Infinite Dev Loop Orchestrator background worker
+    try:
+        from workers.infinite_dev_loop import start_infinite_dev_loop
+        start_infinite_dev_loop()
+        logger.info("✓ Infinite Dev Loop Orchestrator background worker started")
+    except Exception as e:
+        logger.warning("Infinite Dev Loop Orchestrator failed to start: %s", e)
+
     logger.info("═══ OmniBot Agent Factory — ONLINE ═══")
     yield
 
@@ -216,10 +224,12 @@ from api.agents import router as factory_agents_router
 from api.factory import router as factory_control_router
 from api.websocket import router as websocket_router
 from api.settings import router as factory_settings_router
+from api.dev_loop import router as dev_loop_router
 
 app.include_router(factory_agents_router, prefix="/api/factory/agents", tags=["Factory Agents"])
 app.include_router(factory_control_router, prefix="/api/factory", tags=["Factory Control"])
 app.include_router(factory_settings_router, prefix="/api/factory/settings", tags=["Factory Settings"])
+app.include_router(dev_loop_router, prefix="/api/dev-loop", tags=["Dev Loop"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
 
 # ── OS Shell UI Routers (desktop shell) ─────────────────────────────────
