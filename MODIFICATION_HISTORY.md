@@ -356,3 +356,9 @@
 - Approach      : Implemented a single-shot execution engine to completely skip the system cold-start delay. Added a dynamic codebase capability mapper that feeds an LLM task synthesizer to generate 40 actionable training tasks. Created a mock self-play runner that triggers planner and executor agents against the `SignalHarvester` to deterministically score and seed the DB with true trace signals. Pre-seeded 8 manual procedural SKILLs into the DB/ChromaDB and 3 core SOUL personas. Updated the infinite dev loop to check the bootstrap state first, and added a premium glowing full-screen neural overlay to `DevLoopDashboard.tsx`.
 - Outcome       : success
 - Notes         : The entire feature is 100% stable, compiling perfectly with zero errors in both Python (`py_compile`) and Vite React build processes.
+
+## [2026-05-10] — Fix backend startup crash (ChromaDB SQLite corruption)
+- Files changed : backend/chroma_db (directory renamed to chroma_db_backup)
+- Approach      : Diagnosed the backend failure using sequential powershell checks. Found `sqlite3.OperationalError: no such column: collections.topic` during ChromaDB initialization, which is caused by a corrupted/outdated local SQLite schema. Fixed it by renaming the local `chroma_db` directory to force a clean database rebuild.
+- Outcome       : success
+- Notes         : Backend health check now returns 200 OK. MongoDB connection and packages are fully working.
