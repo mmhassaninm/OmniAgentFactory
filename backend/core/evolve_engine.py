@@ -12,6 +12,15 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional, Any
 
+SECURITY_DIRECTIVE = (
+    "🔒 SECURITY SANDBOX DIRECTIVE (IMMUTABLE):\n"
+    "- This agent code MUST run strictly within an isolated Docker container sandbox.\n"
+    "- Accessing, modifying, or reading any host OS directories/files outside '/tmp/' or '/sandbox/' is strictly forbidden.\n"
+    "- Windows absolute paths (e.g. C:\\...) are strictly prohibited; all code must use Linux-compatible container paths.\n"
+    "- Any privilege escalation or container escape attempts will trigger immediate safety shutdown.\n"
+    "--------------------------------------------------\n\n"
+)
+
 from agents.base_agent import BaseAgent, AgentStatus
 from core.checkpoint import (
     checkpoint_draft,
@@ -19,7 +28,7 @@ from core.checkpoint import (
     checkpoint_commit,
     checkpoint_rollback,
 )
-from core.model_router import call_model
+from core.model_router import call_model, route_completion, RouterExhaustedError
 from core.config import get_settings
 from core.dna_engine import DEFAULT_DNA, dna_to_prompt_modifiers
 from core.collective_memory import contribute_memory, get_relevant_memories
@@ -71,6 +80,7 @@ def build_improvement_prompt(
     cross_pollination: str = "",
     red_team: str = "",
     hivemind_wisdom: str = "",
+    constitution_rules: list = None,
 ) -> list:
     """
     Construct the prompt that asks the LLM to improve the agent's code.
@@ -84,9 +94,9 @@ def build_improvement_prompt(
         cycle_number = agent.version + 1
 
     if active_template:
-        system_content = active_template
+        system_content = SECURITY_DIRECTIVE + active_template
     else:
-        system_content = (
+        system_content = SECURITY_DIRECTIVE + (
             "You are an expert AI engineer specializing in agent evolution. "
             "Your task is to improve the given agent's code to better achieve its goal. "
             "Return ONLY the improved Python code — no explanations, no markdown fences. "
@@ -95,6 +105,13 @@ def build_improvement_prompt(
         )
     if dna_modifiers:
         system_content += f" {dna_modifiers}"
+
+    if constitution_rules:
+        system_content += (
+            "\n\n--- FACTORY CONSTITUTION RULES (MANDATORY TO FOLLOW) ---\n"
+            + "\n".join(f"- {rule}" for rule in constitution_rules)
+            + "\n-----------------------------------------------------\n"
+        )
 
     wisdom_section = ""
     if hivemind_wisdom:
@@ -226,11 +243,23 @@ Example response format:
         ]
         
         # Call model router with low temperature
-        response = await call_model(
-            messages=messages,
-            max_tokens=250,
-            temperature=0.1
-        )
+        while True:
+            try:
+                response_obj = await route_completion(
+                    messages=messages,
+                    max_tokens=250,
+                    temperature=0.1
+                )
+                if hasattr(response_obj, "choices") and response_obj.choices:
+                    response = response_obj.choices[0].message.content or ""
+                elif isinstance(response_obj, dict) and "choices" in response_obj:
+                    response = response_obj["choices"][0]["message"]["content"] or ""
+                else:
+                    response = str(response_obj)
+                break
+            except RouterExhaustedError:
+                logger.warning("[ROUTER] All providers exhausted in scoring — waiting 10s then retrying")
+                await asyncio.sleep(10)
         
         if response and not response.startswith("[MODEL_ROUTER_ERROR]"):
             clean_res = response.strip()
@@ -400,6 +429,16 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             if autopsy_hints:
                 await log_thought(agent_id, f"[AUTOPSY] Injecting {len(autopsy_hints)} failure lessons into prompt", phase="draft")
 
+            # Fetch active constitutional rules from MongoDB
+            constitution_rules = []
+            try:
+                cursor = db.constitution.find({})
+                const_docs = await cursor.to_list(length=100)
+                if const_docs:
+                    constitution_rules = [f"{d['title']}: {d['rule']}" for d in const_docs]
+            except Exception as e:
+                logger.warning("Failed to fetch constitution rules: %s", e)
+
             # Get active prompt template: meta_improver A/B candidate or prompt_evolver override
             active_template = None
             used_candidate_template = False
@@ -425,6 +464,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 autopsy_hints=autopsy_hints,
                 active_template=active_template,
                 hivemind_wisdom=wisdom,
+                constitution_rules=constitution_rules,
             )
             orchestrator = Orchestrator()
             new_code = await orchestrator.run_swarm(agent.goal, agent_id, db)

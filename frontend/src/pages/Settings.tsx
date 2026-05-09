@@ -23,6 +23,13 @@ interface ProviderHealth {
   last_checked: string
 }
 
+interface ConstitutionRule {
+  id: string
+  title: string
+  rule: string
+  immutable: boolean
+}
+
 async function fetchJson(url: string, options?: RequestInit) {
   const res = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
@@ -74,6 +81,39 @@ export default function Settings() {
   const [revealedOther, setRevealedOther] = useState(1)
   const [toast, setToast] = useState<string | null>(null)
   const [validatingKeys, setValidatingKeys] = useState<Record<string, boolean>>({})
+
+  // Factory Constitution Rules States & Hooks
+  const [editedRules, setEditedRules] = useState<ConstitutionRule[]>([])
+  const [isEditingConstitution, setIsEditingConstitution] = useState<boolean>(false)
+
+  const { data: constitutionData, isLoading: isLoadingConstitution } = useQuery({
+    queryKey: ['constitution-rules'],
+    queryFn: () => fetchJson('/api/factory/settings/constitution'),
+  })
+
+  useEffect(() => {
+    if (constitutionData?.rules) {
+      setEditedRules(constitutionData.rules)
+    }
+  }, [constitutionData])
+
+  const saveConstitutionMut = useMutation({
+    mutationFn: (rules: ConstitutionRule[]) =>
+      fetchJson('/api/factory/settings/constitution', {
+        method: 'POST',
+        body: JSON.stringify({ rules }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['constitution-rules'] })
+      setToast(`✓ Factory Constitution rules updated successfully!`)
+      setTimeout(() => setToast(null), 4000)
+      setIsEditingConstitution(false)
+    },
+    onError: (err: any) => {
+      setToast(`✗ Error updating rules: ${err.message}`)
+      setTimeout(() => setToast(null), 5000)
+    }
+  })
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings-keys'],
@@ -413,6 +453,161 @@ export default function Settings() {
     )
   }
 
+  const renderConstitutionPanel = () => {
+    if (isLoadingConstitution) {
+      return (
+        <div className="p-6 rounded-2xl bg-[#070b13]/60 border border-[#141b2c] flex items-center justify-center gap-3 mb-8">
+          <span className="inline-block w-4 h-4 rounded-full border-2 border-[#00d4ff] border-t-transparent animate-spin"></span>
+          <span className="text-xs text-text-muted font-mono animate-pulse">Loading Factory Constitution...</span>
+        </div>
+      )
+    }
+
+    return (
+      <div className="glass-panel border border-[#1e293b] rounded-2xl mb-8 p-6 bg-[#070b13]/60 relative overflow-hidden group hover:border-[#7c3aed]/30 transition-all duration-300">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#7c3aed]/5 to-transparent blur-3xl pointer-events-none" />
+        
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#7c3aed]/10 to-indigo-500/10 border border-[#7c3aed]/20 flex items-center justify-center text-xl text-[#a78bfa] shadow-[0_0_15px_rgba(124,58,237,0.15)] shrink-0">
+            📜
+          </div>
+          <div>
+            <h2 className="text-base font-black tracking-tight text-[#f0f4f8] flex items-center gap-2">
+              Factory Constitution & Policy Engine
+            </h2>
+            <p className="text-xs text-text-muted mt-0.5">
+              Define the core regulatory guidelines and sandbox parameters prepended as immutable instructions to every agent's DNA and swarm prompts.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          {editedRules.map((r, idx) => (
+            <div
+              key={r.id}
+              className={`p-4 rounded-xl border transition-all duration-300 ${
+                r.immutable
+                  ? 'bg-[#090e18]/40 border-[#00d4ff]/20 hover:border-[#00d4ff]/40 shadow-[inset_0_0_12px_rgba(0,212,255,0.02)]'
+                  : 'bg-[#090d16]/20 border-[#1e293b] hover:border-[#38bdf8]/20'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-text-muted select-none">#{idx + 1}</span>
+                  {r.immutable ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#00d4ff]/10 text-[#00d4ff] border border-[#00d4ff]/20 flex items-center gap-1 shadow-[0_0_10px_rgba(0,212,255,0.05)]">
+                      <span>🔒</span> Sandbox Rule (Immutable)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#7c3aed]/10 text-[#c084fc] border border-[#7c3aed]/20">
+                      ⚙️ Policy Directive
+                    </span>
+                  )}
+                </div>
+                {!r.immutable && (
+                  <button
+                    onClick={() => {
+                      const updated = editedRules.filter((item) => item.id !== r.id)
+                      setEditedRules(updated)
+                      setIsEditingConstitution(true)
+                    }}
+                    className="p-1.5 rounded-lg text-text-muted hover:text-rose-400 hover:bg-rose-500/10 transition-all active:scale-90"
+                    title="Delete Policy Directive"
+                  >
+                    🗑️ Delete
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1 font-mono">
+                    Rule Title
+                  </label>
+                  <input
+                    type="text"
+                    disabled={r.immutable}
+                    value={r.title}
+                    onChange={(e) => {
+                      const updated = editedRules.map((item) =>
+                        item.id === r.id ? { ...item, title: e.target.value } : item
+                      )
+                      setEditedRules(updated)
+                      setIsEditingConstitution(true)
+                    }}
+                    placeholder="Enter rule title..."
+                    className="w-full px-3 py-2 rounded-lg text-xs font-bold text-text-primary bg-[#04060b] border border-[#1e293b] focus:outline-none focus:border-[#7c3aed]/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-[#060a10]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1 font-mono">
+                    Constitutional Text / Instruction Body
+                  </label>
+                  <textarea
+                    rows={2}
+                    disabled={r.immutable}
+                    value={r.rule}
+                    onChange={(e) => {
+                      const updated = editedRules.map((item) =>
+                        item.id === r.id ? { ...item, rule: e.target.value } : item
+                      )
+                      setEditedRules(updated)
+                      setIsEditingConstitution(true)
+                    }}
+                    placeholder="Describe the rule guidelines in detail..."
+                    className="w-full px-3 py-2 rounded-lg text-xs text-text-secondary bg-[#04060b] border border-[#1e293b] focus:outline-none focus:border-[#7c3aed]/40 transition-all font-mono disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-[#060a10]"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 border-t border-[#1e293b]/60">
+          <button
+            onClick={() => {
+              const newRule: ConstitutionRule = {
+                id: 'rule_' + Date.now(),
+                title: 'New Policy Directive',
+                rule: 'This agent must always protect core user metadata, maintaining full local file integrity.',
+                immutable: false,
+              }
+              setEditedRules([...editedRules, newRule])
+              setIsEditingConstitution(true)
+            }}
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-[#7c3aed]/10 hover:bg-[#7c3aed]/20 text-[#c084fc] border border-[#7c3aed]/20 transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          >
+            ➕ Add Policy Rule
+          </button>
+
+          {isEditingConstitution && (
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                onClick={() => {
+                  if (constitutionData?.rules) {
+                    setEditedRules(constitutionData.rules)
+                  }
+                  setIsEditingConstitution(false)
+                }}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#141b2c] hover:bg-[#1e293b] text-text-secondary transition-all active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveConstitutionMut.mutate(editedRules)}
+                disabled={saveConstitutionMut.isPending}
+                className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-[#7c3aed] to-[#00d4ff] text-[#080c14] hover:shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:scale-[1.02] transition-all active:scale-[0.98] flex items-center gap-1.5"
+              >
+                {saveConstitutionMut.isPending ? 'Saving...' : '💾 Save Constitution'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#030508] p-4 sm:p-6 lg:p-8 text-text-primary">
       {toast && (
@@ -475,6 +670,8 @@ export default function Settings() {
         </div>
 
         {renderHealthPanel()}
+
+        {renderConstitutionPanel()}
 
         {/* ── CENTRALIZED CRYPTOGRAPHIC KEY VAULT INTEGRATION ── */}
         <div className="glass-panel border border-[#1e293b] rounded-2xl mb-8 p-6 bg-[#070b13]/60 relative overflow-hidden group hover:border-[#00d4ff]/30 transition-colors duration-300">

@@ -253,6 +253,65 @@ except Exception as e:
 
 
 
+@app.get("/api/router/status")
+async def get_router_status():
+    """Returns the live status and analytics of the multi-tier cascading model router."""
+    try:
+        from core.database import get_db
+        from core.model_router import _cooling, _fetch_keys_for_provider
+        import time as time_module
+        
+        db = get_db()
+        stats = None
+        if db is not None:
+            stats = await db.router_stats.find_one({"_id": "global_stats"})
+            
+        if not stats:
+            stats = {
+                "current_tier": 1,
+                "active_provider": "openrouter",
+                "active_model": "openrouter/auto",
+                "last_success": None,
+                "total_requests": 0,
+                "tier_stats": {
+                    "tier1_hits": 0,
+                    "tier2_hits": 0,
+                    "tier3_hits": 0,
+                    "tier4_hits": 0,
+                    "tier5_hits": 0
+                }
+            }
+            
+        now = time_module.time()
+        cooling_keys = sum(1 for k, v in _cooling.items() if k.startswith("openrouter:") and v > now)
+        
+        # Calculate keys
+        openrouter_keys = await _fetch_keys_for_provider("openrouter")
+        total_openrouter = len(openrouter_keys)
+        available_openrouter = total_openrouter - cooling_keys
+        
+        return {
+            "current_tier": stats.get("current_tier", 1),
+            "active_provider": stats.get("active_provider", "openrouter"),
+            "active_model": stats.get("active_model", "openrouter/auto"),
+            "cooling_keys": cooling_keys,
+            "total_openrouter_keys": total_openrouter,
+            "available_openrouter_keys": max(available_openrouter, 0),
+            "last_success": stats.get("last_success"),
+            "total_requests": stats.get("total_requests", 0),
+            "tier_stats": stats.get("tier_stats", {
+                "tier1_hits": 0,
+                "tier2_hits": 0,
+                "tier3_hits": 0,
+                "tier4_hits": 0,
+                "tier5_hits": 0
+            })
+        }
+    except Exception as e:
+        logger.error(f"Error in GET /api/router/status: {e}")
+        return {"error": str(e)}
+
+
 @app.get("/api/health")
 async def health_check():
     """Enhanced health check with factory status."""

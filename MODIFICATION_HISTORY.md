@@ -307,3 +307,16 @@
 - Approach: (1) Diagnosed uvicorn startup failures through `backend_err.log` and found three files with incorrect absolute `backend.` prefixes causing `ModuleNotFoundError: No module named 'backend'`. (2) Found and resolved a `NameError: name 'Any' is not defined` inside `evolve_engine.py`. (3) Implemented robust `wait_for_service` health checks in `launcher.py` with full process standard error redirection. (4) Resolved a subtle Windows console crash: logging unicode checkmarks (`✓`) in `launcher.py` threw `UnicodeEncodeError` under Windows terminals mapping default charmaps, preventing the wait loop from completing. Fixed by converting the checkmarks to ASCII `[OK]`.
 - Outcome: success
 - Notes: Standard uvicorn execution uses `backend` as CWD and Python paths do not recognize absolute `backend.` prefixes. Always keep imports clean, and avoid unicode symbols in console logs to maintain Windows command compatibility.
+
+## [2026-05-09] — Factory Constitution Editor, Standalone Dashboard Refinement, & Port Decommissioning
+- Files changed : frontend/src/pages/Settings.tsx, docker-compose.yml, start_omnibot.bat, launcher.py
+- Approach      : (1) Finalized the Factory Constitution Rules Settings Editor inside Settings.tsx with full support for adding, editing, and deleting rules, locking immutable sandbox core rules, and triggering the React Query mutation with live status toast feedbacks. (2) Decommissioned the deprecated frontend-nexus (port 5174) service definition from docker-compose.yml and start_omnibot.bat. (3) Updated launcher.py to directly open the browser at http://localhost:5173/factory. (4) Executed strict TypeScript build verification in frontend with 0 compiler errors.
+- Outcome       : success
+- Notes         : The entire system builds perfectly. The standalone premium web dashboard is now the sole clean interface, routing security enclaves with strict Docker isolation and global immutable sandbox controls.
+
+## [2026-05-09] — OpenRouter Auto/Free Priority Cascade Router
+- Files changed : backend/core/model_router.py, backend/core/evolve_engine.py, backend/main.py, frontend/src/components/ModelRouter.tsx, task.md, walkthrough.md
+- Approach      : (1) Engineered an ultra-resilient, thread-safe 5-tier Priority Cascade Router in `model_router.py` with in-memory cooling down registries and round-robin MongoDB `last_used` tracking. (2) Integrated `route_completion` loops into `evolve_engine.py`'s neural scoring function (`score_agent_output`) with an autonomous 10-second sleep-and-retry structure on router exhaustion. (3) Created a real-time monitor API `GET /api/router/status` logging statistics dynamically to MongoDB's `router_stats` collection. (4) Redesigned the frontend `ModelRouter.tsx` dashboard widget with glowing tier badges, cooling trackers, and micro-analytics progress bars showing historical routing density.
+- Outcome       : success
+- Notes         : All upgraded files compile perfectly on Python 3.11 with zero syntax warnings, and all frontend components verify with 0 TypeScript issues.
+

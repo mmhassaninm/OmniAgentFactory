@@ -9,6 +9,7 @@ import ModelRouter from '../components/ModelRouter'
 import FactoryPulse from '../components/FactoryPulse'
 import ActivityFeed from '../components/ActivityFeed'
 import { useLang } from '../i18n/LanguageContext'
+import { Layers, Play, StopCircle, RefreshCw, Zap, ShieldAlert, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react'
 
 interface ProviderHealth {
   provider: string
@@ -107,6 +108,12 @@ export default function Factory() {
   const maxConcurrent = factoryStatus?.factory?.max_concurrent || 5
   const isNightMode = factoryStatus?.night_mode || false
 
+  // Compute stats dynamically
+  const totalAgentsCount = agents.length
+  const activeAgentsCount = agents.filter((a: any) => a.status !== 'stopped' && a.status !== 'error' && a.status !== 'idle').length
+  const evolvingAgentsCount = agents.filter((a: any) => a.status === 'evolving').length
+  const completedAgentsCount = agents.filter((a: any) => a.version >= 10 || a.status === 'complete').length
+
   const handleCreate = async () => {
     if (!newAgent.name.trim() || !newAgent.goal.trim()) return
     await createAgent.mutateAsync({
@@ -125,102 +132,97 @@ export default function Factory() {
     { value: 'revenue', emoji: '💰', label: 'Revenue Agent', descKey: 'create.template.revenue' },
   ]
 
+  // Dynamic status details
+  const isAutonomousOn = !!factoryStatus?.autonomous?.running
+  const isRunning = activeCount > 0
+
+  let statusText = 'IDLE'
+  let statusBadgeStyle = 'bg-slate-800 text-slate-400 border-slate-700'
+  let statusDotColor = 'bg-slate-400'
+
+  if (isAutonomousOn) {
+    statusText = 'AUTONOMOUS'
+    statusBadgeStyle = 'bg-green-500/10 text-green-400 border-green-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+    statusDotColor = 'bg-green-400'
+  } else if (isRunning) {
+    statusText = 'RUNNING'
+    statusBadgeStyle = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+    statusDotColor = 'bg-indigo-400'
+  }
+
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto">
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <header className="mb-8">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
-              <span className="gradient-text">OmniBot</span>
-              <span className="text-text-muted font-light ml-2 text-lg sm:text-xl">{t('factory.title')}</span>
+    <div className="min-h-screen p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
+      {/* ── Header Bar ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
+        <div>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              🏭 Agent Factory
             </h1>
-            <p className="text-text-muted text-sm mt-1">
-              {t('factory.subtitle_real')}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Night mode indicator */}
-            {isNightMode && (
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
-                             bg-indigo-950/50 text-indigo-300 border border-indigo-500/30">
-                🌙 {t('factory.night_mode')}
-              </span>
-            )}
-
-            {/* WebSocket status */}
-            <span className={`flex items-center gap-1.5 text-xs ${wsConnected ? 'text-emerald-400' : 'text-text-muted'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse-glow' : 'bg-slate-600'}`} />
-              {wsConnected ? t('factory.live') : t('factory.connecting')}
-            </span>
-
-            {/* Active agents counter */}
-            <div className="glass px-3 py-1.5 rounded-lg text-xs">
-              <span className="text-accent-primary font-bold">{activeCount}</span>
-              <span className="text-text-muted">/{maxConcurrent} {t('agent.status.evolving').toLowerCase()}</span>
+            
+            {/* Security Indicator */}
+            <div 
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono bg-green-500/10 text-green-400 border border-green-500/25 shadow-[0_0_12px_rgba(16,185,129,0.08)] cursor-help"
+              title="All agent code runs in isolated Docker containers"
+            >
+              <span>🔒</span>
+              <span>Sandbox Mode: Active</span>
             </div>
-
-            {/* Language toggle */}
-            <button
-              onClick={() => setLang(lang === "en" ? "ar" : "en")}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
-                         bg-bg-panel border border-border-default text-text-secondary
-                         hover:border-accent-primary/40 hover:text-accent-primary
-                         transition-all duration-200"
-              style={{ fontFamily: lang === "ar" ? "'Cairo', sans-serif" : "inherit" }}
-            >
-              <span>🌐</span>
-              <span>{lang === "en" ? "عربي" : "English"}</span>
-            </button>
-
-            {/* Settings button */}
-            <button
-              onClick={() => navigate('/settings')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
-                         bg-bg-panel border border-border-default text-text-secondary
-                         hover:border-accent-primary/40 hover:text-accent-primary
-                         transition-all duration-200"
-            >
-              <span>⚙</span>
-              <span>{t('factory.settings_btn')}</span>
-            </button>
-
-            {/* Key Vault button */}
-            <button
-              onClick={() => navigate('/vault')}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
-                         bg-bg-panel border border-border-default text-text-secondary
-                         hover:border-[#00d4ff]/40 hover:text-[#00d4ff]
-                         transition-all duration-200 shadow-[0_0_10px_rgba(0,212,255,0.02)] hover:shadow-[0_0_15px_rgba(0,212,255,0.1)]"
-            >
-              <span>🔑</span>
-              <span>Vault</span>
-            </button>
-
-            {/* Create button */}
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm
-                         bg-gradient-to-r from-accent-secondary to-accent-tertiary text-white
-                         hover:shadow-[0_0_20px_rgba(124,58,237,0.3)]
-                         transition-all duration-300 hover:translate-y-[-1px]"
-            >
-              <span className="text-lg leading-none">+</span>
-              <span>{t('factory.new_agent')}</span>
-            </button>
+            
+            {/* System Status Banner */}
+            <span className={`inline-flex items-center gap-1 text-[11px] font-mono ${wsConnected ? 'text-emerald-400' : 'text-slate-500'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+              {wsConnected ? 'LIVE' : 'CONNECTING'}
+            </span>
           </div>
+          <p className="text-slate-500 text-sm mt-1">
+            Autonomous Evolution Engine · Self-Aware Intelligence
+          </p>
         </div>
-      </header>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Night mode indicator */}
+          {isNightMode && (
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-950/40 text-indigo-300 border border-indigo-500/25 font-mono">
+              🌙 Night Shift Active
+            </span>
+          )}
+
+          {/* Factory Status Badge */}
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border ${statusBadgeStyle} font-mono uppercase tracking-wider`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${statusDotColor} animate-pulse`} />
+            {statusText}
+          </span>
+
+          {/* Language Toggle */}
+          <button
+            onClick={() => setLang(lang === "en" ? "ar" : "en")}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#0d1117] border border-white/[0.06] text-slate-300 hover:border-indigo-500/30 hover:text-white transition-all font-mono"
+            style={{ fontFamily: lang === "ar" ? "'Cairo', sans-serif" : "inherit" }}
+          >
+            <span>🌐</span>
+            <span>{lang === "en" ? "عربي" : "English"}</span>
+          </button>
+
+          {/* Add New Agent Button */}
+          <button
+            onClick={() => setShowCreate(true)}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-200 active:scale-95 shadow-lg shadow-indigo-500/10 flex items-center gap-2"
+          >
+            <span className="text-lg leading-none">+</span>
+            <span>New Agent</span>
+          </button>
+        </div>
+      </div>
 
       {allProvidersDown && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-950/20 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between animate-pulse">
+        <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/30 text-rose-300 text-sm flex items-center justify-between animate-pulse">
           <div className="flex items-center gap-3">
-            <span className="text-xl animate-bounce">⚠️</span>
+            <span className="text-xl">⚠️</span>
             <div>
-              <strong className="font-extrabold text-rose-400">{t('factory.critical_warning')}</strong>
+              <strong className="font-extrabold text-rose-400">Critical: All LLM Credentials Down</strong>
               <p className="text-xs text-rose-300/80 mt-0.5">
-                {t('factory.critical_desc')}
+                No active provider credentials detected in your vault.
               </p>
             </div>
           </div>
@@ -228,36 +230,92 @@ export default function Factory() {
             onClick={() => navigate('/settings/keys')}
             className="px-3.5 py-1.5 rounded-lg text-xs font-black bg-rose-500 text-black hover:bg-rose-400 active:scale-[0.98] transition-all shrink-0 ml-4 shadow-[0_0_15px_rgba(244,63,94,0.4)] border border-rose-400"
           >
-            {t('factory.configure_keys')}
+            Configure Keys
           </button>
         </div>
       )}
 
-      {/* ── Model Router Health ────────────────────────────────────────── */}
-      <div className="mb-6">
-        <ModelRouter />
+      {/* ── Statistics Row ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Agents */}
+        <div className="bg-[#0d1117] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-slate-500 text-xs font-mono font-bold uppercase tracking-wider">Total Agents</p>
+            <p className="text-2xl font-black mt-1 font-mono text-white">{totalAgentsCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-center text-indigo-400">
+            🤖
+          </div>
+        </div>
+
+        {/* Card 2: Active */}
+        <div className="bg-[#0d1117] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-slate-500 text-xs font-mono font-bold uppercase tracking-wider">Active Run</p>
+            <p className="text-2xl font-black mt-1 font-mono text-emerald-400">{activeAgentsCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center text-emerald-400">
+            ⚡
+          </div>
+        </div>
+
+        {/* Card 3: Evolving */}
+        <div className="bg-[#0d1117] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-slate-500 text-xs font-mono font-bold uppercase tracking-wider">Evolving</p>
+            <p className="text-2xl font-black mt-1 font-mono text-indigo-400">{evolvingAgentsCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-purple-500/5 border border-purple-500/10 flex items-center justify-center text-indigo-400 animate-spin-slow">
+            🔄
+          </div>
+        </div>
+
+        {/* Card 4: Completed */}
+        <div className="bg-[#0d1117] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-slate-500 text-xs font-mono font-bold uppercase tracking-wider">Completed</p>
+            <p className="text-2xl font-black mt-1 font-mono text-cyan-400">{completedAgentsCount}</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-cyan-500/5 border border-cyan-500/10 flex items-center justify-center text-cyan-400">
+            🏆
+          </div>
+        </div>
       </div>
 
-      {/* ── Factory Pulse (Self-Awareness Layer) ───────────────────────── */}
-      <FactoryPulse />
+      {/* ── Model Router & Self-Awareness ──────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ModelRouter />
+        </div>
+        <div className="lg:col-span-1">
+          <FactoryPulse />
+        </div>
+      </div>
 
       {/* ── Central Autonomous Command Panel ──────────────────────────── */}
-      <div className="mb-6 glass-strong p-6 rounded-2xl border border-accent-secondary/20 relative overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-accent-secondary/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-tertiary/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10">
-          {/* Title bar */}
-          <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden bg-[#0d1117] ${
+        isAutonomousOn
+          ? 'border-indigo-500/40 shadow-[0_0_30px_rgba(99,102,241,0.1)]'
+          : 'border-white/[0.06]'
+      }`}>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col gap-6">
+          {/* Header row */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-3xl animate-pulse">🧠</span>
+              <span className="text-2xl animate-pulse">🧠</span>
               <div>
-                <h2 className="text-xl font-bold tracking-tight text-text-primary">
-                  🧠 {t('autonomous.title') || 'Central Autonomous Commander'}
+                <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                  Central Autonomous Commander
+                  {isAutonomousOn && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-bold font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      ON-CHAIN
+                    </span>
+                  )}
                 </h2>
-                <p className="text-xs text-text-muted mt-0.5">
-                  {t('autonomous.subtitle') || 'Unleash the central intelligence loop to autonomously spawn and optimize agents'}
+                <p className="text-slate-500 text-xs">
+                  Unleash autonomous loops to continuously build and optimize enclaves
                 </p>
               </div>
             </div>
@@ -265,33 +323,33 @@ export default function Factory() {
             {/* Toggle controls */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-text-muted">Interval:</span>
+                <span className="text-xs text-slate-400 font-mono">Interval:</span>
                 <input
                   type="number"
                   min={1}
                   value={autoInterval}
-                  disabled={factoryStatus?.autonomous?.running}
+                  disabled={isAutonomousOn}
                   onChange={(e) => setAutoInterval(parseInt(e.target.value) || 5)}
-                  className="w-16 px-2 py-1 text-xs text-center rounded-lg bg-bg-panel border border-border-default text-text-primary focus:outline-none"
+                  className="w-16 px-2 py-1 text-xs text-center rounded bg-[#080c14] border border-white/[0.06] text-white focus:outline-none focus:border-indigo-500/30 font-mono"
                 />
-                <span className="text-xs text-text-muted">min</span>
+                <span className="text-xs text-slate-400 font-mono">min</span>
               </div>
 
               <button
                 onClick={handleToggleAuto}
                 disabled={autoToggling}
-                className={`relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-sm transition-all duration-300 shadow-md ${
-                  factoryStatus?.autonomous?.running
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-                    : 'bg-gradient-to-r from-accent-secondary to-accent-tertiary text-white hover:shadow-[0_0_20px_rgba(124,58,237,0.3)]'
+                className={`flex items-center gap-2 px-5 py-2 rounded-lg font-extrabold text-xs tracking-wider uppercase font-mono transition-all duration-300 ${
+                  isAutonomousOn
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/10'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/10'
                 }`}
               >
                 {autoToggling ? (
-                  <span className="animate-spin text-sm">⚙</span>
-                ) : factoryStatus?.autonomous?.running ? (
+                  <span className="animate-spin">⚙</span>
+                ) : isAutonomousOn ? (
                   <>
-                    <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-                    <span>ACTIVE · STOP ENGINE</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                    <span>STOP ENGINE</span>
                   </>
                 ) : (
                   <span>ENGAGE ENGINE</span>
@@ -300,63 +358,63 @@ export default function Factory() {
             </div>
           </div>
 
-          {/* Configuration and Live logs */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Core Goal Input */}
-            <div className="lg:col-span-1 space-y-3">
-              <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider">
+          {/* Objective, logs and brain state */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4 border-t border-white/[0.04]">
+            {/* Objective Input */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
                 Autonomous Mission Objective
               </label>
               <textarea
                 value={autoGoal}
-                disabled={factoryStatus?.autonomous?.running}
+                disabled={isAutonomousOn}
                 onChange={(e) => setAutoGoal(e.target.value)}
-                placeholder="Describe what you want the factory to build autonomously (e.g. 'Build a directory of the best open-source AI tools and write a research paper on them')"
-                rows={4}
-                className="w-full p-3.5 rounded-xl bg-bg-panel border border-border-default text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-secondary/40 transition-colors resize-none"
+                placeholder="Describe what the factory should build autonomously..."
+                rows={3}
+                className="w-full p-3.5 rounded-xl bg-[#080c14] border border-white/[0.06] text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/30 transition-all resize-none font-mono"
               />
             </div>
 
-            {/* Current Thought Log */}
-            <div className="lg:col-span-1 flex flex-col justify-between p-4 rounded-xl bg-bg-panel border border-border-default/50 relative">
-              <span className="absolute top-3 right-3 text-2xl opacity-10 select-none">💭</span>
+            {/* Central Brain State */}
+            <div className="flex flex-col justify-between p-4 rounded-xl bg-[#080c14] border border-white/[0.04] relative">
+              <span className="absolute top-3 right-3 text-2xl opacity-5 select-none">💭</span>
               <div>
-                <span className="block text-xs font-bold text-accent-secondary uppercase tracking-wider mb-2">
+                <span className="block text-[10px] font-bold text-indigo-400 uppercase tracking-wider font-mono mb-2">
                   Central Brain State
                 </span>
-                <p className="text-sm font-medium text-text-primary italic leading-relaxed">
-                  "{factoryStatus?.autonomous?.last_thought || 'Central intelligence loop is idling. Set a goal and engage the engine to begin.'}"
+                <p className="text-xs font-medium text-slate-300 italic leading-relaxed">
+                  "{factoryStatus?.autonomous?.last_thought || 'Central intelligence loop is idling. Engage engine to launch.'}"
                 </p>
               </div>
-              <div className="mt-4 flex items-center gap-1.5 text-xs text-text-muted">
-                <span className={`w-1.5 h-1.5 rounded-full ${factoryStatus?.autonomous?.running ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+              <div className="mt-4 flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+                <span className={`w-1.5 h-1.5 rounded-full ${isAutonomousOn ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
                 <span>
-                  {factoryStatus?.autonomous?.running ? 'Looping and thinking continuously' : 'Engine standby'}
+                  {isAutonomousOn ? 'Thinking continuously' : 'Standby'}
                 </span>
               </div>
             </div>
 
-            {/* Recent Autonomous Actions Table */}
-            <div className="lg:col-span-1 flex flex-col justify-between p-4 rounded-xl bg-bg-panel border border-border-default/50">
+            {/* Recent Decisions & Logs */}
+            <div className="flex flex-col justify-between p-4 rounded-xl bg-[#080c14] border border-white/[0.04]">
               <div>
-                <span className="block text-xs font-bold text-accent-tertiary uppercase tracking-wider mb-2">
+                <span className="block text-[10px] font-bold text-cyan-400 uppercase tracking-wider font-mono mb-2">
                   Recent Decisions & Log
                 </span>
-                <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-24 overflow-y-auto pr-1">
                   {autoLogs.length === 0 ? (
-                    <p className="text-xs text-text-muted italic py-4 text-center">No decisions logged yet.</p>
+                    <p className="text-xs text-slate-600 italic py-2 text-center font-mono">No decisions logged yet.</p>
                   ) : (
                     autoLogs.map((log, index) => (
-                      <div key={index} className="p-2 rounded bg-bg-elevated/40 border border-border-default/20 text-xs">
-                        <div className="flex items-center justify-between font-mono text-[10px] text-text-muted mb-1">
+                      <div key={index} className="p-2 rounded bg-black/30 border border-white/[0.03] text-[11px] font-mono text-slate-400">
+                        <div className="flex items-center justify-between text-[9px] text-slate-500 mb-0.5">
                           <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                          <span className={`font-black uppercase tracking-wider ${
-                            log.action === 'CREATE' ? 'text-cyan-400' : log.action === 'EVOLVE' ? 'text-purple-400' : 'text-slate-400'
+                          <span className={`font-black tracking-wider uppercase ${
+                            log.action === 'CREATE' ? 'text-cyan-400' : log.action === 'EVOLVE' ? 'text-purple-400' : 'text-slate-500'
                           }`}>
                             {log.action}
                           </span>
                         </div>
-                        <p className="text-text-secondary leading-normal truncate">{log.thought}</p>
+                        <p className="text-slate-400 leading-normal truncate">{log.thought}</p>
                       </div>
                     ))
                   )}
@@ -371,84 +429,83 @@ export default function Factory() {
       <ActivityFeed liveEvents={factoryEvents} agents={agents} />
 
       {/* ── Agent Grid ─────────────────────────────────────────────────── */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-24">
-          <div className="text-center">
-            <div className="text-4xl animate-spin-slow mb-4">⚙</div>
-            <p className="text-text-muted">{t('factory.loading')}</p>
+      <div className="space-y-3">
+        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider font-mono">
+          Evolved Agents Collection
+        </h2>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20 bg-[#0d1117] border border-white/[0.06] rounded-xl">
+            <div className="text-center space-y-2">
+              <div className="text-2xl animate-spin text-indigo-500">⚙</div>
+              <p className="text-xs font-mono text-slate-500 animate-pulse">Retrieving agent catalog...</p>
+            </div>
           </div>
-        </div>
-      ) : agents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="text-6xl mb-4 opacity-30">🏭</div>
-          <h2 className="text-xl font-bold text-text-primary mb-2">{t('factory.no_agents_title')}</h2>
-          <p className="text-text-muted mb-6 max-w-md">
-            {t('factory.no_agents_desc')}
-          </p>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="px-6 py-3 rounded-xl font-semibold
-                       bg-gradient-to-r from-accent-secondary to-accent-tertiary text-white
-                       hover:shadow-[0_0_20px_rgba(124,58,237,0.3)]
-                       transition-all duration-300"
-          >
-            {t('factory.create_first')}
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {agents.map((agent: any) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onShowCatalog={(id) => setCatalogAgentId(id)}
-            />
-          ))}
-        </div>
-      )}
+        ) : agents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-[#0d1117] border border-white/[0.06] border-dashed rounded-xl text-center">
+            <div className="text-4xl mb-4 opacity-40">🏭</div>
+            <h3 className="text-base font-bold text-white mb-1">No Agents Configured</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6">
+              Create your very first autonomous intelligence enclave. Let the evolution engine design its code and workflows dynamically!
+            </p>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="px-5 py-2.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-500/10"
+            >
+              Create First Agent
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {agents.map((agent: any) => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                onShowCatalog={(id) => setCatalogAgentId(id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* ── Create Agent Modal ─────────────────────────────────────────── */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="glass-strong rounded-2xl max-w-lg w-full animate-slide-up">
-            <div className="px-6 py-4 border-b border-border-default/50">
-              <h2 className="text-lg font-bold gradient-text">{t('create.title')}</h2>
-              <p className="text-xs text-text-muted mt-1">{t('create.subtitle')}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#0d1117] border border-white/[0.06] rounded-2xl max-w-lg w-full animate-slide-up shadow-2xl">
+            <div className="px-6 py-4 border-b border-white/[0.04]">
+              <h2 className="text-lg font-bold text-white">Create New Agent</h2>
+              <p className="text-xs text-slate-500 mt-1">Specify your agent mission objectives and select templates</p>
             </div>
 
             <div className="p-6 space-y-4">
               {/* Name */}
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">{t('create.name')}</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">Agent Name</label>
                 <input
                   type="text"
                   value={newAgent.name}
                   onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                  placeholder={t('create.name_placeholder')}
-                  className="w-full px-4 py-2.5 rounded-lg bg-bg-panel border border-border-default
-                             text-text-primary text-sm placeholder:text-text-muted
-                             focus:outline-none focus:border-accent-secondary/50 transition-colors"
+                  placeholder="e.g. CodeEnforcer, EgyptianScribe..."
+                  className="w-full px-4 py-2.5 rounded-lg bg-[#080c14] border border-white/[0.06] text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/30 transition-all font-mono"
                   autoFocus
                 />
               </div>
 
               {/* Goal */}
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">{t('create.goal')}</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">Agent Goal / Mission</label>
                 <textarea
                   value={newAgent.goal}
                   onChange={(e) => setNewAgent({ ...newAgent, goal: e.target.value })}
-                  placeholder={t('create.goal_placeholder')}
+                  placeholder="Describe your agent mission goal in full detail..."
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-lg bg-bg-panel border border-border-default
-                             text-text-primary text-sm placeholder:text-text-muted resize-none
-                             focus:outline-none focus:border-accent-secondary/50 transition-colors"
+                  className="w-full px-4 py-2.5 rounded-lg bg-[#080c14] border border-white/[0.06] text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/30 transition-all resize-none font-mono"
                 />
               </div>
 
               {/* Template */}
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1.5">{t('create.template')}</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono mb-1.5">Behavioral Template</label>
                 <div className="grid grid-cols-4 gap-2">
                   {TEMPLATES.map((tmpl) => (
                     <button
@@ -456,12 +513,12 @@ export default function Factory() {
                       onClick={() => setNewAgent({ ...newAgent, template: tmpl.value })}
                       className={`p-3 rounded-lg border text-center transition-all duration-200 ${
                         newAgent.template === tmpl.value
-                          ? 'border-accent-secondary bg-accent-secondary/10 shadow-[0_0_10px_rgba(124,58,237,0.15)]'
-                          : 'border-border-default bg-bg-panel hover:border-border-default/80'
+                          ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_12px_rgba(99,102,241,0.1)]'
+                          : 'border-white/[0.06] bg-[#080c14] hover:border-white/[0.12]'
                       }`}
                     >
                       <div className="text-lg mb-1">{tmpl.emoji}</div>
-                      <div className="text-[10px] text-text-muted">{t(tmpl.descKey)}</div>
+                      <div className="text-[10px] font-bold text-slate-400 truncate">{tmpl.label}</div>
                     </button>
                   ))}
                 </div>
@@ -469,24 +526,19 @@ export default function Factory() {
             </div>
 
             {/* Actions */}
-            <div className="px-6 py-4 border-t border-border-default/50 flex justify-end gap-2">
+            <div className="px-6 py-4 border-t border-white/[0.04] flex justify-end gap-2.5 bg-[#05080f]/40">
               <button
                 onClick={() => setShowCreate(false)}
-                className="px-4 py-2 text-sm text-text-muted hover:text-text-primary rounded-lg
-                           hover:bg-bg-elevated transition-all"
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white rounded-lg transition-all"
               >
-                {t('create.cancel')}
+                Cancel
               </button>
               <button
                 onClick={handleCreate}
                 disabled={!newAgent.name.trim() || !newAgent.goal.trim() || createAgent.isPending}
-                className="px-5 py-2 text-sm font-semibold rounded-lg
-                           bg-gradient-to-r from-accent-secondary to-accent-tertiary text-white
-                           hover:shadow-[0_0_15px_rgba(124,58,237,0.3)]
-                           disabled:opacity-40 disabled:cursor-not-allowed
-                           transition-all duration-200"
+                className="px-5 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all font-mono"
               >
-                {createAgent.isPending ? t('create.creating') : t('create.submit')}
+                {createAgent.isPending ? 'Creating...' : 'Initialize Agent'}
               </button>
             </div>
           </div>

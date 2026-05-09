@@ -475,3 +475,126 @@ async def reload_router_endpoint():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to reload model router: {str(e)}")
 
+
+# ── Factory Constitution Endpoints ──────────────────────────────────────────
+
+class ConstitutionRule(BaseModel):
+    id: str
+    title: str
+    rule: str
+    immutable: Optional[bool] = False
+
+class SaveConstitutionRequest(BaseModel):
+    rules: List[ConstitutionRule]
+
+@router.get("/constitution")
+async def get_constitution():
+    """Retrieve all factory constitution rules. Initializes default rules if empty."""
+    from core.database import get_db
+    db = get_db()
+    
+    # Check if we have any rules stored
+    cursor = db.constitution.find({})
+    rules = await cursor.to_list(length=100)
+    
+    if not rules:
+        # Initialize default rules including the immutable security directive
+        default_rules = [
+            {
+                "id": "sandbox_rule",
+                "title": "Secure Container Isolation",
+                "rule": "This agent MUST execute strictly within an isolated Docker container sandbox. Windows absolute paths (C:\\...) are strictly forbidden. Accessing host OS filesystem outside designated sandbox is prohibited.",
+                "immutable": True
+            },
+            {
+                "id": "rate_limit_rule",
+                "title": "Rate Limit Respect",
+                "rule": "Agents must strictly monitor token budgets and rate limit headers. In case of 429 warnings, gracefully delay calls and cascade to backup model keys.",
+                "immutable": False
+            },
+            {
+                "id": "robust_error_rule",
+                "title": "Fail-Safe Execution",
+                "rule": "All code blocks must wrap file read/write or network calls in try-except blocks to ensure robust, non-crashing execution under unexpected conditions.",
+                "immutable": False
+            }
+        ]
+        for rule in default_rules:
+            rule["created_at"] = datetime.now()
+            await db.constitution.update_one({"id": rule["id"]}, {"$set": rule}, upsert=True)
+        
+        cursor = db.constitution.find({})
+        rules = await cursor.to_list(length=100)
+        
+    # Remove MongoDB internal ObjectId for JSON serialization
+    for r in rules:
+        r.pop("_id", None)
+        if "created_at" in r and r["created_at"]:
+            r["created_at"] = r["created_at"].isoformat()
+            
+    return {"rules": rules}
+
+
+@router.post("/constitution")
+async def save_constitution(req: SaveConstitutionRequest):
+    """Save/update factory constitution rules. Enforces immutability of the sandbox rule."""
+    from core.database import get_db
+    db = get_db()
+    
+    # Load existing rules to ensure we don't bypass immutability
+    cursor = db.constitution.find({})
+    existing = await cursor.to_list(length=100)
+    existing_map = {r["id"]: r for r in existing}
+    
+    submitted_ids = {r.id for r in req.rules}
+    
+    # 1. Enforce that all existing immutable rules must remain present and unchanged
+    for r_id, ext_rule in existing_map.items():
+        if ext_rule.get("immutable"):
+            if r_id not in submitted_ids:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Rule '{ext_rule['title']}' is immutable and cannot be deleted."
+                )
+                
+    # 2. Process updates and new rules
+    for r in req.rules:
+        # Trim whitespace
+        r_id = r.id.strip()
+        title = r.title.strip()
+        rule_text = r.rule.strip()
+        
+        if not r_id or not title or not rule_text:
+            raise HTTPException(status_code=400, detail="Rule fields cannot be blank.")
+            
+        # Check if we are trying to modify an existing immutable rule's body
+        if r_id in existing_map and existing_map[r_id].get("immutable"):
+            # Ensure title and body are preserved or reset to original
+            title = existing_map[r_id]["title"]
+            rule_text = existing_map[r_id]["rule"]
+            immutable_flag = True
+        else:
+            immutable_flag = r.immutable
+            
+        rule_doc = {
+            "id": r_id,
+            "title": title,
+            "rule": rule_text,
+            "immutable": immutable_flag,
+            "updated_at": datetime.now()
+        }
+        
+        await db.constitution.update_one(
+            {"id": r_id},
+            {"$set": rule_doc, "$setOnInsert": {"created_at": datetime.now()}},
+            upsert=True
+        )
+        
+    # 3. Clean up deleted rules (that are not immutable)
+    for r_id, ext_rule in existing_map.items():
+        if r_id not in submitted_ids and not ext_rule.get("immutable"):
+            await db.constitution.delete_one({"id": r_id})
+            
+    return {"status": "saved", "count": len(req.rules)}
+
+

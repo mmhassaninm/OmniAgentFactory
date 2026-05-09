@@ -20,7 +20,7 @@ docker-compose down >nul 2>&1
 taskkill /F /IM python.exe /T 2>nul
 taskkill /F /IM node.exe /T 2>nul
 taskkill /F /IM uvicorn.exe /T 2>nul
-powershell -NoProfile -Command "& { foreach ($port in 3001,5173,5174) { $pids = (netstat -ano | Select-String ":$port\s" | ForEach-Object { ($_ -split '\s+')[-1] } | Sort-Object -Unique); foreach ($p in $pids) { if ($p -match '^\d+$' -and $p -ne '0') { try { Stop-Process -Id $p -Force -ErrorAction Stop } catch {} } } } }"
+powershell -NoProfile -Command "& { foreach ($port in 3001,5173) { $pids = (netstat -ano | Select-String ":$port\s" | ForEach-Object { ($_ -split '\s+')[-1] } | Sort-Object -Unique); foreach ($p in $pids) { if ($p -match '^\d+$' -and $p -ne '0') { try { Stop-Process -Id $p -Force -ErrorAction Stop } catch {} } } } }"
 timeout /t 3 /nobreak >nul
 
 if exist "%BASE_DIR%docker-compose.yml" (

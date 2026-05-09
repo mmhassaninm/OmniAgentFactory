@@ -203,7 +203,7 @@ def launch_services():
         # Manage LM Studio VRAM
         manage_lm_studio(action="startup")
         import webbrowser
-        webbrowser.open(f"http://localhost:{TARGET_PORT_FRONTEND}")
+        webbrowser.open(f"http://localhost:{TARGET_PORT_FRONTEND}/factory")
     else:
         log_message("STARTUP FAILED — Check logs above for errors")
         # Show which service failed
