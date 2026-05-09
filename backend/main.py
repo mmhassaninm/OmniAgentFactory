@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from contextlib import asynccontextmanager
 
+from core.config import get_settings
+
 # Session log file must be configured before any other module emits log records
 try:
     from logging_config import setup_session_logging
@@ -29,10 +31,12 @@ async def lifespan(app: FastAPI):
     # ── Agent Factory Systems ───────────────────────────────────────────
     # 1. Connect to MongoDB (with retry)
     try:
-        from core.database import connect_db, close_db
+        from core.database import connect_db, close_db, get_db
         await connect_db()
+        db = get_db()
         logger.info("✓ MongoDB connected")
     except Exception as e:
+        db = None
         logger.error("MongoDB connection failed (factory features disabled): %s", e)
 
     # 2. Crash recovery — rollback any agents stuck in draft/testing
@@ -60,6 +64,18 @@ async def lifespan(app: FastAPI):
         logger.info("✓ Night mode scheduler started")
     except Exception as e:
         logger.warning("Night scheduler start failed: %s", e)
+
+    # 5. Start Telegram command center if configured
+    try:
+        settings = get_settings()
+        if settings.telegram_bot_token and settings.telegram_chat_id and db is not None:
+            from services.telegram_commander import TelegramCommander
+            commander = TelegramCommander(settings.telegram_bot_token, settings.telegram_chat_id)
+            asyncio.create_task(commander.listen(db))
+            await commander.send("🚀 OmniBot Factory started!")
+            logger.info("✓ Telegram Commander started")
+    except Exception as e:
+        logger.warning("Telegram Commander failed: %s", e)
 
     # 5. Initialize Prompt Evolver (Phase 7: Self-Rewriting Prompt Templates)
     try:
@@ -205,6 +221,36 @@ app.include_router(factory_agents_router, prefix="/api/factory/agents", tags=["F
 app.include_router(factory_control_router, prefix="/api/factory", tags=["Factory Control"])
 app.include_router(factory_settings_router, prefix="/api/factory/settings", tags=["Factory Settings"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
+
+# ── OS Shell UI Routers (desktop shell) ─────────────────────────────────
+try:
+    from routers.files import router as files_router
+    app.include_router(files_router, tags=["Files"])
+    logger.info("✓ Files router loaded")
+except Exception as e:
+    logger.warning("Files router failed to load: %s", e)
+
+try:
+    from routers.terminal import router as terminal_router
+    app.include_router(terminal_router, tags=["Terminal"])
+    logger.info("✓ Terminal router loaded")
+except Exception as e:
+    logger.warning("Terminal router failed to load: %s", e)
+
+try:
+    from routers.media import router as media_router
+    app.include_router(media_router, tags=["Media"])
+    logger.info("✓ Media router loaded")
+except Exception as e:
+    logger.warning("Media router failed to load: %s", e)
+
+try:
+    from api.hub import router as hub_router
+    app.include_router(hub_router, prefix="/api/hub", tags=["Model Hub"])
+    logger.info("✓ Model Hub router loaded")
+except Exception as e:
+    logger.warning("Model Hub router failed to load: %s", e)
+
 
 
 @app.get("/api/health")

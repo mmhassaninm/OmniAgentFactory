@@ -104,3 +104,11 @@ TEMPLATES = {
 
 from ..ghost_developer import GHOST_DEVELOPER_TEMPLATE
 TEMPLATES["ghost_developer"] = GHOST_DEVELOPER_TEMPLATE
+
+from .microsaas_agent import MICROSAAS_TEMPLATE
+from .content_agent import CONTENT_TEMPLATE
+from .freelance_agent import FREELANCE_TEMPLATE
+
+TEMPLATES["microsaas"] = MICROSAAS_TEMPLATE
+TEMPLATES["content"] = CONTENT_TEMPLATE
+TEMPLATES["freelance"] = FREELANCE_TEMPLATE

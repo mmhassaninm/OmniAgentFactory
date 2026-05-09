@@ -23,7 +23,9 @@ from core.model_router import call_model
 from core.config import get_settings
 from core.dna_engine import DEFAULT_DNA, dna_to_prompt_modifiers
 from core.collective_memory import contribute_memory, get_relevant_memories
+from core.hivemind import get_hivemind
 from core.prompt_autopsy import analyze_failure, get_autopsy_hints
+from core.swarm import Orchestrator
 from core.roi_tracker import record_cycle, estimate_tokens_in_response
 from utils.thought_logger import log_thought
 from utils.budget import get_budget_governor
@@ -68,10 +70,11 @@ def build_improvement_prompt(
     fix_directive: str = "",
     cross_pollination: str = "",
     red_team: str = "",
+    hivemind_wisdom: str = "",
 ) -> list:
     """
     Construct the prompt that asks the LLM to improve the agent's code.
-    Injects DNA behavioral modifiers, collective memory discoveries, and autopsy hints.
+    Injects DNA behavioral modifiers, collective memory discoveries, autopsy hints, and HiveMind wisdom.
     When a prompt_evolver active_template is provided, it overrides the default system content.
     """
     dna = dna or DEFAULT_DNA
@@ -92,6 +95,14 @@ def build_improvement_prompt(
         )
     if dna_modifiers:
         system_content += f" {dna_modifiers}"
+
+    wisdom_section = ""
+    if hivemind_wisdom:
+        wisdom_section = (
+            "\n--- HiveMind Wisdom ---\n"
+            + hivemind_wisdom.strip()
+            + "\n"
+        )
 
     memory_section = ""
     if collective_memories:
@@ -120,6 +131,7 @@ Current version: v{agent.version}
 Current score: {agent.current_score:.2f}/1.0
 Evolution cycle: #{cycle_number}
 
+{wisdom_section}
 PREVIOUS VERSION CODE:
 {agent.agent_code or 'No code yet — create the initial implementation.'}
 {autopsy_section}
@@ -170,23 +182,136 @@ def _format_test_cases(test_cases: list) -> str:
 
 # ── Agent Testing ───────────────────────────────────────────────────────────
 
-async def test_agent(new_code: str, test_cases: list, agent_name: str = "test", old_code: Optional[str] = None) -> float:
+async def score_agent_output(
+    input_data: Any,
+    output: Any,
+    expected: Any,
+    goal: str,
+    agent_name: str = "Agent"
+) -> float:
+    """
+    Neural Evaluation Engine (System 3.5 Upgrade):
+    Utilizes multi-criteria LLM scoring to grade agent output against qualitative goals and expected outputs.
+    Evaluates:
+      1. Functional Accuracy (40% weight)
+      2. Bilingual Alignment (20% weight)
+      3. Structural Presentation (20% weight)
+      4. Monetization / Call To Action presence (20% weight)
+    Returns a final weighted score between 0.0 and 1.0.
+    """
+    try:
+        import json
+        prompt = f"""You are an objective Neural Quality Inspector for OmniBot.
+Evaluate the following agent's task execution performance.
+
+Agent Name: {agent_name}
+Goal: {goal}
+Test Input: {input_data}
+Expected Output: {expected}
+Actual Output Produced: {output}
+
+Grade the execution based on four key axes:
+1. FUNCTIONAL ACCURACY (40% weight): Does the output address the goal and handle the input properly?
+2. BILINGUAL ALIGNMENT (20% weight): Is the output fluent in Arabic/English if required, with proper linguistic context?
+3. STRUCTURAL PRESENTATION (20% weight): Is the output clean, using rich markdown (lists, headers, JSON, or code blocks)?
+4. MONETIZATION/CTA (20% weight): Does it have clear pricing, value proposition, or transaction links (like PayPal/Stripe)?
+
+Respond ONLY with a JSON block containing the scoring breakdown and a weighted 'final_score' between 0.0 and 1.0. No explanations, no code block wrapper, no backticks.
+Example response format:
+{{"functional": 0.9, "bilingual": 0.8, "structure": 0.7, "monetization": 1.0, "final_score": 0.85}}
+"""
+        messages = [
+            {"role": "system", "content": "You are a precise JSON-only neural scoring model. Return ONLY a raw JSON dictionary and nothing else."},
+            {"role": "user", "content": prompt}
+        ]
+        
+        # Call model router with low temperature
+        response = await call_model(
+            messages=messages,
+            max_tokens=250,
+            temperature=0.1
+        )
+        
+        if response and not response.startswith("[MODEL_ROUTER_ERROR]"):
+            clean_res = response.strip()
+            if clean_res.startswith("```json"):
+                clean_res = clean_res[7:].strip()
+            if clean_res.startswith("```"):
+                clean_res = clean_res[3:].strip()
+            if clean_res.endswith("```"):
+                clean_res = clean_res[:-3].strip()
+                
+            data = json.loads(clean_res)
+            score = float(data.get("final_score", 0.5))
+            return min(max(score, 0.0), 1.0)
+            
+    except Exception as e:
+        logger.error("Neural scoring failed: %s. Falling back to heuristics.", e)
+        
+    return -1.0  # Sentinel for fallback
+
+
+async def test_agent(new_code: str, test_cases: list, agent_name: str = "test", old_code: Optional[str] = None, goal: str = "general execution") -> float:
     """
     Test new agent code against test cases in a sandboxed execution.
-    Returns score between 0.0 and 1.0.
+    Returns score between 0.0 and 1.0 using either Neural Evaluation or Heuristics.
     """
     temp_agent = BaseAgent(
         name=agent_name,
-        goal="testing",
+        goal=goal,
         agent_code=new_code,
         test_cases=test_cases,
     )
-    try:
-        score = await temp_agent.test(test_cases, old_code=old_code)
-        return score
-    except Exception as e:
-        logger.error("Agent test failed: %s", e)
-        return 0.0
+    
+    if not test_cases:
+        return 0.5
+        
+    total_weight = 0.0
+    weighted_score = 0.0
+    use_heuristics = False
+    
+    for case in test_cases:
+        weight = case.get("weight", 1.0)
+        total_weight += weight
+        
+        try:
+            # Execute sandboxed code
+            result = await temp_agent.run(case.get("input"))
+            
+            if result.get("success"):
+                output = result.get("output")
+                expected = case.get("expected")
+                
+                # Grade using Neural Evaluation Engine
+                case_score = await score_agent_output(
+                    input_data=case.get("input"),
+                    output=output,
+                    expected=expected,
+                    goal=goal,
+                    agent_name=agent_name
+                )
+                
+                if case_score < 0.0:
+                    # Neural evaluation returned failure sentinel, trigger heuristic fallback
+                    use_heuristics = True
+                    break
+            else:
+                case_score = 0.0
+                
+            weighted_score += weight * case_score
+        except Exception as e:
+            logger.error("Error evaluating test case: %s", e)
+            use_heuristics = True
+            break
+            
+    if use_heuristics:
+        try:
+            return await temp_agent.test(test_cases, old_code=old_code)
+        except Exception as e:
+            logger.error("Fallback heuristic test failed: %s", e)
+            return 0.0
+            
+    return weighted_score / total_weight if total_weight > 0 else 0.0
 
 
 # ── Evolution Loop ──────────────────────────────────────────────────────────
@@ -251,6 +376,10 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             await checkpoint_draft(agent_id, agent.agent_code, agent.config, agent.current_score)
             await log_thought(agent_id, "Phase DRAFT: generating improved version...", phase="draft")
 
+            hivemind = get_hivemind()
+            wisdom = await hivemind.get_collective_wisdom(agent.goal)
+            await log_thought(agent_id, "[HIVEMIND] Retrieved wisdom for goal", phase="draft")
+
             # Fetch collective memory discoveries to guide the improvement
             collective_memories = await get_relevant_memories(db, agent.goal)
             if collective_memories:
@@ -273,6 +402,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
 
             # Get active prompt template: meta_improver A/B candidate or prompt_evolver override
             active_template = None
+            used_candidate_template = False
             try:
                 from core.meta_improver import get_meta_improver
                 meta = get_meta_improver()
@@ -284,7 +414,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 try:
                     from core.prompt_evolver import get_prompt_evolver
                     evolver = get_prompt_evolver()
-                    active_template = evolver.get_active_template()
+                    active_template, used_candidate_template = evolver.get_active_template(return_meta=True)
                 except Exception:
                     pass
 
@@ -294,8 +424,10 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 collective_memories=collective_memories,
                 autopsy_hints=autopsy_hints,
                 active_template=active_template,
+                hivemind_wisdom=wisdom,
             )
-            new_code = await call_model(improvement_prompt, task_type="code", agent_id=agent_id)
+            orchestrator = Orchestrator()
+            new_code = await orchestrator.run_swarm(agent.goal, agent_id, db)
 
             # Check for model router error
             if new_code.startswith("[MODEL_ROUTER_ERROR]"):
@@ -311,7 +443,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             await checkpoint_testing(agent_id)
             await log_thought(agent_id, "Phase TEST: evaluating new version...", phase="testing")
 
-            score = await test_agent(new_code, agent.test_cases, agent.name, old_code=agent.agent_code)
+            score = await test_agent(new_code, agent.test_cases, agent.name, old_code=agent.agent_code, goal=agent.goal)
 
             # 3b. RED TEAM: adversarial robustness gate (only when code improves)
             red_team_passed = True
@@ -371,6 +503,14 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 except Exception as e:
                     logger.debug("Meta improver record failed: %s", e)
 
+                # Notify PromptEvolver of successful cycle
+                try:
+                    from core.prompt_evolver import get_prompt_evolver
+                    evolver = get_prompt_evolver()
+                    await evolver.record_cycle_outcome(db, score_delta=score - score_before_cycle, committed=True, used_candidate=used_candidate_template)
+                except Exception as e:
+                    logger.debug("Prompt evolver record failed: %s", e)
+
                 # Export thought log to markdown after each successful commit
                 try:
                     from utils.log_exporter import export_thoughts_to_md
@@ -411,6 +551,21 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 except Exception as e:
                     logger.debug("Collective memory contribution failed: %s", e)
 
+                # Deposit learning into HiveMind
+                try:
+                    improvement_summary = (
+                        f"Evolved to v{new_version} from v{agent.version}; "
+                        f"score {agent.current_score:.2f} → {score:.2f}."
+                    )
+                    await hivemind.remember(
+                        agent_id=agent_id,
+                        agent_name=agent.name,
+                        knowledge=f"Goal: {agent.goal}\nWhat worked: {improvement_summary}",
+                        category="evolution_success",
+                    )
+                except Exception as e:
+                    logger.debug("HiveMind remember failed: %s", e)
+
                 # Breeding trigger: at version 10 milestone, breed top 2 agents
                 if new_version == 10:
                     try:
@@ -448,6 +603,14 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     await meta.record_cycle(db, agent_id, 0.0, committed=False)
                 except Exception as e:
                     logger.debug("Meta improver record failed: %s", e)
+
+                # Notify PromptEvolver of failed cycle
+                try:
+                    from core.prompt_evolver import get_prompt_evolver
+                    evolver = get_prompt_evolver()
+                    await evolver.record_cycle_outcome(db, score_delta=0.0, committed=False, used_candidate=used_candidate_template)
+                except Exception as e:
+                    logger.debug("Prompt evolver record failed: %s", e)
 
                 # Prompt Autopsy: analyze why this cycle failed
                 try:

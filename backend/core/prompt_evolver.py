@@ -85,21 +85,30 @@ class PromptEvolver:
             finally:
                 self._initialized = True
 
-    def get_active_template(self) -> Optional[str]:
+    def get_active_template(self, return_meta: bool = False):
         """
         Return the active template text, or None to use the built-in default.
         During A/B test: 30% of calls return the candidate template.
         """
-        if not self._initialized or self._active_template == DEFAULT_TEMPLATE_V1:
-            return None  # Use default from evolve_engine
+        used_candidate = False
+        template_text = None
 
-        if self._ab_active and self._candidate_template:
+        if not self._initialized or self._active_template == DEFAULT_TEMPLATE_V1:
+            template_text = None
+        elif self._ab_active and self._candidate_template:
             # Use A/B test distribution
             import random
             if random.random() < AB_TEST_RATIO:
-                return self._candidate_template
+                template_text = self._candidate_template
+                used_candidate = True
+            else:
+                template_text = self._active_template
+        else:
+            template_text = self._active_template
 
-        return self._active_template
+        if return_meta:
+            return template_text, used_candidate
+        return template_text
 
     async def record_cycle_outcome(self, db, score_delta: float, committed: bool, used_candidate: bool = False):
         """

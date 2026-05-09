@@ -188,14 +188,14 @@ export default function Factory() {
 
             {/* Key Vault button */}
             <button
-              onClick={() => navigate('/settings/keys')}
+              onClick={() => navigate('/vault')}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
                          bg-bg-panel border border-border-default text-text-secondary
                          hover:border-[#00d4ff]/40 hover:text-[#00d4ff]
                          transition-all duration-200 shadow-[0_0_10px_rgba(0,212,255,0.02)] hover:shadow-[0_0_15px_rgba(0,212,255,0.1)]"
             >
-              <span>🔐</span>
-              <span>Key Vault</span>
+              <span>🔑</span>
+              <span>Vault</span>
             </button>
 
             {/* Create button */}

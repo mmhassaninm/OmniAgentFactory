@@ -597,11 +597,22 @@ class ModelRouter:
         messages: list,
         max_tokens: Optional[int] = None,
         base_url: Optional[str] = None,
+        agent_id: Optional[str] = None,
     ) -> Tuple[Optional[str], Optional[any]]:
         """
         Attempt a single LiteLLM call on a specific key/model.
         Returns (content, latency) on success or (None, error_str) on failure.
         """
+        import uuid
+        from api.hub import get_model_hub
+        call_id = str(uuid.uuid4())
+        hub = get_model_hub()
+
+        try:
+            hub.before_call(call_id, provider, model, agent_id=agent_id)
+        except Exception as ex:
+            logger.debug("Failed to record model hub before_call: %s", ex)
+
         try:
             kwargs = {
                 "model": model,
@@ -637,11 +648,27 @@ class ModelRouter:
             tokens_used = getattr(response.usage, "total_tokens", 0) if response.usage else 0
 
             key_state.record_success(tokens_used)
+
+            try:
+                tokens_in = getattr(response.usage, "prompt_tokens", 0) if response.usage else 0
+                tokens_out = getattr(response.usage, "completion_tokens", 0) if response.usage else 0
+                try:
+                    cost = litellm.completion_cost(response=response) or 0.0
+                except Exception:
+                    cost = 0.0
+                hub.after_call(call_id, tokens_in=tokens_in, tokens_out=tokens_out, cost=cost, error=None)
+            except Exception as ex:
+                logger.debug("Failed to record model hub after_call: %s", ex)
+
             return content, latency
 
         except Exception as e:
             err_msg = str(e)
             key_state.record_failure(err_msg)
+            try:
+                hub.after_call(call_id, tokens_in=0, tokens_out=0, cost=0.0, error=err_msg)
+            except Exception as ex:
+                logger.debug("Failed to record model hub after_call: %s", ex)
             return None, err_msg
 
     async def _call_openrouter_with_fallback(
@@ -656,7 +683,17 @@ class ModelRouter:
         Returns (content, latency) on success or (None, error_str) on full exhaustion.
         Stops immediately on 401 (bad key). Skips on 404/unavailable.
         """
+        import uuid
+        from api.hub import get_model_hub
+        hub = get_model_hub()
+
         for model in OPENROUTER_FREE_MODELS:
+            call_id = str(uuid.uuid4())
+            try:
+                hub.before_call(call_id, "openrouter", model, agent_id=agent_id)
+            except Exception as ex:
+                logger.debug("Failed to record model hub before_call: %s", ex)
+
             kwargs = {
                 "model": model,
                 "messages": messages,
@@ -674,6 +711,18 @@ class ModelRouter:
                 content = response.choices[0].message.content or ""
                 tokens_used = getattr(response.usage, "total_tokens", 0) if response.usage else 0
                 key_state.record_success(tokens_used)
+
+                try:
+                    tokens_in = getattr(response.usage, "prompt_tokens", 0) if response.usage else 0
+                    tokens_out = getattr(response.usage, "completion_tokens", 0) if response.usage else 0
+                    try:
+                        cost = litellm.completion_cost(response=response) or 0.0
+                    except Exception:
+                        cost = 0.0
+                    hub.after_call(call_id, tokens_in=tokens_in, tokens_out=tokens_out, cost=cost, error=None)
+                except Exception as ex:
+                    logger.debug("Failed to record model hub after_call: %s", ex)
+
                 await self._log_cascade(
                     f"[CASCADE] ✓ OpenRouter fallback hit: {model} ({key_state.env_name})",
                     agent_id=agent_id,
@@ -681,6 +730,11 @@ class ModelRouter:
                 return content, latency
             except Exception as e:
                 err_str = str(e)
+                try:
+                    hub.after_call(call_id, tokens_in=0, tokens_out=0, cost=0.0, error=err_str)
+                except Exception as ex:
+                    logger.debug("Failed to record model hub after_call: %s", ex)
+
                 if "401" in err_str or "Invalid API Key" in err_str or "AuthenticationError" in err_str:
                     key_state.record_failure(err_str)
                     return None, err_str
@@ -774,7 +828,7 @@ class ModelRouter:
                         )
 
                         content, result = await self._try_provider(
-                            provider, key_state, model, messages, max_tokens, base_url
+                            provider, key_state, model, messages, max_tokens, base_url, agent_id=agent_id
                         )
 
                         if content is not None:

@@ -1,4 +1,4 @@
-﻿# MODIFICATION HISTORY
+# MODIFICATION HISTORY
 
 ## [2026-05-09] ΓÇö Added validation for Cerebras, Cloudflare, LlamaCloud
 - Files changed: settings.py, Settings.tsx
@@ -289,3 +289,16 @@
 - Approach      : Added `NexusOS-main/Style_References/` to .gitignore, removed the directory from git index with `git rm --cached -r`, amended the latest commit, and updated origin URL to `https://github.com/mmhassaninm/Omni-agent-factory.git`
 - Outcome       : success
 - Notes         : Local reference files remain on disk but are no longer tracked; pushed amended commit safely to new remote.
+
+## [2026-05-09] — Phase 1-5 Swarm, HiveMind, Ghost Developer, Telegram, Tunnel, Vault
+- Files changed: backend/core/evolve_engine.py, backend/core/hivemind.py, backend/core/ghost_developer.py, backend/core/swarm/__init__.py, backend/core/swarm/orchestrator.py, backend/core/swarm/researcher.py, backend/core/swarm/coder.py, backend/core/swarm/reviewer.py, backend/services/telegram_commander.py, backend/services/tunnel_manager.py, backend/core/config.py, backend/main.py, .env.example, backend/requirements.txt, frontend/src/App.tsx, frontend/src/pages/Factory.tsx, start_omnibot.bat
+- Approach: Implemented swarm-based evolution, added collective HiveMind memory, created self-improving GhostDeveloper, wired Telegram command center startup, added Cloudflare tunnel manager, and exposed the Vault UI route.
+- Outcome: success
+- Notes: Frontend build passed. Backend health check skipped because no backend process was running at time of verification.
+
+## [2026-05-09] — Phase 3B Neural Grader, Phase 4 Playwright E2E Tests, Phase 5 Prompt Evolution Wiring
+- Files changed: backend/core/evolve_engine.py, backend/core/prompt_evolver.py, backend/tests/ui_tester.py, task.md
+- Approach: (1) Overhauled `test_agent` in `evolve_engine.py` to use a newly introduced `score_agent_output` LLM evaluator that executes multi-criteria evaluation of agent code outputs (Functional Accuracy, Bilingual Context, Markdown Structure, and Monetization Call-To-Actions) with a smooth fallback to local heuristic testing. (2) Created a modular Playwright test suite `backend/tests/ui_tester.py` to assert full Desktop navigation, key configurations, dynamic language toggling, and draggable app launching. (3) Fully wired `PromptEvolver`'s outcome recording loop inside `evolve_engine.py` to track both committed and rolled-back cycles, closing the feedback loop for second-order self-rewriting prompt templates. (4) Updated `task.md` checkboxes to mark all remaining phases as successfully completed.
+- Outcome: success
+- Notes: Robust fallback safeguards are fully integrated so any potential LLM or network outage gracefully defaults to local heuristic evaluation. Second-order self-improvement templates are now dynamically scored per-cycle.
+

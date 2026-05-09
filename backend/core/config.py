@@ -85,6 +85,10 @@ class Settings:
         self.default_service_price: int = int(os.getenv("DEFAULT_SERVICE_PRICE", "25"))
         self.revenue_mode: bool = os.getenv("REVENUE_MODE", "false").lower() == "true"
 
+        # ── Telegram Command Center ──────────────
+        self.telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+        self.telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "").strip()
+
     def is_night_mode(self) -> bool:
         """Check if current local time falls within the night mode window."""
         from datetime import datetime

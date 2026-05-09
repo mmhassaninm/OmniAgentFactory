@@ -144,6 +144,24 @@ def kill_processes():
     
     log_message("Cleanup complete. 100% clean state achieved.")
 
+def wait_for_service(url: str, name: str, max_wait: int = 60) -> bool:
+    """Wait until a service is actually responding, not just launched."""
+    import urllib.request
+    start = time.time()
+    while time.time() - start < max_wait:
+        try:
+            # Using urllib Request to handle potential redirect or basic validation
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=2) as response:
+                if response.status == 200 or response.status == 302:
+                    log_message(f"{name} is ready ✓")
+                    return True
+        except Exception:
+            log_message(f"Waiting for {name}... ({int(time.time() - start)}s)")
+            time.sleep(2)
+    log_message(f"ERROR: {name} failed to start within {max_wait}s")
+    return False
+
 def launch_services():
     """Launch all OmniBot services in high-stealth mode."""
     log_message("Launching OmniBot services...")
@@ -155,29 +173,44 @@ def launch_services():
         venv_python = "python" # Fallback to system python if venv not found
         
     log_message("Starting Unified Python FastAPI Backend...")
-    subprocess.Popen(
-        [venv_python, "main.py"],
+    backend_process = subprocess.Popen(
+        [venv_python, "-m", "uvicorn", "main:app", "--port", "3001", "--host", "127.0.0.1"],
         cwd=backend_dir,
-        creationflags=subprocess.CREATE_NO_WINDOW
+        stdout=open(os.path.join(PROJECT_ROOT, "backend_out.log"), "w"),
+        stderr=open(os.path.join(PROJECT_ROOT, "backend_err.log"), "w"),  # capture errors!
+        creationflags=subprocess.CREATE_NO_WINDOW,
     )
 
     # 2. Frontend
     log_message("Starting Frontend Server...")
-    subprocess.Popen(
-        ["cmd", "/c", "npm run dev"],
+    frontend_process = subprocess.Popen(
+        ["npm", "run", "dev"],
         cwd=os.path.join(PROJECT_ROOT, "frontend"),
-        creationflags=subprocess.CREATE_NO_WINDOW
+        stdout=open(os.path.join(PROJECT_ROOT, "frontend_out.log"), "w"),
+        stderr=open(os.path.join(PROJECT_ROOT, "frontend_err.log"), "w"),  # capture errors!
+        shell=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
     )
 
     log_message("Services launched. Waiting for initialization...")
-    time.sleep(5)
     
-    # Manage LM Studio VRAM
-    manage_lm_studio(action="startup")
-    
-    # Auto-launch browser
-    log_message("Opening UI...")
-    subprocess.Popen(["cmd", "/c", f"start http://localhost:{TARGET_PORT_FRONTEND}"], shell=True)
+    # Wait until services are ready
+    backend_ready = wait_for_service(f"http://127.0.0.1:{TARGET_PORT_BACKEND}/api/health", "Backend", max_wait=60)
+    frontend_ready = wait_for_service(f"http://127.0.0.1:{TARGET_PORT_FRONTEND}", "Frontend", max_wait=60)
+
+    if backend_ready and frontend_ready:
+        log_message("All services ready — Opening UI...")
+        # Manage LM Studio VRAM
+        manage_lm_studio(action="startup")
+        import webbrowser
+        webbrowser.open(f"http://localhost:{TARGET_PORT_FRONTEND}")
+    else:
+        log_message("STARTUP FAILED — Check logs above for errors")
+        # Show which service failed
+        if not backend_ready:
+            log_message("Backend failed to start. Check: backend_err.log")
+        if not frontend_ready:
+            log_message("Frontend failed to start. Check: npm/node errors")
 
 def create_shortcut():
     """Creates a desktop shortcut for the launcher."""
