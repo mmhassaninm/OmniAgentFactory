@@ -1,0 +1,223 @@
+@import "tailwindcss";
+@import "@nexus/ui/styles.css";
+
+/* ══════════════════════════════════════════════════════════
+   Phase 46: Premium NexusOS Design System
+   Ported from Legacy Nexus-Prime with 10x Enhancement
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Neon Color Palette (Themeable) ───────────────────────── */
+:root {
+  --neon-primary: #00f3ff;
+  --neon-accent: #bc13fe;
+  --neon-glow: rgba(0, 243, 255, 0.4);
+  --deep-bg: #050510;
+  --os-bg: #050510;
+  --os-border: rgba(255, 255, 255, 0.05);
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  /* ── Phase 65: Aura Dynamic Tokens ───────────────────────── */
+  --aura-primary: var(--neon-primary);
+  --aura-glow: var(--neon-glow);
+  --aura-opacity: 0.15;
+  --aura-pulse-speed: 8s;
+}
+
+/* Theme Presets */
+[data-aura="cyan"] {
+  --neon-primary: #00f3ff;
+  --neon-glow: rgba(0, 243, 255, 0.4);
+}
+
+[data-aura="purple"] {
+  --neon-primary: #bc13fe;
+  --neon-glow: rgba(188, 19, 254, 0.4);
+}
+
+[data-aura="emerald"] {
+  --neon-primary: #10b981;
+  --neon-glow: rgba(16, 185, 129, 0.4);
+}
+
+[data-aura="rose"] {
+  --neon-primary: #f43f5e;
+  --neon-glow: rgba(244, 63, 94, 0.4);
+}
+
+[data-aura="amber"] {
+  --neon-primary: #f59e0b;
+  --neon-glow: rgba(245, 158, 11, 0.4);
+}
+
+/* ── Force Fullscreen Render ──────────────────────────────── */
+:root,
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--deep-bg);
+  user-select: none;
+  -webkit-user-select: none;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Arabic Typography Engine ─────────────────────────────── */
+html[dir="rtl"] body,
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] button,
+html[dir="rtl"] select {
+  font-family: 'Cairo', system-ui, sans-serif !important;
+  line-height: 1.6;
+}
+
+/* ── Custom Neon Cursor ───────────────────────────────────── */
+body {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'><path d='M2 2 L10 22 L13 13 L22 10 Z' fill='rgba(0,0,0,0.4)' stroke='%2300f3ff' stroke-width='1.5' stroke-linejoin='round'/><path d='M2 2 L10 22 L13 13 L22 10 Z' fill='%2300f3ff' fill-opacity='0.15'/></svg>") 2 2, default;
+}
+
+/* Neon Purple cursor on interactive elements */
+a,
+button,
+[role="button"],
+.cursor-pointer,
+input,
+select,
+textarea {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none'><path d='M2 2 L10 22 L13 13 L22 10 Z' fill='rgba(0,0,0,0.4)' stroke='%23bc13fe' stroke-width='1.5' stroke-linejoin='round'/><path d='M2 2 L10 22 L13 13 L22 10 Z' fill='%23bc13fe' fill-opacity='0.15'/></svg>") 2 2, pointer;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Aura Animated Wallpaper ───────────────────────── */
+@keyframes auraPulse {
+
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.nexus-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--deep-bg);
+  transition: background-color 1s ease;
+}
+
+.nexus-wallpaper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 50%, var(--aura-glow) 0%, transparent 40%),
+    radial-gradient(circle at 85% 30%, var(--aura-glow) 0%, transparent 40%),
+    radial-gradient(circle at 50% 90%, var(--aura-glow) 0%, transparent 35%);
+  opacity: var(--aura-opacity);
+  filter: blur(60px);
+  animation: auraPulse var(--aura-pulse-speed) infinite ease-in-out;
+  transition: background-image 1s ease, opacity 1.5s ease;
+}
+
+/* ── Scan-Line CRT Overlay ────────────────────────────────── */
+.scan-line-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 243, 255, 0.015) 2px,
+      rgba(0, 243, 255, 0.015) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Glassmorphism Utility Classes ────────────────────────── */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Custom Scrollbar — Cyberpunk ─────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 243, 255, 0.25);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 243, 255, 0.45);
+}
+
+/* ── Neon Button ──────────────────────────────────────────── */
+.neon-button {
+  position: relative;
+  overflow: hidden;
+  background: rgba(0, 243, 255, 0.08);
+  color: var(--neon-primary);
+  border: 1px solid rgba(0, 243, 255, 0.35);
+  padding: 8px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.neon-button:hover {
+  background: rgba(0, 243, 255, 0.15);
+  box-shadow: 0 0 25px rgba(0, 243, 255, 0.25);
+}
+
+/* ── Fade-in animation for Start Menu ─────────────────────── */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeSlideUp 0.2s ease-out;
+}
+
+/* ── Selection Color ──────────────────────────────────────── */
+::selection {
+  background: rgba(0, 243, 255, 0.3);
+  color: white;
+}

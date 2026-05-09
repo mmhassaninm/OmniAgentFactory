@@ -8,33 +8,30 @@ POST /factory/agents/{id}/fix       — Inject priority fix
 GET  /factory/status                — Factory health
 GET  /factory/models                — Model router health
 """
-
 import logging
 from typing import Optional
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from core.evolve_engine import get_evolution_manager, StopMode
 from core.model_router import get_model_router
 from core.config import get_settings
+from autonomous_engine import get_autonomous_engine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
 
 # ── Request Models ──────────────────────────────────────────────────────────
 
 class ControlRequest(BaseModel):
     mode: str = Field(..., description="Stop mode: hard_stop, soft_stop, or pause")
 
-
 class FixRequest(BaseModel):
     instruction: str = Field(..., min_length=1, max_length=2000)
 
-
-# ── Routes ──────────────────────────────────────────────────────────────────
-
+class AutonomousStartRequest(BaseModel):
+    goal: str
+    interval_minutes: int = Field(default=5, ge=1)
 @router.post("/agents/{agent_id}/control")
 async def control_agent(agent_id: str, req: ControlRequest):
     """Kill Switch — control an agent's evolution with 3 modes."""
@@ -136,6 +133,7 @@ async def factory_status():
             "end": settings.night_mode_end.isoformat(),
         },
         "models": router_instance.get_health_status(),
+        "autonomous": get_autonomous_engine().to_dict(),
         "limits": {
             "max_concurrent_day": settings.max_concurrent_agents_day,
             "max_concurrent_night": settings.max_concurrent_agents_night,
@@ -340,3 +338,48 @@ async def trigger_dead_letter_check(agent_id: str):
         return {"status": "alive", "agent_id": agent_id, "message": "Agent does not meet dead letter criteria"}
     ghost = await process_dead_agent(db, agent_id)
     return {"status": "ghosted", "agent_id": agent_id, "ghost": ghost}
+
+
+# ── Autonomous Mode Central Endpoints ─────────────────────────────────────────
+
+@router.post("/autonomous/start")
+async def start_autonomous(req: AutonomousStartRequest):
+    engine = get_autonomous_engine()
+    engine.start(req.goal, req.interval_minutes)
+    return {"status": "started", "goal": req.goal, "interval_minutes": req.interval_minutes}
+
+@router.post("/autonomous/stop")
+async def stop_autonomous():
+    engine = get_autonomous_engine()
+    engine.stop()
+    return {"status": "stopped"}
+
+@router.get("/autonomous/status")
+async def status_autonomous():
+    engine = get_autonomous_engine()
+    return engine.to_dict()
+
+@router.get("/autonomous/log")
+async def log_autonomous(limit: int = 50):
+    from core.database import get_db
+    db = get_db()
+    try:
+        cursor = db.autonomous_log.find({}, {"_id": 0}).sort("timestamp", -1).limit(limit)
+        logs = []
+        async for log in cursor:
+            if "timestamp" in log and hasattr(log["timestamp"], "isoformat"):
+                log["timestamp"] = log["timestamp"].isoformat()
+            logs.append(log)
+        return {"logs": logs}
+    except Exception as e:
+        logger.error("Failed to fetch autonomous logs: %s", e)
+        return {"logs": []}
+
+# Legacy/CLI Compatible mounts
+@router.post("/start")
+async def start_autonomous_legacy(req: AutonomousStartRequest):
+    return await start_autonomous(req)
+
+@router.post("/stop")
+async def stop_autonomous_legacy():
+    return await stop_autonomous()

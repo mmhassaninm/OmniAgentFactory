@@ -184,11 +184,160 @@ TOOL_DEFINITIONS: List[dict] = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "llamacloud_parser",
+            "description": "Parse PDF and documents using LlamaCloud LlamaParse. Can parse local files, URLs, or search previously parsed documents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["parse_document", "parse_url", "search_parsed_docs"],
+                        "description": "The action to perform."
+                    },
+                    "target": {
+                        "type": "string",
+                        "description": "The file path or URL to parse. Required for parse_document and parse_url."
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "The search query. Required for search_parsed_docs."
+                    }
+                },
+                "required": ["action"]
+            }
+        }
+    },
+
+    {
+        "type": "function",
+        "function": {
+            "name": "github_tool",
+            "description": "Manage GitHub operations via the REST API.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["listPRs", "viewPR", "listIssues", "viewIssue", "createIssue", "runAPIQuery"]},
+                    "repo": {"type": "string"},
+                    "prNumber": {"type": "integer"},
+                    "issueNumber": {"type": "integer"},
+                    "title": {"type": "string"},
+                    "body": {"type": "string"},
+                    "query": {"type": "string"}
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_tool",
+            "description": "Perform advanced web search and return detailed content from duckduckgo.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "calendar_tool",
+            "description": "Manage tasks and events.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["addTask", "listTasks", "addEvent", "listEvents"]},
+                    "title": {"type": "string"},
+                    "notes": {"type": "string"},
+                    "when": {"type": "string"},
+                    "deadline": {"type": "string"},
+                    "list_name": {"type": "string"},
+                    "limit": {"type": "integer"}
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "email_tool",
+            "description": "Send and read emails.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["send", "read"]},
+                    "to": {"type": "string"},
+                    "subject": {"type": "string"},
+                    "body": {"type": "string"}
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "discord_tool",
+            "description": "Interact with Discord.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["send", "read"]},
+                    "channelId": {"type": "string"},
+                    "userId": {"type": "string"},
+                    "message": {"type": "string"},
+                    "limit": {"type": "integer"}
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "notion_tool",
+            "description": "Manage Notion pages.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["search", "getPage", "getBlocks"]},
+                    "query": {"type": "string"},
+                    "pageId": {"type": "string"}
+                },
+                "required": ["action"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "obsidian_tool",
+            "description": "Manage local Obsidian markdown vault.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["listNotes", "readNote", "createNote", "appendNote", "searchNotes"]},
+                    "title": {"type": "string"},
+                    "content": {"type": "string"},
+                    "query": {"type": "string"}
+                },
+                "required": ["action"]
+            }
+        }
+    }
 ]
 
 _BY_NAME: dict = {t["function"]["name"]: t for t in TOOL_DEFINITIONS}
 
-NEW_TOOL_NAMES = {"web_search", "calculator", "get_datetime", "fetch_url", "run_python"}
+NEW_TOOL_NAMES = {"web_search", "calculator", "get_datetime", "fetch_url", "run_python", "llamacloud_parser", "github_tool", "search_tool", "calendar_tool", "email_tool", "discord_tool", "notion_tool", "obsidian_tool"}
 
 TOOL_ICONS = {
     "web_search": "🔍",
@@ -204,6 +353,14 @@ TOOL_ICONS = {
     "run_command": "⚡",
     "write_draft": "✏️",
     "web_scraper": "🕸️",
+    "llamacloud_parser": "📄",
+    "github_tool": "🐙",
+    "search_tool": "🔍",
+    "calendar_tool": "📅",
+    "email_tool": "📧",
+    "discord_tool": "🎮",
+    "notion_tool": "📝",
+    "obsidian_tool": "💎",
 }
 
 

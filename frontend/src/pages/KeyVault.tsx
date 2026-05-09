@@ -726,7 +726,7 @@ export default function KeyVault() {
                         <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider font-mono mb-1">Target Engine / Routing Model</p>
                         <div className="px-3 py-2 rounded-lg bg-slate-950 border border-[#1e293b]/40 text-xs font-mono text-[#f0f4f8] flex items-center gap-2">
                           <Cpu size={12} className="text-[#64748b]" />
-                          {item.model}
+                          {item.provider.toLowerCase() === 'llamacloud' ? '📄 Document Parser' : item.model}
                         </div>
                       </div>
 
@@ -758,6 +758,11 @@ export default function KeyVault() {
                               className="bg-[#00d4ff] h-full transition-all duration-1000"
                               style={{ width: `${(countdown / 5) * 100}%` }}
                             />
+                          </div>
+                        )}
+                        {item.provider.toLowerCase() === 'llamacloud' && (
+                          <div className="text-[9px] text-[#64748b] mt-2 font-mono">
+                            Used by agents for PDF/document analysis
                           </div>
                         )}
                       </div>
@@ -941,7 +946,7 @@ export default function KeyVault() {
               </div>
 
               {/* API Key value */}
-              {formState.provider !== 'ollama' && (
+              {formState.provider !== 'ollama' && formState.provider !== 'cloudflare' && (
                 <div>
                   <div className="flex justify-between items-center mb-1.5">
                     <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider font-mono">Symmetric Secret Value</label>
@@ -960,6 +965,48 @@ export default function KeyVault() {
                   />
                   <span className="block text-[9px] text-[#64748b] mt-1 font-mono">
                     Expected format: {PROVIDERS.find(p => p.value === formState.provider)?.placeholder}
+                  </span>
+                </div>
+              )}
+
+              {formState.provider === 'cloudflare' && (
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider font-mono">API Token & Account ID</label>
+                    <span className="text-[9px] text-[#00d4ff] font-mono font-bold">AES encrypted</span>
+                  </div>
+                  <div className="space-y-3">
+                    <input
+                      type="password"
+                      placeholder={
+                        editingKey 
+                          ? '•••••••• (Leave blank to keep existing token)' 
+                          : 'API Token (e.g. cfat_xxxxxxxxxxxx)'
+                      }
+                      value={formState.key_value.split('|')[0] || ''}
+                      onChange={(e) => {
+                        const account = formState.key_value.split('|')[1] || '';
+                        setFormState(prev => ({ ...prev, key_value: `${e.target.value}|${account}` }));
+                      }}
+                      className="w-full px-4 py-2.5 rounded-lg bg-[#0c1017] border border-[#1e293b] text-sm text-[#f0f4f8] placeholder:text-slate-700 focus:outline-none focus:border-[#00d4ff]/40 font-mono"
+                    />
+                    <input
+                      type="text"
+                      placeholder={
+                        editingKey 
+                          ? '•••••••• (Leave blank to keep existing account ID)' 
+                          : 'Account ID (e.g. d75899bffefdbda90a608ab81bd8fb38)'
+                      }
+                      value={formState.key_value.split('|')[1] || ''}
+                      onChange={(e) => {
+                        const token = formState.key_value.split('|')[0] || '';
+                        setFormState(prev => ({ ...prev, key_value: `${token}|${e.target.value}` }));
+                      }}
+                      className="w-full px-4 py-2.5 rounded-lg bg-[#0c1017] border border-[#1e293b] text-sm text-[#f0f4f8] placeholder:text-slate-700 focus:outline-none focus:border-[#00d4ff]/40 font-mono"
+                    />
+                  </div>
+                  <span className="block text-[9px] text-[#64748b] mt-2 font-mono">
+                    Find your Account ID in Cloudflare Dashboard → right sidebar
                   </span>
                 </div>
               )}

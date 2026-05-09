@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAgents, useCreateAgent, useFactoryStatus } from '../hooks/useAgent'
@@ -39,6 +39,58 @@ export default function Factory() {
   const [showCreate, setShowCreate] = useState(false)
   const [catalogAgentId, setCatalogAgentId] = useState<string | null>(null)
   const [newAgent, setNewAgent] = useState({ name: '', goal: '', template: 'general' })
+
+  // Autonomous central state
+  const [autoGoal, setAutoGoal] = useState('')
+  const [autoInterval, setAutoInterval] = useState(5)
+  const [autoLogs, setAutoLogs] = useState<any[]>([])
+  const [autoToggling, setAutoToggling] = useState(false)
+
+  const fetchAutoLogs = async () => {
+    try {
+      const res = await fetch('/api/factory/autonomous/log')
+      if (res.ok) {
+        const d = await res.json()
+        setAutoLogs(d.logs || [])
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => {
+    fetchAutoLogs()
+    const intv = setInterval(fetchAutoLogs, 5000)
+    return () => clearInterval(intv)
+  }, [])
+
+  useEffect(() => {
+    if (factoryStatus?.autonomous) {
+      setAutoGoal(factoryStatus.autonomous.goal || '')
+      setAutoInterval(factoryStatus.autonomous.interval_minutes || 5)
+    }
+  }, [factoryStatus?.autonomous])
+
+  const handleToggleAuto = async () => {
+    setAutoToggling(true)
+    const running = factoryStatus?.autonomous?.running
+    try {
+      if (running) {
+        await fetch('/api/factory/autonomous/stop', { method: 'POST' })
+      } else {
+        await fetch('/api/factory/autonomous/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal: autoGoal.trim() || 'Create specialized agents to solve problems', interval_minutes: autoInterval })
+        })
+      }
+      fetchAutoLogs()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setAutoToggling(false)
+    }
+  }
 
   const { data: healthData } = useQuery<ProviderHealth[]>({
     queryKey: ['provider-health'],
@@ -188,6 +240,132 @@ export default function Factory() {
 
       {/* ── Factory Pulse (Self-Awareness Layer) ───────────────────────── */}
       <FactoryPulse />
+
+      {/* ── Central Autonomous Command Panel ──────────────────────────── */}
+      <div className="mb-6 glass-strong p-6 rounded-2xl border border-accent-secondary/20 relative overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-accent-secondary/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-tertiary/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          {/* Title bar */}
+          <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl animate-pulse">🧠</span>
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-text-primary">
+                  🧠 {t('autonomous.title') || 'Central Autonomous Commander'}
+                </h2>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {t('autonomous.subtitle') || 'Unleash the central intelligence loop to autonomously spawn and optimize agents'}
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle controls */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-muted">Interval:</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={autoInterval}
+                  disabled={factoryStatus?.autonomous?.running}
+                  onChange={(e) => setAutoInterval(parseInt(e.target.value) || 5)}
+                  className="w-16 px-2 py-1 text-xs text-center rounded-lg bg-bg-panel border border-border-default text-text-primary focus:outline-none"
+                />
+                <span className="text-xs text-text-muted">min</span>
+              </div>
+
+              <button
+                onClick={handleToggleAuto}
+                disabled={autoToggling}
+                className={`relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-sm transition-all duration-300 shadow-md ${
+                  factoryStatus?.autonomous?.running
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-500 text-white hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                    : 'bg-gradient-to-r from-accent-secondary to-accent-tertiary text-white hover:shadow-[0_0_20px_rgba(124,58,237,0.3)]'
+                }`}
+              >
+                {autoToggling ? (
+                  <span className="animate-spin text-sm">⚙</span>
+                ) : factoryStatus?.autonomous?.running ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                    <span>ACTIVE · STOP ENGINE</span>
+                  </>
+                ) : (
+                  <span>ENGAGE ENGINE</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Configuration and Live logs */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Core Goal Input */}
+            <div className="lg:col-span-1 space-y-3">
+              <label className="block text-xs font-bold text-text-secondary uppercase tracking-wider">
+                Autonomous Mission Objective
+              </label>
+              <textarea
+                value={autoGoal}
+                disabled={factoryStatus?.autonomous?.running}
+                onChange={(e) => setAutoGoal(e.target.value)}
+                placeholder="Describe what you want the factory to build autonomously (e.g. 'Build a directory of the best open-source AI tools and write a research paper on them')"
+                rows={4}
+                className="w-full p-3.5 rounded-xl bg-bg-panel border border-border-default text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-secondary/40 transition-colors resize-none"
+              />
+            </div>
+
+            {/* Current Thought Log */}
+            <div className="lg:col-span-1 flex flex-col justify-between p-4 rounded-xl bg-bg-panel border border-border-default/50 relative">
+              <span className="absolute top-3 right-3 text-2xl opacity-10 select-none">💭</span>
+              <div>
+                <span className="block text-xs font-bold text-accent-secondary uppercase tracking-wider mb-2">
+                  Central Brain State
+                </span>
+                <p className="text-sm font-medium text-text-primary italic leading-relaxed">
+                  "{factoryStatus?.autonomous?.last_thought || 'Central intelligence loop is idling. Set a goal and engage the engine to begin.'}"
+                </p>
+              </div>
+              <div className="mt-4 flex items-center gap-1.5 text-xs text-text-muted">
+                <span className={`w-1.5 h-1.5 rounded-full ${factoryStatus?.autonomous?.running ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+                <span>
+                  {factoryStatus?.autonomous?.running ? 'Looping and thinking continuously' : 'Engine standby'}
+                </span>
+              </div>
+            </div>
+
+            {/* Recent Autonomous Actions Table */}
+            <div className="lg:col-span-1 flex flex-col justify-between p-4 rounded-xl bg-bg-panel border border-border-default/50">
+              <div>
+                <span className="block text-xs font-bold text-accent-tertiary uppercase tracking-wider mb-2">
+                  Recent Decisions & Log
+                </span>
+                <div className="space-y-2 max-h-28 overflow-y-auto pr-1">
+                  {autoLogs.length === 0 ? (
+                    <p className="text-xs text-text-muted italic py-4 text-center">No decisions logged yet.</p>
+                  ) : (
+                    autoLogs.map((log, index) => (
+                      <div key={index} className="p-2 rounded bg-bg-elevated/40 border border-border-default/20 text-xs">
+                        <div className="flex items-center justify-between font-mono text-[10px] text-text-muted mb-1">
+                          <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
+                          <span className={`font-black uppercase tracking-wider ${
+                            log.action === 'CREATE' ? 'text-cyan-400' : log.action === 'EVOLVE' ? 'text-purple-400' : 'text-slate-400'
+                          }`}>
+                            {log.action}
+                          </span>
+                        </div>
+                        <p className="text-text-secondary leading-normal truncate">{log.thought}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── Live Activity Feed ─────────────────────────────────────────── */}
       <ActivityFeed liveEvents={factoryEvents} agents={agents} />

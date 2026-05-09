@@ -101,6 +101,32 @@ _TOOL_SIGNALS: dict[str, list[tuple[float, list[str]]]] = {
         (0.6, ["table", "data from website", "html", "dom"]),
         (0.4, ["website", "page", "content"]),
     ],
+    "llamacloud_parser": [
+        (1.0, ["parse document", "parse pdf", "read pdf", "extract pdf", "llamaparse", "llamacloud"]),
+        (0.8, ["document", "pdf", "file", "analyze document", "analyze pdf"]),
+        (0.6, ["read", "parse", "extract text"]),
+    ],
+    "github_tool": [
+        (1.0, ["github", "repo", "pull request", "issue", "commit", "pr "]),
+    ],
+    "search_tool": [
+        (0.9, ["deep search", "agentic search", "duckduckgo"]),
+    ],
+    "calendar_tool": [
+        (1.0, ["calendar", "schedule", "event", "task", "reminder", "deadline"]),
+    ],
+    "email_tool": [
+        (1.0, ["email", "send email", "read email", "inbox"]),
+    ],
+    "discord_tool": [
+        (1.0, ["discord", "discord message", "discord channel"]),
+    ],
+    "notion_tool": [
+        (1.0, ["notion", "notion page", "notion database"]),
+    ],
+    "obsidian_tool": [
+        (1.0, ["obsidian", "obsidian note", "obsidian vault"]),
+    ],
 }
 
 # Negative signals — reduce score when present (prevents false positives)

@@ -1,0 +1,26 @@
+{
+    "os": {
+        "start_menu": "Start Menu",
+        "search": "Search NexusOS...",
+        "apps": "Applications",
+        "pinned": "Pinned Apps",
+        "power": "Power",
+        "restart": "Restart",
+        "shutdown": "Shutdown"
+    },
+    "apps": {
+        "chat": "Privacy Chat",
+        "vault": "Gemini Vault",
+        "monitor": "System Monitor"
+    },
+    "tray": {
+        "show": "Show NexusOS",
+        "hide": "Hide NexusOS",
+        "quit": "Nuclear Quit"
+    },
+    "notifications": {
+        "backup_complete": "System backup completed successfully.",
+        "vault_sync": "Vault synchronized successfully.",
+        "memory_warning": "CRITICAL: System memory usage is high. Restart recommended."
+    }
+}

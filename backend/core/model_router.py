@@ -616,10 +616,15 @@ class ModelRouter:
                 kwargs["api_base"] = "https://openrouter.ai/api/v1"
             if base_url:
                 if provider == "cloudflare":
-                    base_url = base_url.replace(
-                        "{ACCOUNT_ID}", 
-                        get_settings().cloudflare_account_id
-                    )
+                    if "|" in key_state.api_key:
+                        cf_token, cf_account = [x.strip() for x in key_state.api_key.split("|", 1)]
+                        kwargs["api_key"] = cf_token
+                        base_url = base_url.replace("{ACCOUNT_ID}", cf_account)
+                    else:
+                        base_url = base_url.replace(
+                            "{ACCOUNT_ID}", 
+                            get_settings().cloudflare_account_id
+                        )
                 kwargs["api_base"] = base_url
             if max_tokens:
                 kwargs["max_tokens"] = max_tokens

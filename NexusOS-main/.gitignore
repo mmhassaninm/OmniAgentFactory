@@ -1,0 +1,103 @@
+# ==========================================
+# NexusOS Comprehensive .gitignore
+# ==========================================
+
+# 1. Node.js & Dependencies
+node_modules/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# 2. Build Outputs & Vite Caches
+dist/
+dist-electron/
+build/
+out/
+release/
+.vite/
+*.tsbuildinfo
+
+# 3. Electron Builder Outputs
+*.exe
+*.dmg
+*.AppImage
+*.pkg
+*.deb
+*.rpm
+*.zip
+*.tar.gz
+
+# 4. Python & AI Environments
+venv/
+env/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+
+# 5. Secrets & Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+NEXUS_INTEGRITY_LEDGER.json
+secrets/
+credentials.json
+
+# 6. IDEs & Editor Configurations
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# 7. OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# 8. Project Specific Logs & Temporary Files
+*.log
+logs/
+temp/
+tmp/
+.temp/
+.cache/
+
+# 9. NexusOS Specific Data & Local Databases
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+nexus_system.db
+nexus_db.json
+
+# 10. Personal Vaults & AI Memory
+my-files/
+Profiles/
+Knowledge_Vault/
+Conversations/
+dist-build/
+
+# 11. Security & Air-Gapped Constitution
+Project_Docs/PROJECT_INSTRUCTIONS.md

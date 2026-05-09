@@ -1,0 +1,10 @@
+{
+    "name": "@nexus/python-chat",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Python Sandbox Environment for NexusOS AI",
+    "scripts": {
+        "setup": "setup.bat",
+        "start": "echo \"Python Daemon running natively via setup.bat\""
+    }
+}

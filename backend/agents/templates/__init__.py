@@ -101,3 +101,6 @@ TEMPLATES = {
     "code": CODE_TEMPLATE,
     "research": RESEARCH_TEMPLATE,
 }
+
+from ..ghost_developer import GHOST_DEVELOPER_TEMPLATE
+TEMPLATES["ghost_developer"] = GHOST_DEVELOPER_TEMPLATE

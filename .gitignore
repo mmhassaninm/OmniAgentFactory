@@ -41,7 +41,10 @@ mongodb_data/
 
 # === PYTHON ===
 __pycache__/
+**/__pycache__/
 *.py[cod]
+*.pyc
+backend/chroma_db/
 *$py.class
 *.so
 .Python
@@ -86,6 +89,9 @@ docker-compose.override.yml
 # === SENSITIVE RUNTIME FILES ===
 *.pid
 nohup.out
+
+# === GENERATED / PRIVATE REFERENCE MATERIAL ===
+NexusOS-main/Style_References/
 
 # === BUILD OUTPUTS ===
 out/

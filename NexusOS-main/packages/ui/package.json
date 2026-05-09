@@ -1,0 +1,23 @@
+{
+    "name": "@nexus/ui",
+    "version": "1.0.0",
+    "description": "NexusOS Premium Glassmorphism UI Components & Design System",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./tailwind.config": "./tailwind.config.js",
+        "./styles.css": "./src/index.css"
+    },
+    "scripts": {
+        "dev": "tailwindcss -i ./src/index.css -o ./dist/index.css --watch",
+        "build": "tailwindcss -i ./src/index.css -o ./dist/index.css",
+        "lint": "eslint ."
+    },
+    "dependencies": {
+        "clsx": "^2.1.0",
+        "tailwind-merge": "^2.2.1"
+    },
+    "devDependencies": {
+        "tailwindcss": "^4.0.0"
+    }
+}

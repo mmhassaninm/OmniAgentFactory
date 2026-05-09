@@ -84,6 +84,27 @@ services:
       - VITE_API_URL=http://backend:3001
       - VITE_WS_URL=ws://backend:3001
 
+  frontend-nexus:
+    build:
+      context: ./frontend-nexus
+      dockerfile: Dockerfile
+    container_name: omnibot-frontend-nexus
+    restart: unless-stopped
+    mem_limit: 256m
+    ports:
+      - "5174:5174"
+    volumes:
+      - ./frontend-nexus/src:/app/src
+      - ./frontend-nexus/public:/app/public
+      - ./frontend-nexus/index.html:/app/index.html
+      - ./frontend-nexus/vite.config.js:/app/vite.config.js
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - VITE_API_URL=http://backend:3001
+      - VITE_WS_URL=ws://backend:3001
+
 volumes:
   mongo_data:
   chroma_data:

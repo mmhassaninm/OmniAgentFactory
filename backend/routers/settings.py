@@ -285,15 +285,15 @@ async def _validate_key_direct(provider: str, key_value: str, model: str = "AUTO
     # Cloudflare
     elif provider == "cloudflare":
         if "|" not in key_value:
-            return {"valid": False, "latency_ms": 0, "message": "Format: API_TOKEN|ACCOUNT_ID"}
-        token, account_id = key_value.split("|", 1)
+            return {"valid": False, "latency_ms": 0, "message": "Cloudflare requires: API_TOKEN|ACCOUNT_ID format. Example: cfat_xxx|d75899bff..."}
+        token, account_id = [x.strip() for x in key_value.split("|", 1)]
         _start = _time.time()
         try:
             async with httpx.AsyncClient() as client:
                 r = await client.post(
                     f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct",
                     headers={"Authorization": f"Bearer {token}"},
-                    json={"messages": [{"role": "user", "content": "hi"}], "max_tokens": 1},
+                    json={"prompt": "hi"},
                     timeout=8
                 )
                 latency = int((_time.time() - _start) * 1000)
@@ -310,15 +310,17 @@ async def _validate_key_direct(provider: str, key_value: str, model: str = "AUTO
         try:
             async with httpx.AsyncClient() as client:
                 r = await client.get(
-                    "https://cloud.llamaindex.ai/api/v1/pipelines",
+                    "https://api.cloud.llamaindex.ai/api/v1/files?limit=1",
                     headers={"Authorization": f"Bearer {key_value}"},
                     timeout=8
                 )
                 latency = int((_time.time() - _start) * 1000)
                 if r.status_code == 200:
-                    return {"valid": True, "latency_ms": latency, "message": "✓ LlamaCloud verified"}
+                    return {"valid": True, "latency_ms": latency, "message": "✓ LlamaParse connected"}
+                elif r.status_code == 401:
+                    return {"valid": False, "latency_ms": latency, "message": "✗ Invalid API key"}
                 else:
-                    return {"valid": False, "latency_ms": latency, "message": f"✗ LlamaCloud returned {r.status_code}"}
+                    return {"valid": False, "latency_ms": latency, "message": f"✗ LlamaCloud returned {r.status_code}: {r.text[:50]}"}
         except Exception as e:
             return {"valid": False, "latency_ms": 0, "message": f"✗ Error: {str(e)[:50]}"}
 
@@ -407,8 +409,22 @@ async def save_key(req: KeyItem):
     doc_id = existing_doc["id"] if existing_doc else (req.id or str(uuid.uuid4()))
     
     if existing_doc and (not key_val or "•" in key_val or "*" in key_val):
-        # Keep old encrypted value if key value is blank or masked
-        encrypted_value = existing_doc.get("key_value", "")
+        if req.provider.strip().lower() == "cloudflare" and "|" in key_val:
+            # Special case for Cloudflare: split and merge
+            new_token, new_account = key_val.split("|", 1)
+            old_decrypted = decrypt_key(existing_doc.get("key_value", ""))
+            if "|" in old_decrypted:
+                old_token, old_account = old_decrypted.split("|", 1)
+            else:
+                old_token, old_account = old_decrypted, ""
+                
+            final_token = old_token if ("•" in new_token or "*" in new_token or not new_token.strip()) else new_token
+            final_account = old_account if ("•" in new_account or "*" in new_account or not new_account.strip()) else new_account
+            
+            encrypted_value = encrypt_key(f"{final_token.strip()}|{final_account.strip()}")
+        else:
+            # Keep old encrypted value if key value is blank or masked entirely
+            encrypted_value = existing_doc.get("key_value", "")
     else:
         encrypted_value = encrypt_key(key_val)
         

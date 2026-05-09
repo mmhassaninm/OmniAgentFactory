@@ -48,6 +48,30 @@ def _dispatch(tool_name: str, arguments: dict) -> str:
     if tool_name == "run_python":
         from tools.tools.code_runner import run_python
         return run_python(arguments.get("code", ""))
+    if tool_name == "llamacloud_parser":
+        from tools.llamacloud_tool import dispatch_llamacloud
+        return dispatch_llamacloud(arguments.get("action", ""), arguments.get("target", ""), arguments.get("query", ""))
+    if tool_name == "github_tool":
+        from tools.github_tool import dispatch_github
+        return dispatch_github(arguments)
+    if tool_name == "search_tool":
+        from tools.search_tool import dispatch_search
+        return dispatch_search(arguments)
+    if tool_name == "calendar_tool":
+        from tools.calendar_tool import dispatch_calendar
+        return dispatch_calendar(arguments)
+    if tool_name == "email_tool":
+        from tools.email_tool import dispatch_email
+        return dispatch_email(arguments)
+    if tool_name == "discord_tool":
+        from tools.discord_tool import dispatch_discord
+        return dispatch_discord(arguments)
+    if tool_name == "notion_tool":
+        from tools.notion_tool import dispatch_notion
+        return dispatch_notion(arguments)
+    if tool_name == "obsidian_tool":
+        from tools.obsidian_tool import dispatch_obsidian
+        return dispatch_obsidian(arguments)
     # ── Existing system tools ───────────────────────────────────────────────────
     if tool_name == "code_interpreter":
         from services.omni_action_engine import execute_code

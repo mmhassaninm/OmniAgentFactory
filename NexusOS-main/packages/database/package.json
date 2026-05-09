@@ -1,0 +1,13 @@
+{
+    "name": "@nexus/database",
+    "version": "1.0.0",
+    "description": "NexusOS Shared Database Connections (SQLite)",
+    "main": "index.js",
+    "type": "module",
+    "private": true,
+    "dependencies": {
+        "@nexus/logger": "^0.2.0",
+        "better-sqlite3": "^12.6.2",
+        "nedb-promises": "^6.2.3"
+    }
+}

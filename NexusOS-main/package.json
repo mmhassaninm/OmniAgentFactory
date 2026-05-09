@@ -1,0 +1,94 @@
+{
+    "name": "nexus-os",
+    "version": "1.0.0",
+    "author": "Mostafa Mohamed",
+    "description": "NexusOS Master Workspace",
+    "main": "src/main/app.js",
+    "type": "module",
+    "private": true,
+    "workspaces": [
+        "src/*"
+    ],
+    "scripts": {
+        "start": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
+        "dev:renderer": "npx pnpm --filter @nexus/desktop run dev",
+        "dev:main": "node start-main.cjs",
+        "build:python": "python src/python-daemons/build.py",
+        "build": "npm run build:python && npm --workspace=src/renderer run build && electron-builder",
+        "publish-release": "npm run build:python && npm --workspace=src/renderer run build && electron-builder -p always",
+        "postinstall": "electron-builder install-app-deps",
+        "aegis": "node aegis-daemon.js"
+    },
+    "build": {
+        "appId": "com.nexus.os",
+        "productName": "NexusOS",
+        "directories": {
+            "output": "dist-build"
+        },
+        "win": {
+            "target": [
+                "nsis",
+                "msi"
+            ],
+            "icon": "build/icon.ico"
+        },
+        "asar": true,
+        "asarUnpack": [
+            "**/*.exe",
+            "**/*.dll"
+        ],
+        "nsis": {
+            "oneClick": false,
+            "perMachine": true,
+            "allowElevation": true,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "runAfterFinish": true
+        },
+        "msi": {
+            "oneClick": false,
+            "perMachine": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "runAfterFinish": true
+        },
+        "extraResources": [
+            {
+                "from": "src/python-daemons/dist/main.exe",
+                "to": "python-daemons/main.exe"
+            }
+        ],
+        "publish": [
+            {
+                "provider": "github",
+                "owner": "mmhassanin",
+                "repo": "NexusOS"
+            }
+        ]
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "electron": "^29.0.0",
+        "electron-builder": "^24.9.1",
+        "electron-rebuild": "^3.2.9",
+        "vite": "^5.1.0"
+    },
+    "dependencies": {
+        "@monaco-editor/react": "^4.6.0",
+        "better-sqlite3": "^12.6.2",
+        "chokidar": "^5.0.0",
+        "electron-store": "^11.0.2",
+        "framer-motion": "^12.34.3",
+        "i18next": "^25.8.13",
+        "lucide-react": "^0.575.0",
+        "nedb-promises": "^6.2.3",
+        "react-i18next": "^16.5.4",
+        "react-markdown": "^10.1.0",
+        "react-router-dom": "^7.13.1",
+        "react-syntax-highlighter": "^16.1.0",
+        "screenshot-desktop": "^1.15.3",
+        "systeminformation": "^5.31.1",
+        "zustand": "^5.0.11"
+    }
+}
