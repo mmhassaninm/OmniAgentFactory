@@ -1,6 +1,6 @@
 import asyncio
 from playwright.async_api import async_playwright
-from backend.utils.error_log import log_error
+from utils.error_log import log_error
 
 
 class BrowserTool:

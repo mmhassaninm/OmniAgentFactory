@@ -302,3 +302,8 @@
 - Outcome: success
 - Notes: Robust fallback safeguards are fully integrated so any potential LLM or network outage gracefully defaults to local heuristic evaluation. Second-order self-improvement templates are now dynamically scored per-cycle.
 
+## [2026-05-09] — Control Center Launcher Diagnostics & Windows Encoding Fix
+- Files changed: launcher.py, backend/tools/browser_tool.py, backend/tools/llamacloud_tool.py, backend/core/revenue_engine.py, backend/core/evolve_engine.py
+- Approach: (1) Diagnosed uvicorn startup failures through `backend_err.log` and found three files with incorrect absolute `backend.` prefixes causing `ModuleNotFoundError: No module named 'backend'`. (2) Found and resolved a `NameError: name 'Any' is not defined` inside `evolve_engine.py`. (3) Implemented robust `wait_for_service` health checks in `launcher.py` with full process standard error redirection. (4) Resolved a subtle Windows console crash: logging unicode checkmarks (`✓`) in `launcher.py` threw `UnicodeEncodeError` under Windows terminals mapping default charmaps, preventing the wait loop from completing. Fixed by converting the checkmarks to ASCII `[OK]`.
+- Outcome: success
+- Notes: Standard uvicorn execution uses `backend` as CWD and Python paths do not recognize absolute `backend.` prefixes. Always keep imports clean, and avoid unicode symbols in console logs to maintain Windows command compatibility.

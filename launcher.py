@@ -154,7 +154,7 @@ def wait_for_service(url: str, name: str, max_wait: int = 60) -> bool:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=2) as response:
                 if response.status == 200 or response.status == 302:
-                    log_message(f"{name} is ready ✓")
+                    log_message(f"{name} is ready [OK]")
                     return True
         except Exception:
             log_message(f"Waiting for {name}... ({int(time.time() - start)}s)")

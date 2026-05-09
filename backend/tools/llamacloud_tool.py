@@ -9,7 +9,7 @@ LLAMA_API_BASE = "https://api.cloud.llamaindex.ai/api/v1"
 async def _get_api_key():
     try:
         db = get_db()
-        from backend.routers.settings import decrypt_key
+        from routers.settings import decrypt_key
         doc = await db.api_keys.find_one({"provider": "llamacloud", "status": "online"})
         if not doc:
             return None

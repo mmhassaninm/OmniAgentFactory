@@ -1,4 +1,4 @@
-from backend.core.config import get_settings
+from core.config import get_settings
 
 
 def get_payment_message(service_name: str, price: int = None) -> str:
