@@ -81,7 +81,7 @@ class MetaImprover:
     async def _trigger_meta_improvement(self, db):
         """Collect metrics, ask LLM for better prompt, start A/B test."""
         try:
-            logger.info("[META] Triggering factory self-improvement analysis (cycle %d)", self._cycle_counter)
+            logger.info("[META] [IMPROVER] Triggering factory self-improvement analysis (cycle %d)", self._cycle_counter)
 
             metrics = await self._collect_performance_metrics(db)
             current_template = await self._get_current_template_text(db)
@@ -111,7 +111,7 @@ class MetaImprover:
                 self._ab_old_scores = []
                 self._ab_new_scores = []
 
-                logger.info("[META] A/B test started with new prompt template (length=%d)", len(new_template))
+                logger.info("[META] [IMPROVER] A/B test started with new prompt template (length=%d)", len(new_template))
             else:
                 logger.warning("[META] LLM did not produce a valid new template")
 

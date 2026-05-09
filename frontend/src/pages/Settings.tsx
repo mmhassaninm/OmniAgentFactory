@@ -49,6 +49,13 @@ const KEY_META: Record<string, { placeholder: string }> = {
   OPENAI_KEY_1: { placeholder: "sk-proj-..." },
   ANTHROPIC_KEY_1: { placeholder: "sk-ant-..." },
   OLLAMA_BASE_URL: { placeholder: "http://host.docker.internal:11434" },
+  GITHUB_TOKEN_1: { placeholder: "ghp_..." },
+  GITHUB_TOKEN_2: { placeholder: "ghp_..." },
+  HF_KEY_1: { placeholder: "hf_..." },
+  HF_KEY_2: { placeholder: "hf_..." },
+  GOOGLE_AI_STUDIO_KEY_1: { placeholder: "AIzaSy..." },
+  GOOGLE_AI_STUDIO_KEY_2: { placeholder: "AIzaSy..." },
+  NVIDIA_NIM_KEY_1: { placeholder: "nvapi-..." },
 }
 
 export default function Settings() {
@@ -131,7 +138,11 @@ export default function Settings() {
     k.env_name.startsWith('GEMINI_KEY_') || 
     k.env_name === 'OPENAI_KEY_1' || 
     k.env_name === 'ANTHROPIC_KEY_1' ||
-    k.env_name === 'OLLAMA_BASE_URL'
+    k.env_name === 'OLLAMA_BASE_URL' ||
+    k.env_name.startsWith('GITHUB_TOKEN_') ||
+    k.env_name.startsWith('HF_KEY_') ||
+    k.env_name.startsWith('GOOGLE_AI_STUDIO_KEY_') ||
+    k.env_name.startsWith('NVIDIA_NIM_KEY_')
   )
 
   // Auto-reveal configured slots on initial data load so users see what is active
@@ -612,6 +623,30 @@ export default function Settings() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {otherKeys.map(renderKeyField)}
+          </div>
+        </div>
+
+        {/* ── SECTION 4: FREE PROVIDERS ── */}
+        <div className="glass-panel border border-[#141b2c] rounded-2xl mb-8 p-6 bg-[#070b13]/60 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#34d399]/10 border border-[#34d399]/20 flex items-center justify-center text-[#34d399] text-xl">
+                🆓
+              </div>
+              <div>
+                <h2 className="text-base font-bold">Free Providers</h2>
+                <p className="text-xs text-text-muted">GitHub Models, HuggingFace, Google AI Studio – no credit card required</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {otherKeys.filter(k => 
+              k.env_name.startsWith('GITHUB_TOKEN_') ||
+              k.env_name.startsWith('HF_KEY_') ||
+              k.env_name.startsWith('GOOGLE_AI_STUDIO_KEY_') ||
+              k.env_name.startsWith('NVIDIA_NIM_KEY_')
+            ).map(renderKeyField)}
           </div>
         </div>
 

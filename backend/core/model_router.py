@@ -186,6 +186,79 @@ class KeyState:
         }
 
 
+# ── Smart Rate Limit Manager ────────────────────────────────────────────────
+
+class SmartRateLimitManager:
+    """
+    Tracks request rates per provider/key and enforces smart delays.
+    Goal: stay at 80% of rate limit, never hit 100%.
+    Uses token bucket algorithm per provider.
+    """
+    
+    def __init__(self):
+        # Limits per provider (conservative — 80% of actual)
+        self.limits = {
+            "groq":           {"rpm": 24,  "rpd": 800,   "tpm": 400000},
+            "openrouter":     {"rpm": 16,  "rpd": 160,   "tpm": 200000},
+            "gemini":         {"rpm": 12,  "rpd": 1400,  "tpm": 800000},
+            "github":         {"rpm": 12,  "rpd": 120,   "tpm": 80000},
+            "huggingface":    {"rpm": 8,   "rpd": 1600,  "tpm": 400000},
+            "gemini_studio":  {"rpm": 12,  "rpd": 1400,  "tpm": 800000},
+            "anthropic":      {"rpm": 40,  "rpd": 2000,  "tpm": 160000},
+            "ollama":         {"rpm": 999, "rpd": 999999, "tpm": 999999},
+            "pollinations":   {"rpm": 4,   "rpd": 400,   "tpm": 200000},
+        }
+        
+        # Per-provider counters
+        self._minute_counts: dict[str, list[float]] = {}  # timestamps
+        self._day_counts: dict[str, int] = {}
+        self._day_reset: dict[str, datetime] = {}
+    
+    def can_call(self, provider: str) -> tuple[bool, float]:
+        """
+        Returns (can_call, wait_seconds).
+        If can_call is False, wait_seconds indicates how long to wait.
+        """
+        now = datetime.utcnow()
+        limits = self.limits.get(provider, {"rpm": 10, "rpd": 500})
+        
+        # Clean minute window
+        key = provider
+        if key not in self._minute_counts:
+            self._minute_counts[key] = []
+        
+        cutoff = now.timestamp() - 60
+        self._minute_counts[key] = [t for t in self._minute_counts[key] if t > cutoff]
+        
+        # Check RPM
+        if len(self._minute_counts[key]) >= limits["rpm"]:
+            oldest = min(self._minute_counts[key])
+            wait = 60 - (now.timestamp() - oldest) + 1
+            return False, max(wait, 1)
+        
+        # Check RPD
+        if key not in self._day_reset or (now - self._day_reset[key]).total_seconds() > 86400:
+            self._day_counts[key] = 0
+            self._day_reset[key] = now
+        
+        if self._day_counts.get(key, 0) >= limits["rpd"]:
+            return False, 3600  # wait an hour if daily limit hit
+        
+        return True, 0
+    
+    def record_call(self, provider: str):
+        """Record that a call was made to this provider."""
+        now = datetime.utcnow()
+        key = provider
+        if key not in self._minute_counts:
+            self._minute_counts[key] = []
+        self._minute_counts[key].append(now.timestamp())
+        self._day_counts[key] = self._day_counts.get(key, 0) + 1
+
+
+# Singleton instance
+_rate_manager = SmartRateLimitManager()
+
 # ── Model Router ────────────────────────────────────────────────────────────
 
 CASCADER_MODELS = {
@@ -204,6 +277,34 @@ CASCADER_MODELS = {
         "gemini/gemini-2.5-flash",
         "gemini/gemini-2.0-flash"
     ],
+    "github": {
+        "primary": "github/openai/gpt-4.1",
+        "fallback": "github/meta/llama-3.3-70b-instruct",
+        "code_primary": "github/openai/gpt-4.1",
+        "fast_primary": "github/mistralai/mistral-small",
+        "base_url": "https://models.inference.ai.azure.com",
+    },
+    "huggingface": {
+        "primary": "huggingface/meta-llama/Meta-Llama-3.1-70B-Instruct",
+        "fallback": "huggingface/mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "code_primary": "huggingface/Qwen/Qwen2.5-Coder-32B-Instruct",
+        "fast_primary": "huggingface/meta-llama/Meta-Llama-3.1-8B-Instruct",
+        "base_url": "https://api-inference.huggingface.co/v1",
+    },
+    "gemini_studio": {
+        "primary": "gemini/gemini-2.0-flash-exp",
+        "fallback": "gemini/gemini-1.5-flash-latest",
+        "code_primary": "gemini/gemini-1.5-pro-latest",
+        "fast_primary": "gemini/gemini-2.0-flash-exp",
+    },
+    "pollinations": {
+        "primary": "openai/openai",
+        "fallback": "openai/openai",
+        "code_primary": "openai/openai",
+        "fast_primary": "openai/openai",
+        "base_url": "https://text.pollinations.ai/openai",
+        "requires_key": False,
+    },
     "openai": [
         "openai/gpt-4o-mini"
     ],
@@ -216,6 +317,18 @@ CASCADER_MODELS = {
         "ollama/mistral"
     ]
 }
+
+PROVIDER_PRIORITY = [
+    "groq",
+    "openrouter",
+    "gemini",
+    "github",
+    "huggingface",
+    "gemini_studio",
+    "anthropic",
+    "pollinations",
+    "ollama",
+]
 
 # Ordered list of free OpenRouter models to try in sequence.
 # Tried from top to bottom — first success wins, 404/unavailable → next model.
@@ -367,6 +480,9 @@ class ModelRouter:
             ]
 
             if ollama_url:
+                import os
+                if "host.docker.internal" in ollama_url and not os.path.exists("/.dockerenv"):
+                    ollama_url = ollama_url.replace("host.docker.internal", "localhost")
                 get_settings().ollama_base_url = ollama_url
 
             total = sum(len(v) for v in self._keys.values())
@@ -749,6 +865,17 @@ class ModelRouter:
                         break  # Found working model/key
                     except Exception as e:
                         logger.warning("[CASCADE] Health check ping failed for model %s with key %s of provider %s: %s", model, key_state.env_name, provider, str(e)[:100])
+                        if provider == "ollama":
+                            try:
+                                async with httpx.AsyncClient(timeout=2.0) as client:
+                                    resp = await client.get(get_settings().ollama_base_url)
+                                if resp.status_code == 200 or "Ollama is running" in resp.text:
+                                    status = "online"
+                                    success = True
+                                    latency_ms = int((time_module.time() - start_time) * 1000)
+                                    break
+                            except Exception:
+                                pass
 
             exhausted_keys_count = sum(1 for k in keys if k.env_name in self._exhausted_keys)
             active_keys_count = len(keys) - exhausted_keys_count

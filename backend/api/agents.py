@@ -18,7 +18,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
 from core.database import get_db
@@ -55,6 +55,10 @@ class RunAgentResponse(BaseModel):
     result: str
     execution_time_ms: int
     version: int
+
+
+class UpdateBudgetRequest(BaseModel):
+    daily_token_limit: int
 
 
 _DANGEROUS_PATTERNS = [
@@ -273,9 +277,43 @@ async def regenerate_catalog(agent_id: str):
     return catalog
 
 
+def _extract_behavior_description(code: str) -> str:
+    """Extract docstrings, comments, or key structure from agent code to describe its behavior."""
+    if not code:
+        return "Use your goal to guide responses."
+
+    import ast
+    try:
+        tree = ast.parse(code)
+        docstring = ast.get_docstring(tree)
+        if docstring:
+            return docstring
+
+        # Check if execute function has a docstring
+        for node in tree.body:
+            if isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef)):
+                if node.name == "execute":
+                    func_doc = ast.get_docstring(node)
+                    if func_doc:
+                        return func_doc
+    except Exception:
+        pass
+
+    # Fallback: extract comments or first few lines of functions
+    lines = code.splitlines()
+    comments = [ln.strip("#").strip() for ln in lines if ln.strip().startswith("#")]
+    if comments:
+        desc = "\n".join(comments[:15])
+        if len(desc) > 50:
+            return desc
+
+    # If no docstring or comments, just provide the actual code as behavior reference
+    return f"Execute the logic defined in this evolved code block:\n{code[:2000]}"
+
+
 @router.post("/{agent_id}/run")
 async def run_agent(agent_id: str, req: RunAgentRequest):
-    """Execute an agent's execute() function with a user message."""
+    """Execute an agent dynamically via LLM using its goal and evolved behavior context."""
     db = get_db()
     agent_doc = await db.agents.find_one({"id": agent_id})
     if not agent_doc:
@@ -285,7 +323,7 @@ async def run_agent(agent_id: str, req: RunAgentRequest):
     version = agent_doc.get("version", 0)
     now = datetime.now(timezone.utc).isoformat()
 
-    # Save user message
+    # Save user message first to persist in conversation history
     await db.agent_conversations.insert_one({
         "agent_id": agent_id,
         "role": "user",
@@ -293,39 +331,76 @@ async def run_agent(agent_id: str, req: RunAgentRequest):
         "timestamp": now,
     })
 
-    # Guard: no execute function yet
-    if "def execute" not in agent_code:
-        result = "⚠ This agent has no execute() function yet. Click Evolve to improve it first."
-        await db.agent_conversations.insert_one({
-            "agent_id": agent_id,
-            "role": "assistant",
-            "content": result,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version": version,
-            "execution_time_ms": 0,
-        })
-        return RunAgentResponse(result=result, execution_time_ms=0, version=version)
+    # Build the dynamic system prompt with goal and evolved behavioral context
+    extracted_behavior = _extract_behavior_description(agent_code)
+    system_prompt = f"""You are {agent_doc['name']}.
 
-    safe_code = _sanitize_code(agent_code)
+YOUR CURRENT GOAL AND CAPABILITIES:
+{agent_doc['goal']}
+
+YOUR CURRENT EVOLVED BEHAVIOR:
+{extracted_behavior}
+
+Respond to the user based on your specialized role. Be specific, detailed, and use 
+your full capabilities. Never give generic responses."""
+
+    # Fetch last 10 conversation messages (including the one just inserted)
+    history_docs = await db.agent_conversations.find(
+        {"agent_id": agent_id}
+    ).sort("timestamp", -1).limit(10).to_list(10)
+    history_docs.reverse()
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for doc in history_docs:
+        messages.append({
+            "role": doc.get("role", "user"),
+            "content": doc.get("content", "")
+        })
+
     start_ms = time.monotonic()
     result = ""
 
+    # Call the model router dynamically
     try:
-        namespace: dict = {}
-        exec(compile(safe_code, "<agent>", "exec"), namespace)  # noqa: S102
-        execute_fn = namespace.get("execute")
-        if execute_fn is None:
-            result = "⚠ execute() function not found after loading agent code."
+        from core.model_router import call_model
+        result = await call_model(messages, task_type="general", agent_id=agent_id)
+        if not result or result.startswith("[MODEL_ROUTER_ERROR]"):
+            raise ValueError(f"Model router failure: {result}")
+    except Exception as e:
+        logger.warning("Dynamic chat model call failed: %s. Falling back to local python execution.", e)
+        # Fallback to direct Python code execution if "def execute" is in the code
+        if "def execute" in agent_code:
+            safe_code = _sanitize_code(agent_code)
+            try:
+                namespace: dict = {}
+                try:
+                    from tools.tools.web_search import web_search as ws_fn
+                    import asyncio
+                    class web_search_tool:
+                        @staticmethod
+                        async def run(query: str, max_results: int = 5) -> str:
+                            return await asyncio.to_thread(ws_fn, query, max_results)
+                    namespace["web_search"] = web_search_tool.run
+                except Exception as ex_ws:
+                    logger.warning("Failed to inject web_search: %s", ex_ws)
+
+                exec(compile(safe_code, "<agent>", "exec"), namespace)  # noqa: S102
+                execute_fn = namespace.get("execute")
+                if execute_fn is not None:
+                    raw = await asyncio.wait_for(execute_fn(req.message), timeout=30.0)
+                    result = str(raw) if raw is not None else "(no output)"
+                else:
+                    result = "⚠ execute() function not found after loading agent code."
+            except asyncio.TimeoutError:
+                result = "⏱ Agent took too long to respond (>30 s). Try evolving it for better performance."
+            except Exception as exc:
+                result = f"⚠ Agent error: {type(exc).__name__}: {exc}"
         else:
-            raw = await asyncio.wait_for(execute_fn(req.message), timeout=30.0)
-            result = str(raw) if raw is not None else "(no output)"
-    except asyncio.TimeoutError:
-        result = "⏱ Agent took too long to respond (>30 s). Try evolving it for better performance."
-    except Exception as exc:
-        result = f"⚠ Agent error: {type(exc).__name__}: {exc}"
+            result = f"⚠ Provider Connection Issue: Could not reach LLM providers for dynamic chat, and no executable code is built yet."
 
     elapsed_ms = int((time.monotonic() - start_ms) * 1000)
 
+    # Save assistant's response to conversation history
     await db.agent_conversations.insert_one({
         "agent_id": agent_id,
         "role": "assistant",
@@ -347,3 +422,81 @@ async def get_conversations(agent_id: str):
         {"_id": 0},
     ).sort("timestamp", 1).limit(50).to_list(50)
     return {"messages": docs, "count": len(docs)}
+
+
+@router.get("/{agent_id}/budget")
+async def get_agent_budget(agent_id: str):
+    """Get dynamic agent budget detail."""
+    gov = get_budget_governor()
+    summary = await gov.get_usage_summary(agent_id)
+    return {
+        "daily_limit": summary.get("max_daily", 0),
+        "tokens_today": summary.get("tokens_today", 0),
+        "cost_estimate": summary.get("spent_total", 0.0),
+        "utilization_pct": summary.get("utilization_pct", 0.0),
+    }
+
+
+@router.put("/{agent_id}/budget")
+async def update_agent_budget(agent_id: str, req: UpdateBudgetRequest):
+    """Update dynamic agent budget limit in MongoDB."""
+    db = get_db()
+    await db.economy.update_one(
+        {"agent_id": agent_id},
+        {"$set": {"daily_limit": req.daily_token_limit, "updated_at": datetime.utcnow()}},
+        upsert=True
+    )
+    return {"status": "success", "agent_id": agent_id, "daily_token_limit": req.daily_token_limit}
+
+
+@router.get("/{agent_id}/preview-data")
+async def get_agent_preview_data(agent_id: str, db=Depends(get_db)):
+    """
+    Returns real-time preview data for the agent live visualizer.
+    Includes: current phase, recent thoughts, web searches performed,
+    current model being used, score history, and active tool calls.
+    """
+    agent = await db.agents.find_one({"id": agent_id})
+    if not agent:
+        raise HTTPException(404, "Agent not found")
+    
+    # Last 20 thoughts
+    thoughts = await db.thoughts.find(
+        {"agent_id": agent_id},
+        sort=[("timestamp", -1)],
+        limit=20
+    ).to_list(20)
+    
+    # Score history from snapshots
+    snapshots = await db.snapshots.find(
+        {"agent_id": agent_id, "status": "committed"},
+        sort=[("version", 1)]
+    ).to_list(50)
+    
+    score_history = [
+        {"version": s.get("version", 0), "score": s.get("performance_score", 0)}
+        for s in snapshots
+    ]
+    
+    return {
+        "agent": {
+            "id": agent_id,
+            "name": agent.get("name", ""),
+            "goal": agent.get("goal", ""),
+            "status": agent.get("status", "idle"),
+            "version": agent.get("version", 0),
+            "score": agent.get("current_score", 0),
+        },
+        "thoughts": [
+            {
+                "timestamp": str(t.get("timestamp", "")),
+                "message": t.get("message", ""),
+                "phase": t.get("phase", ""),
+                "model_used": t.get("model_used", ""),
+            }
+            for t in reversed(thoughts)
+        ],
+        "score_history": score_history,
+        "current_phase": agent.get("current_phase", "idle"),
+        "evolving": agent.get("status") == "evolving",
+    }

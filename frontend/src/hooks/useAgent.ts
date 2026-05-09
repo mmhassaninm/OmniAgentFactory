@@ -179,3 +179,27 @@ export function useAgentConversations(agentId: string) {
     enabled: !!agentId,
   })
 }
+
+export function useAgentBudget(agentId: string) {
+  return useQuery({
+    queryKey: ['agent-budget', agentId],
+    queryFn: () => fetchJson(`${API_BASE}/agents/${agentId}/budget`),
+    refetchInterval: 5000,
+    enabled: !!agentId,
+  })
+}
+
+export function useUpdateAgentBudget() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ agentId, dailyTokenLimit }: { agentId: string; dailyTokenLimit: number }) =>
+      fetchJson(`${API_BASE}/agents/${agentId}/budget`, {
+        method: 'PUT',
+        body: JSON.stringify({ daily_token_limit: dailyTokenLimit }),
+      }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['agent-budget', variables.agentId] })
+      qc.invalidateQueries({ queryKey: ['agent', variables.agentId] })
+    },
+  })
+}

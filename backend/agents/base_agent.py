@@ -74,6 +74,19 @@ class BaseAgent:
             if self.agent_code:
                 # Execute agent code in a sandboxed namespace
                 namespace: Dict[str, Any] = {"input_data": input_data, "result": None}
+                
+                try:
+                    from tools.tools.web_search import web_search as ws_fn
+                    import asyncio
+                    class web_search_tool:
+                        @staticmethod
+                        async def run(query: str, max_results: int = 5) -> str:
+                            return await asyncio.to_thread(ws_fn, query, max_results)
+                    namespace["web_search"] = web_search_tool.run
+                except Exception as e:
+                    logger.warning("Failed to inject web_search: %s", e)
+
+
                 exec(self.agent_code, namespace)
 
                 # Call the 'execute' function if defined
@@ -92,7 +105,7 @@ class BaseAgent:
             logger.error("Agent %s run failed: %s", self.agent_id, e)
             return {"success": False, "error": str(e)}
 
-    async def test(self, test_cases: Optional[List[dict]] = None) -> float:
+    async def test(self, test_cases: Optional[List[dict]] = None, old_code: Optional[str] = None) -> float:
         """
         Run test cases against the agent and return a score between 0.0 and 1.0.
         Each test case: { "input": ..., "expected": ..., "weight": 1.0 }
@@ -109,26 +122,111 @@ class BaseAgent:
             total_weight += weight
 
             try:
+                # 1. Run new code
+                import time
+                start_time = time.monotonic()
                 result = await self.run(case.get("input"))
-                if result.get("success"):
-                    expected = case.get("expected")
-                    actual = result.get("output")
+                elapsed = time.monotonic() - start_time
 
-                    if expected is None:
-                        # No expected value — just check it ran successfully
-                        weighted_score += weight * 0.7
-                    elif actual == expected:
-                        weighted_score += weight * 1.0
-                    elif str(actual) == str(expected):
-                        weighted_score += weight * 0.9
-                    else:
-                        # Partial credit for running without error
-                        weighted_score += weight * 0.3
+                # 2. Run old code if provided for comparative improvement metrics
+                old_result = None
+                if old_code:
+                    try:
+                        old_agent = BaseAgent(
+                            name=self.name,
+                            goal=self.goal,
+                            agent_code=old_code,
+                            test_cases=test_cases,
+                        )
+                        old_result = await old_agent.run(case.get("input"))
+                    except Exception:
+                        pass
+
+                # 3. Grade output quality
+                case_score = 0.1 # base floor for running/attempting
+
+                if result.get("success"):
+                    actual = result.get("output")
+                    expected = case.get("expected")
+
+                    # Check for exact/string matching first if expected is defined
+                    has_exact_match = False
+                    if expected is not None:
+                        if actual == expected:
+                            case_score = 1.0
+                            has_exact_match = True
+                        elif str(actual) == str(expected):
+                            case_score = 0.9
+                            has_exact_match = True
+
+                    if not has_exact_match:
+                        # Heuristic grading: partial credit starts at 0.3
+                        case_score = 0.3
+
+                        if actual:
+                            actual_str = str(actual)
+                            # Length / detail bonus
+                            length = len(actual_str)
+                            if length > 500:
+                                case_score += 0.2
+                            elif length > 150:
+                                case_score += 0.1
+
+                            # Structure bonus (Lists, headings, bold, tables, JSON)
+                            has_structure = False
+                            if any(marker in actual_str for marker in ["- ", "* ", "\n1.", "\n-"]):
+                                case_score += 0.1
+                                has_structure = True
+                            if "**" in actual_str or "###" in actual_str:
+                                case_score += 0.05
+                                has_structure = True
+                            if "|" in actual_str and "---" in actual_str:
+                                case_score += 0.1
+                                has_structure = True
+                            if actual_str.strip().startswith("{") and actual_str.strip().endswith("}"):
+                                case_score += 0.1
+                                has_structure = True
+
+                            # Real web data / search details bonus
+                            if any(k in actual_str.lower() for k in ["http", "www.", "source:", "search results", "citation", "finding"]):
+                                case_score += 0.15
+
+                            # Compare with old output if available
+                            if old_result and old_result.get("success"):
+                                old_actual = old_result.get("output")
+                                if old_actual:
+                                    old_str = str(old_actual)
+                                    # If new output is longer/more detailed than old
+                                    if len(actual_str) > len(old_str) * 1.5:
+                                        case_score += 0.1
+                                    # If new output has structure but old did not
+                                    new_has_struct = has_structure
+                                    old_has_struct = any(marker in old_str for marker in ["- ", "* ", "\n1.", "###"])
+                                    if new_has_struct and not old_has_struct:
+                                        case_score += 0.1
+                                    # If new has web references but old did not
+                                    new_has_web = any(k in actual_str.lower() for k in ["http", "www.", "source:", "search results"])
+                                    old_has_web = any(k in old_str.lower() for k in ["http", "www.", "source:", "search results"])
+                                    if new_has_web and not old_has_web:
+                                        case_score += 0.1
+
+                            # If old code failed entirely but new code works
+                            if old_result and not old_result.get("success"):
+                                case_score += 0.2
+
+                        # Execution speed bonus
+                        if elapsed < 0.2:
+                            case_score += 0.05
+
+                    # Clamp score to [0.0, 1.0]
+                    case_score = min(max(case_score, 0.1), 1.0)
                 else:
-                    # Ran but failed
-                    weighted_score += weight * 0.1
-            except Exception:
-                # Crashed entirely
+                    # New code crashed/failed
+                    case_score = 0.0
+
+                weighted_score += weight * case_score
+            except Exception as e:
+                logger.error("Error testing case: %s", e)
                 pass
 
         return weighted_score / total_weight if total_weight > 0 else 0.0

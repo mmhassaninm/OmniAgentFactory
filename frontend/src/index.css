@@ -204,3 +204,17 @@ body {
     linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
 }
+
+/* ── RTL Support ───────────────────────────────────────────────────── */
+
+[dir="rtl"] {
+  font-family: 'Cairo', sans-serif;
+}
+
+[dir="rtl"] * {
+  text-align: right;
+}
+
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}

@@ -18,6 +18,14 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     logger.info("OmniBot backend starting up")
 
+    # 0. Initialize error log (clears previous session's log)
+    try:
+        from utils.error_log import clear_error_log
+        clear_error_log()
+        logger.info("✓ Error log initialized")
+    except Exception as e:
+        logger.warning("Error log init failed: %s", e)
+
     # ── Agent Factory Systems ───────────────────────────────────────────
     # 1. Connect to MongoDB (with retry)
     try:
@@ -60,6 +68,7 @@ async def lifespan(app: FastAPI):
         evolver = get_prompt_evolver()
         await evolver.initialize(get_db())
         logger.info("✓ Prompt Evolver initialized (Self-Rewriting Templates active)")
+        logger.info("✓ [IMPROVER] AutonomousImprover initialized (MetaImprover active)")
     except Exception as e:
         logger.warning("Prompt Evolver init failed: %s", e)
 

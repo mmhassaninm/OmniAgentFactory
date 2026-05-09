@@ -45,9 +45,16 @@ class Settings:
         self.gemini_keys: List[str] = _collect_keys("GEMINI_KEY", max_count=4)
         self.anthropic_key: Optional[str] = os.getenv("ANTHROPIC_KEY", "").strip() or None
         self.openai_key: Optional[str] = os.getenv("OPENAI_KEY", "").strip() or None
+        # New free provider keys
+        self.github_tokens: List[str] = _collect_keys("GITHUB_TOKEN")
+        self.huggingface_keys: List[str] = _collect_keys("HF_KEY")
+        self.google_ai_studio_keys: List[str] = _collect_keys("GOOGLE_AI_STUDIO_KEY")
+        self.nvidia_nim_keys: List[str] = _collect_keys("NVIDIA_NIM_KEY")
 
         # ── Local Models ────────────────────────
         self.ollama_base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        if "host.docker.internal" in self.ollama_base_url and not os.path.exists("/.dockerenv"):
+            self.ollama_base_url = self.ollama_base_url.replace("host.docker.internal", "localhost")
 
         # ── Database ────────────────────────────
         self.mongodb_uri: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017")

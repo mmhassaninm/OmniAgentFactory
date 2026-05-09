@@ -8,6 +8,7 @@ import AgentCatalog from '../components/AgentCatalog'
 import ModelRouter from '../components/ModelRouter'
 import FactoryPulse from '../components/FactoryPulse'
 import ActivityFeed from '../components/ActivityFeed'
+import { useLang } from '../i18n/LanguageContext'
 
 interface ProviderHealth {
   provider: string
@@ -35,6 +36,7 @@ const TEMPLATES = [
 
 export default function Factory() {
   const navigate = useNavigate()
+  const { lang, setLang } = useLang()
   const { data: agentsData, isLoading } = useAgents()
   const { data: factoryStatus } = useFactoryStatus()
   const { connected: wsConnected, events: factoryEvents } = useFactorySocket()
@@ -105,6 +107,19 @@ export default function Factory() {
               <span className="text-accent-primary font-bold">{activeCount}</span>
               <span className="text-text-muted">/{maxConcurrent} evolving</span>
             </div>
+
+            {/* Language toggle */}
+            <button
+              onClick={() => setLang(lang === "en" ? "ar" : "en")}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium
+                         bg-bg-panel border border-border-default text-text-secondary
+                         hover:border-accent-primary/40 hover:text-accent-primary
+                         transition-all duration-200"
+              style={{ fontFamily: lang === "ar" ? "'Cairo', sans-serif" : "inherit" }}
+            >
+              <span>🌐</span>
+              <span>{lang === "en" ? "عربي" : "English"}</span>
+            </button>
 
             {/* Settings button */}
             <button

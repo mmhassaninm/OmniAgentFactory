@@ -64,6 +64,10 @@ def build_improvement_prompt(
     collective_memories: list = None,
     autopsy_hints: list = None,
     active_template: str = None,
+    cycle_number: Optional[int] = None,
+    fix_directive: str = "",
+    cross_pollination: str = "",
+    red_team: str = "",
 ) -> list:
     """
     Construct the prompt that asks the LLM to improve the agent's code.
@@ -72,6 +76,9 @@ def build_improvement_prompt(
     """
     dna = dna or DEFAULT_DNA
     dna_modifiers = dna_to_prompt_modifiers(dna)
+
+    if not cycle_number:
+        cycle_number = agent.version + 1
 
     if active_template:
         system_content = active_template
@@ -97,27 +104,54 @@ def build_improvement_prompt(
     autopsy_section = ""
     if autopsy_hints:
         autopsy_section = (
-            "\n--- Autopsy Hints (lessons from this agent's previous failed attempts) ---\n"
+            "\n--- WHAT THE PREVIOUS VERSION DID WRONG (scoring breakdown/autopsy) ---\n"
             + "\n".join(f"- {h}" for h in autopsy_hints)
             + "\n"
         )
+    else:
+        autopsy_section = (
+            "\n--- WHAT THE PREVIOUS VERSION DID WRONG (scoring breakdown) ---\n"
+            "Score was low or has room for improvement. It may have failed certain test cases or missed details.\n"
+        )
 
-    user_content = (
-        f"Agent Name: {agent.name}\n"
-        f"Agent Goal: {agent.goal}\n"
-        f"Current Version: v{agent.version}\n"
-        f"Current Score: {agent.current_score:.2f}\n"
-        f"\n--- Current Agent Code ---\n"
-        f"{agent.agent_code or 'No code yet — create the initial implementation.'}\n"
-        f"\n--- Test Cases ---\n"
-        f"{_format_test_cases(agent.test_cases)}\n"
-        f"{memory_section}"
-        f"{autopsy_section}"
-        f"\n--- Configuration ---\n"
-        f"{agent.config}\n"
-        f"\nImprove this agent to score higher on its test cases and better achieve its goal. "
-        f"Focus on: correctness, robustness, and performance."
-    )
+    user_content = f"""You are evolving agent: {agent.name}
+Goal: {agent.goal}
+Current version: v{agent.version}
+Current score: {agent.current_score:.2f}/1.0
+Evolution cycle: #{cycle_number}
+
+PREVIOUS VERSION CODE:
+{agent.agent_code or 'No code yet — create the initial implementation.'}
+{autopsy_section}
+YOUR TASK FOR THIS EVOLUTION:
+Generate a MEANINGFULLY DIFFERENT version that:
+1. Does something the previous version didn't do
+2. Adds at least ONE new capability or approach
+3. Improves the weakest scoring dimension
+4. Never repeats the exact same approach as any previous version
+
+IMPORTANT: This is version {agent.version + 1}. Each version must be genuinely 
+different from v1, v2, ... v{agent.version}. If you're a Shopify agent on v5,
+your v5 must do something v1-v4 never did.
+
+Output only the new agent code. No explanations.
+"""
+
+    if fix_directive:
+        user_content += f"\n\nSPECIFIC IMPROVEMENT DIRECTIVE (prioritize this):\n{fix_directive}"
+    if cross_pollination:
+        user_content += f"\n\nSKILL TO ACQUIRE THIS CYCLE:\n{cross_pollination}"
+    if red_team:
+        user_content += f"\n\nADVERSARIAL CHALLENGES TO ADDRESS:\n{red_team}"
+
+    user_content += f"""
+
+--- Test Cases ---
+{_format_test_cases(agent.test_cases)}
+{memory_section}
+--- Configuration ---
+{agent.config}
+"""
 
     return [
         {"role": "system", "content": system_content},
@@ -136,7 +170,7 @@ def _format_test_cases(test_cases: list) -> str:
 
 # ── Agent Testing ───────────────────────────────────────────────────────────
 
-async def test_agent(new_code: str, test_cases: list, agent_name: str = "test") -> float:
+async def test_agent(new_code: str, test_cases: list, agent_name: str = "test", old_code: Optional[str] = None) -> float:
     """
     Test new agent code against test cases in a sandboxed execution.
     Returns score between 0.0 and 1.0.
@@ -148,7 +182,7 @@ async def test_agent(new_code: str, test_cases: list, agent_name: str = "test") 
         test_cases=test_cases,
     )
     try:
-        score = await temp_agent.test(test_cases)
+        score = await temp_agent.test(test_cases, old_code=old_code)
         return score
     except Exception as e:
         logger.error("Agent test failed: %s", e)
@@ -277,7 +311,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             await checkpoint_testing(agent_id)
             await log_thought(agent_id, "Phase TEST: evaluating new version...", phase="testing")
 
-            score = await test_agent(new_code, agent.test_cases, agent.name)
+            score = await test_agent(new_code, agent.test_cases, agent.name, old_code=agent.agent_code)
 
             # 3b. RED TEAM: adversarial robustness gate (only when code improves)
             red_team_passed = True
@@ -336,6 +370,13 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     await meta.record_cycle(db, agent_id, score - score_before_cycle, committed=True)
                 except Exception as e:
                     logger.debug("Meta improver record failed: %s", e)
+
+                # Export thought log to markdown after each successful commit
+                try:
+                    from utils.log_exporter import export_thoughts_to_md
+                    await export_thoughts_to_md(agent_id, agent_doc.get("name", agent_id), db)
+                except Exception as e:
+                    logger.debug("Thought export failed: %s", e)
 
                 # Reset failure tax counter on successful commit
                 manager = get_evolution_manager()
@@ -458,7 +499,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     logger.debug("Dead letter check failed: %s", e)
 
             # 5. Sleep between cycles (configurable per agent, with failure tax backoff)
-            interval = 60
+            interval = 45
 
             # Night mode: double the interval (slower but more efficient)
             settings = get_settings()

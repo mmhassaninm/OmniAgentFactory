@@ -135,7 +135,7 @@ export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
         isLoading={controlMut.isPending || evolveMut.isPending || resumeMut.isPending}
       />
 
-      {/* USE + Catalog Buttons */}
+      {/* USE + Catalog + Preview Buttons */}
       <div className="mt-2 pt-2 border-t border-border-default/30 flex items-center gap-2">
         <button
           onClick={() => navigate(`/agent/${agent.id}/chat`)}
@@ -154,6 +154,14 @@ export default function AgentCard({ agent, onShowCatalog }: AgentCardProps) {
         >
           <span>📖</span>
           <span>Catalog</span>
+        </button>
+        <button
+          onClick={() => window.open(`/agent/${agent.id}/preview`, '_blank')}
+          className="flex-1 text-[10px] text-text-muted hover:text-accent-primary
+                     transition-colors flex items-center justify-center gap-1 py-1.5"
+        >
+          <span>👁</span>
+          <span>Preview</span>
         </button>
       </div>
     </div>

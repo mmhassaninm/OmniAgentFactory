@@ -84,7 +84,14 @@ async def _setup_indexes(db: AsyncIOMotorDatabase):
     # economy: agent_id
     await db.economy.create_index("agent_id", unique=True)
 
-    logger.info("MongoDB indexes created/verified for all 6 collections")
+    # Performance optimization indexes
+    await db.agents.create_index([("status", 1), ("created_at", -1)])
+    await db.thoughts.create_index([("phase", 1), ("timestamp", -1)])
+    await db.api_keys.create_index("env_name", unique=True)
+    await db.checkpoints.create_index([("agent_id", 1), ("version", -1)])
+    await db.agent_conversations.create_index([("agent_id", 1), ("timestamp", -1)])
+
+    logger.info("MongoDB indexes created/verified for all collections")
 
 
 def get_db() -> AsyncIOMotorDatabase:

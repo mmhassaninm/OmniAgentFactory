@@ -71,7 +71,10 @@ async def _validate_single_key(env_name: str, api_key: str) -> dict:
 
     if provider == "ollama":
         import httpx
+        import os
         url = api_key
+        if "host.docker.internal" in url and not os.path.exists("/.dockerenv"):
+            url = url.replace("host.docker.internal", "localhost")
         if not url.startswith(("http://", "https://")):
             url = f"http://{url}"
         try:

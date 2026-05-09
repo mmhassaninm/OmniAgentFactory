@@ -8,6 +8,8 @@ import {
   useResumeAgent,
   useFixAgent,
   useDeleteAgent,
+  useAgentBudget,
+  useUpdateAgentBudget,
 } from '../hooks/useAgent'
 import { useAgentSocket } from '../hooks/useSocket'
 import ThoughtLog from '../components/ThoughtLog'
@@ -38,6 +40,10 @@ export default function AgentDetail() {
   const resumeMut = useResumeAgent()
   const fixMut = useFixAgent()
   const deleteMut = useDeleteAgent()
+  const updateBudgetMut = useUpdateAgentBudget()
+
+  const [isEditingBudget, setIsEditingBudget] = useState(false)
+  const [editedBudgetLimit, setEditedBudgetLimit] = useState<number | ''>('')
 
   const [activeFilter, setActiveFilter] = useState('all')
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
@@ -308,23 +314,97 @@ export default function AgentDetail() {
             </div>
 
             {/* Daily Budget Progress */}
-            <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20 col-span-2 sm:col-span-1">
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-3">Daily Budget</div>
-              {agent.budget ? (
-                <>
-                  <div className="w-full bg-bg-base rounded-full h-2 overflow-hidden border border-border-default/10 mb-2">
-                    <div
-                      className="bg-gradient-to-r from-[#00d4ff] to-[#7c3aed] h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, agent.budget.utilization_pct || 0)}%` }}
+            <div className="bg-bg-base/50 rounded-xl p-4 border border-border-default/20 col-span-2 sm:col-span-1 flex flex-col justify-between min-h-[120px]">
+              <div className="flex items-center justify-between mb-3 w-full">
+                <div className="text-[10px] text-text-muted uppercase tracking-wider font-semibold">Daily Budget</div>
+                {!isEditingBudget ? (
+                  <button
+                    onClick={() => {
+                      setEditedBudgetLimit(agent.budget?.max_daily || 500000)
+                      setIsEditingBudget(true)
+                    }}
+                    className="text-[10px] text-indigo-400 hover:text-indigo-300 transition-all flex items-center gap-1 font-semibold bg-indigo-500/10 hover:bg-indigo-500/25 px-2 py-0.5 rounded-md border border-indigo-500/10"
+                  >
+                    ✏️ Edit Limit
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={async () => {
+                        if (editedBudgetLimit !== '') {
+                          await updateBudgetMut.mutateAsync({
+                            agentId: agent.id,
+                            dailyTokenLimit: Number(editedBudgetLimit),
+                          })
+                        }
+                        setIsEditingBudget(false)
+                      }}
+                      disabled={updateBudgetMut.isPending}
+                      className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold bg-emerald-500/10 hover:bg-emerald-500/25 px-2 py-0.5 rounded-md transition-colors disabled:opacity-50 border border-emerald-500/10"
+                    >
+                      {updateBudgetMut.isPending ? 'Saving...' : '💾 Save'}
+                    </button>
+                    <button
+                      onClick={() => setIsEditingBudget(false)}
+                      className="text-[10px] text-text-muted hover:text-text-primary font-medium bg-bg-base/50 border border-border-default/15 px-2 py-0.5 rounded-md transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {isEditingBudget ? (
+                <div className="space-y-3 w-full">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={editedBudgetLimit}
+                      onChange={(e) => setEditedBudgetLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full bg-bg-base border border-border-default/30 rounded-lg px-2.5 py-1 text-sm font-semibold text-text-primary focus:outline-none focus:border-accent-primary transition-all"
+                      placeholder="Limit (e.g. 100000)"
+                      min="0"
                     />
+                    <span className="text-[10px] text-text-muted uppercase font-bold tracking-wider">tokens</span>
                   </div>
-                  <div className="text-xs text-text-muted">
-                    {agent.budget.utilization_pct || 0}% of{' '}
-                    {(agent.budget.max_daily || 0).toLocaleString()} tokens
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setEditedBudgetLimit(prev => Math.max(0, (Number(prev) || 0) - 50000))}
+                      className="flex-1 text-[10px] py-1 bg-bg-base/60 hover:bg-bg-base border border-border-default/20 rounded-lg text-text-muted hover:text-text-primary transition-colors font-semibold"
+                    >
+                      -50K
+                    </button>
+                    <button
+                      onClick={() => setEditedBudgetLimit(prev => (Number(prev) || 0) + 50000)}
+                      className="flex-1 text-[10px] py-1 bg-bg-base/60 hover:bg-bg-base border border-border-default/20 rounded-lg text-text-muted hover:text-text-primary transition-colors font-semibold"
+                    >
+                      +50K
+                    </button>
+                    <button
+                      onClick={() => setEditedBudgetLimit(prev => (Number(prev) || 0) + 200000)}
+                      className="flex-1 text-[10px] py-1 bg-bg-base/60 hover:bg-bg-base border border-border-default/20 rounded-lg text-text-muted hover:text-text-primary transition-colors font-semibold"
+                    >
+                      +200K
+                    </button>
                   </div>
-                </>
+                </div>
               ) : (
-                <div className="text-xs text-text-muted italic">No budget data</div>
+                agent.budget ? (
+                  <div className="w-full">
+                    <div className="w-full bg-bg-base rounded-full h-2 overflow-hidden border border-border-default/10 mb-2">
+                      <div
+                        className="bg-gradient-to-r from-[#00d4ff] to-[#7c3aed] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, agent.budget.utilization_pct || 0)}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-text-muted flex justify-between font-medium">
+                      <span>{agent.budget.utilization_pct || 0}% used</span>
+                      <span>{(agent.budget.max_daily || 0).toLocaleString()} tokens</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-text-muted italic">No budget data</div>
+                )
               )}
             </div>
 
