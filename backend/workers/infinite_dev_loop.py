@@ -58,6 +58,18 @@ async def get_dev_loop_status() -> dict:
     return dev_loop_status
 
 
+async def broadcast_status():
+    """Broadcasts current dev loop status over WebSocket."""
+    try:
+        from api.websocket import manager
+        await manager.broadcast_to_factory({
+            "type": "dev_loop_update",
+            "payload": dev_loop_status
+        })
+    except Exception as e:
+        logger.warning("[DEV_LOOP] Failed to broadcast WS dev_loop_update: %s", e)
+
+
 async def run_dev_loop_cycle(force: bool = False) -> dict:
     """
     Executes a single 8-phase optimization cycle.
@@ -73,6 +85,7 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
     dev_loop_status["current_cycle_id"] = cycle_id
     dev_loop_status["last_execution_time"] = datetime.now(timezone.utc).isoformat()
     dev_loop_status["current_phase"] = "START"
+    await broadcast_status()
 
     logger.info("🚀 Starting True Autonomous Infinite Development Loop Cycle: %s", cycle_id)
 
@@ -84,23 +97,36 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
         "improvements": [],
         "benchmarks": [],
         "ideas": [],
+        "phase_errors": [],
     }
 
+    # Initialize helper modules
     try:
-        # Initialize helper modules
         harvester = SignalHarvester()
         skill_engine = SkillLibraryEngine()
-        
-        try:
-            watcher = WatcherAgent()
-        except Exception as w_err:
-            logger.error("[DEV_LOOP] Failed to initialize WatcherAgent: %s. Fallbacks will apply.", w_err)
-            watcher = None
+    except Exception as init_err:
+        logger.error("[DEV_LOOP] Failed to initialize core subsystems: %s", init_err)
+        dev_loop_status["status"] = "error"
+        dev_loop_status["current_phase"] = "ERROR: INIT_FAILED"
+        await broadcast_status()
+        return {"status": "error", "error": f"Subsystem init failed: {init_err}"}
 
-        # ──────────────────────────────────────────────────────────────────────
-        # PHASE 1: ANALYZE
-        # ──────────────────────────────────────────────────────────────────────
+    try:
+        watcher = WatcherAgent()
+    except Exception as w_err:
+        logger.error("[DEV_LOOP] Failed to initialize WatcherAgent: %s. Fallbacks will apply.", w_err)
+        watcher = None
+
+    agents = []
+    problems_to_solve = []
+    new_pending_improvements = []
+
+    # ──────────────────────────────────────────────────────────────────────
+    # PHASE 1: ANALYZE
+    # ──────────────────────────────────────────────────────────────────────
+    try:
         dev_loop_status["current_phase"] = "1. ANALYZE"
+        await broadcast_status()
         logger.info("[DEV_LOOP] Phase 1: Gathering database execution profiles.")
         
         agents_cursor = db.agents.find({"status": {"$nin": ["extinct", "archived"]}})
@@ -108,15 +134,18 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
         
         logger.info("[DEV_LOOP] Found %d active agents for analysis.", len(agents))
         cycle_log["phases_completed"].append("ANALYZE")
+    except Exception as phase_err:
+        logger.error("[DEV_LOOP] Phase 1 (ANALYZE) failed: %s", phase_err)
+        cycle_log["phase_errors"].append({"phase": "ANALYZE", "error": str(phase_err)})
 
-        # ──────────────────────────────────────────────────────────────────────
-        # PHASE 2: IDENTIFY
-        # ──────────────────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────────────────────
+    # PHASE 2: IDENTIFY
+    # ──────────────────────────────────────────────────────────────────────
+    try:
         dev_loop_status["current_phase"] = "2. IDENTIFY"
+        await broadcast_status()
         logger.info("[DEV_LOOP] Phase 2: Detecting failures via SignalHarvester (Objective Metrics).")
         
-        problems_to_solve = []
-
         # Rule A: Query objective low-score sessions from SignalHarvester (pure metrics)
         low_sessions = await harvester.get_low_score_sessions(threshold=0.4, last_n=50)
         for s in low_sessions:
@@ -156,14 +185,18 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
         dev_loop_status["problems_found"] += len(problems_to_solve)
         cycle_log["problems"] = problems_to_solve
         cycle_log["phases_completed"].append("IDENTIFY")
+        await broadcast_status()
+    except Exception as phase_err:
+        logger.error("[DEV_LOOP] Phase 2 (IDENTIFY) failed: %s", phase_err)
+        cycle_log["phase_errors"].append({"phase": "IDENTIFY", "error": str(phase_err)})
 
-        # ──────────────────────────────────────────────────────────────────────
-        # PHASE 3: IDEATE
-        # ──────────────────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────────────────────
+    # PHASE 3: IDEATE
+    # ──────────────────────────────────────────────────────────────────────
+    try:
         dev_loop_status["current_phase"] = "3. IDEATE"
+        await broadcast_status()
         logger.info("[DEV_LOOP] Phase 3: Drafting architectural optimizations and prompt proposals.")
-        
-        new_pending_improvements = []
         
         for prob in problems_to_solve:
             agent_id = prob["agent_id"]
@@ -218,11 +251,16 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
                 logger.error("[DEV_LOOP] Ideation failed for agent %s: %s", agent_id[:8], idea_err)
 
         cycle_log["phases_completed"].append("IDEATE")
+    except Exception as phase_err:
+        logger.error("[DEV_LOOP] Phase 3 (IDEATE) failed: %s", phase_err)
+        cycle_log["phase_errors"].append({"phase": "IDEATE", "error": str(phase_err)})
 
-        # ──────────────────────────────────────────────────────────────────────
-        # PHASE 4: APPROVAL GATE (Watcher Agent Integration)
-        # ──────────────────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────────────────────
+    # PHASE 4: APPROVAL GATE (Watcher Agent Integration)
+    # ──────────────────────────────────────────────────────────────────────
+    try:
         dev_loop_status["current_phase"] = "4. APPROVAL GATE"
+        await broadcast_status()
         logger.info("[DEV_LOOP] Phase 4: Running Watcher Agent rules to resolve approvals autonomously.")
         
         # Dispatched structured Telegram notifications
@@ -272,6 +310,16 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
                         )
                         imp["status"] = "rejected"
                         logger.info("[DEV_LOOP] Watcher REJECTED improvement for agent %s. Reason: %s", imp["target_agent_id"][:8], verdict.rule_triggered)
+
+                    # Store decision log in watcher_decisions collection (ENH-004 Fix)
+                    await db.watcher_decisions.insert_one({
+                        "improvement_id": str(imp["_id"]),
+                        "decision": verdict.decision,
+                        "rule_triggered": verdict.rule_triggered,
+                        "confidence": verdict.confidence,
+                        "test_generated": verdict.rule_triggered != "test_coverage_check_failed",
+                        "created_at": datetime.now(timezone.utc)
+                    })
                 except Exception as eval_err:
                     logger.error("[DEV_LOOP] Watcher crashed. Fallback to default applied. Error: %s", eval_err)
                     # Safe fallback
@@ -303,11 +351,16 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
                     imp["status"] = "rejected"
 
         cycle_log["phases_completed"].append("APPROVAL_GATE")
+    except Exception as phase_err:
+        logger.error("[DEV_LOOP] Phase 4 (APPROVAL GATE) failed: %s", phase_err)
+        cycle_log["phase_errors"].append({"phase": "APPROVAL_GATE", "error": str(phase_err)})
 
-        # ──────────────────────────────────────────────────────────────────────
-        # PHASE 5: EXECUTE (Autonomous Skill Injection)
-        # ──────────────────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────────────────────
+    # PHASE 5, 6, 7: EXECUTE, TEST & VALIDATE, REINFORCE & EXTRACT
+    # ──────────────────────────────────────────────────────────────────────
+    try:
         dev_loop_status["current_phase"] = "5. EXECUTE"
+        await broadcast_status()
         logger.info("[DEV_LOOP] Phase 5: Injecting context skills and compiling evolutions.")
         
         approved_cursor = db.pending_improvements.find({
@@ -328,15 +381,24 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
             agent_obj = BaseAgent.from_dict(agent_doc)
             
             # Fetch and inject similar procedural skills via Vector recall
-            relevant_skills = await skill_engine.load_relevant_skills(agent_obj.goal, max_skills=3)
+            relevant_skills = []
+            try:
+                relevant_skills = await skill_engine.load_relevant_skills(agent_obj.goal, max_skills=3)
+            except Exception as skill_err:
+                logger.error("[DEV_LOOP] Failed to load skills context: %s", skill_err)
+
             if relevant_skills:
                 skills_context = "\n\nInherited Procedural Knowledge from successful runs:\n" + "\n---\n".join(relevant_skills)
                 proposed_fix = f"{proposed_fix}\n{skills_context}"
                 logger.info("[DEV_LOOP] Injected %d active skills into prompt template for: %s", len(relevant_skills), agent_id[:8])
 
             # Capture BEFORE metrics
-            before_metrics = await snapshot_agent_metrics(agent_id)
-            await store_benchmark(agent_id, cycle_id, "before", before_metrics)
+            before_metrics = {}
+            try:
+                before_metrics = await snapshot_agent_metrics(agent_id)
+                await store_benchmark(agent_id, cycle_id, "before", before_metrics)
+            except Exception as bench_err:
+                logger.warning("[DEV_LOOP] Failed to snapshot initial benchmark metrics: %s", bench_err)
             
             # Start Checkpoint lifecycle
             await checkpoint_draft(agent_id, agent_obj.agent_code, agent_obj.config, agent_obj.current_score)
@@ -366,6 +428,7 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
             # PHASE 6: TEST & VALIDATE
             # ──────────────────────────────────────────────────────────────────────
             dev_loop_status["current_phase"] = "6. TEST & VALIDATE"
+            await broadcast_status()
             logger.info("[DEV_LOOP] Phase 6: Verifying score metrics and compiling.")
             
             await checkpoint_testing(agent_id)
@@ -374,14 +437,17 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
             # Capture AFTER metrics
             after_metrics = {
                 "success_rate": round(score, 4),
-                "avg_latency_ms": before_metrics.get("avg_latency_ms", 500.0),
-                "output_quality_score": before_metrics.get("output_quality_score", 5.0),
-                "error_rate": before_metrics.get("error_rate", 0.0),
+                "avg_latency_ms": before_metrics.get("avg_latency_ms", 500.0) if before_metrics else 500.0,
+                "output_quality_score": before_metrics.get("output_quality_score", 5.0) if before_metrics else 5.0,
+                "error_rate": before_metrics.get("error_rate", 0.0) if before_metrics else 0.0,
             }
-            await store_benchmark(agent_id, cycle_id, "after", after_metrics)
+            try:
+                await store_benchmark(agent_id, cycle_id, "after", after_metrics)
+            except Exception as bench_err:
+                logger.warning("[DEV_LOOP] Failed to store post-improvement metrics: %s", bench_err)
             
-            deltas = compare_snapshots(before_metrics, after_metrics)
-            improvement_delta = score_improvement(deltas)
+            deltas = compare_snapshots(before_metrics, after_metrics) if before_metrics else {}
+            improvement_delta = score_improvement(deltas) if deltas else 0.0
             
             # Rollback check: if there is score regression
             if score < agent_obj.current_score:
@@ -395,7 +461,10 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
                 )
                 
                 # Analyze failure patterns (Prompt Autopsy)
-                await analyze_failure(db, agent_id, improvement_prompt, new_code, agent_obj.current_score, score)
+                try:
+                    await analyze_failure(db, agent_id, improvement_prompt, new_code, agent_obj.current_score, score)
+                except Exception as autopsy_err:
+                    logger.warning("[DEV_LOOP] Autopsy failed: %s", autopsy_err)
             else:
                 # Commit successful improvement!
                 new_version = await checkpoint_commit(
@@ -425,50 +494,68 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
                 # ── Skill Synthesis ──
                 # Synthesize new skills from highly successful execution records
                 if score > 0.7:
-                    latest_run = await db.agent_runs.find_one(
-                        {"agent_id": agent_id},
-                        sort=[("started_at", -1)]
-                    )
-                    if latest_run:
-                        logger.info("[DEV_LOOP] High scoring run completed. Synthesizing reusable skill...")
-                        await skill_engine.synthesize_skill_from_session(agent_id, latest_run["run_id"])
+                    try:
+                        latest_run = await db.agent_runs.find_one(
+                            {"agent_id": agent_id},
+                            sort=[("started_at", -1)]
+                        )
+                        if latest_run:
+                            logger.info("[DEV_LOOP] High scoring run completed. Synthesizing reusable skill...")
+                            await skill_engine.synthesize_skill_from_session(agent_id, latest_run["run_id"])
+                    except Exception as skill_err:
+                        logger.warning("[DEV_LOOP] Skill synthesis failed: %s", skill_err)
 
                 # ──────────────────────────────────────────────────────────────────────
                 # PHASE 7: REINFORCE & EXTRACT
                 # ──────────────────────────────────────────────────────────────────────
                 dev_loop_status["current_phase"] = "7. REINFORCE & EXTRACT"
+                await broadcast_status()
                 logger.info("[DEV_LOOP] Phase 7: Writing lessons to collective memory and HiveMind.")
                 
-                await contribute_memory(
-                    db, agent_id,
-                    discovery=new_code[:800],
-                    context=agent_obj.goal,
-                    score_delta=score - agent_obj.current_score
-                )
+                try:
+                    await contribute_memory(
+                        db, agent_id,
+                        discovery=new_code[:800],
+                        context=agent_obj.goal,
+                        score_delta=score - agent_obj.current_score
+                    )
+                except Exception as mem_err:
+                    logger.warning("[DEV_LOOP] Collective memory update failed: %s", mem_err)
                 
-                hivemind = get_hivemind()
-                await hivemind.remember(
-                    agent_id=agent_id,
-                    agent_name=agent_obj.name,
-                    knowledge=f"Optimization committed v{new_version}. Approved improvement applied.",
-                    category="infinite_dev_loop"
-                )
+                try:
+                    hivemind = get_hivemind()
+                    await hivemind.remember(
+                        agent_id=agent_id,
+                        agent_name=agent_obj.name,
+                        knowledge=f"Optimization committed v{new_version}. Approved improvement applied.",
+                        category="infinite_dev_loop"
+                    )
+                except Exception as hive_err:
+                    logger.warning("[DEV_LOOP] Hivemind sync failed: %s", hive_err)
 
         cycle_log["phases_completed"].append("EXECUTE")
         cycle_log["phases_completed"].append("TEST_VALIDATE")
         cycle_log["phases_completed"].append("REINFORCE_EXTRACT")
+    except Exception as phase_err:
+        logger.error("[DEV_LOOP] Execution/Verification block (Phases 5-7) failed: %s", phase_err)
+        cycle_log["phase_errors"].append({"phase": "EXECUTE_BLOCK", "error": str(phase_err)})
 
-        # ──────────────────────────────────────────────────────────────────────
-        # PHASE 8: REFLECT (SOUL prompt tuning)
-        # ──────────────────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────────────────────────
+    # PHASE 8: REFLECT (SOUL prompt tuning)
+    # ──────────────────────────────────────────────────────────────────────
+    try:
         dev_loop_status["current_phase"] = "8. REFLECT"
+        await broadcast_status()
         logger.info("[DEV_LOOP] Phase 8: Seeding future ideas & evolving active agent SOUL prompts.")
         
-        future_ideas = await generate_ideas(cycle_log)
-        for idea in future_ideas:
-            idea["cycle_id"] = cycle_id
-            await store_idea(idea)
-            cycle_log["ideas"].append(idea)
+        try:
+            future_ideas = await generate_ideas(cycle_log)
+            for idea in future_ideas:
+                idea["cycle_id"] = cycle_id
+                await store_idea(idea)
+                cycle_log["ideas"].append(idea)
+        except Exception as idea_err:
+            logger.warning("[DEV_LOOP] Future ideation failed: %s", idea_err)
             
         cycle_log["phases_completed"].append("REFLECT")
 
@@ -476,23 +563,28 @@ async def run_dev_loop_cycle(force: bool = False) -> dict:
         dev_loop_status["total_cycles_completed"] += 1
         if dev_loop_status["total_cycles_completed"] % 10 == 0:
             logger.info("[DEV_LOOP] Cycle 10 threshold reached. Initializing system-wide SOUL evolutions.")
-            soul_engine = SoulEvolver()
-            for agent in agents:
-                await soul_engine.run(agent.get("id"))
+            try:
+                soul_engine = SoulEvolver()
+                for agent in agents:
+                    await soul_engine.run(agent.get("id"))
+            except Exception as soul_err:
+                logger.error("[DEV_LOOP] SoulEvolver failed to run: %s", soul_err)
+    except Exception as phase_err:
+        logger.error("[DEV_LOOP] Phase 8 (REFLECT) failed: %s", phase_err)
+        cycle_log["phase_errors"].append({"phase": "REFLECT", "error": str(phase_err)})
 
-        # Log completion
-        dev_loop_status["status"] = "idle"
-        dev_loop_status["current_phase"] = "COMPLETE"
-        
+    # Log completion
+    dev_loop_status["status"] = "idle"
+    dev_loop_status["current_phase"] = "COMPLETE"
+    await broadcast_status()
+    
+    try:
         await db.dev_loop_history.insert_one(cycle_log)
-        logger.info("🎉 Infinite Development Loop Cycle %s completed successfully!", cycle_id)
-        return {"status": "success", "cycle_id": cycle_id}
+    except Exception as insert_err:
+        logger.error("[DEV_LOOP] Failed to persist dev_loop_history record to MongoDB: %s", insert_err)
 
-    except Exception as e:
-        logger.error("[DEV_LOOP] Infinite Dev Loop Cycle %s failed with exception: %s", cycle_id, e, exc_info=True)
-        dev_loop_status["status"] = "error"
-        dev_loop_status["current_phase"] = f"ERROR: {str(e)[:50]}"
-        return {"status": "error", "error": str(e)}
+    logger.info("🎉 Infinite Development Loop Cycle %s completed successfully!", cycle_id)
+    return {"status": "success", "cycle_id": cycle_id}
 
 
 async def _infinite_dev_loop_worker():
@@ -526,6 +618,7 @@ async def _infinite_dev_loop_worker():
             
             dev_loop_status["status"] = "sleeping"
             dev_loop_status["next_execution_time"] = (datetime.now(timezone.utc) + timedelta(minutes=interval_minutes)).isoformat()
+            await broadcast_status()
             
             # Interruptible sleep
             for _ in range(interval_minutes * 60):

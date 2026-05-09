@@ -344,5 +344,18 @@ async def health_check():
         health["night_mode"] = False
     return health
 
+
+@app.get("/health")
+async def simple_health():
+    """Simple health check endpoint."""
+    from core.database import get_db
+    db = get_db()
+    return {
+        "status": "ok",
+        "db": "connected" if db is not None else "offline",
+        "version": "2.0"
+    }
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=3001, reload=True)

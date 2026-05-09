@@ -90,7 +90,7 @@ class Settings:
         self.telegram_chat_id: str = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
         # ── Infinite Dev Loop Orchestrator ──────
-        self.enable_dev_loop: bool = os.getenv("ENABLE_DEV_LOOP", "false").lower() == "true"
+        self.enable_dev_loop: bool = os.getenv("ENABLE_DEV_LOOP", "true").lower() == "true"
         self.dev_loop_interval_minutes: int = int(os.getenv("DEV_LOOP_INTERVAL_MINUTES", "60"))
 
     @property

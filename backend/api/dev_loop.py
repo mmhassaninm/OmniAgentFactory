@@ -48,6 +48,14 @@ async def get_loop_status():
 @router.post("/trigger")
 async def trigger_loop_cycle():
     """Force run an autonomous 8-phase optimization cycle."""
+    from core.database import get_db
+    db = get_db()
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="MongoDB is offline. Cannot start optimization cycle. Check database connection."
+        )
+
     status = await get_dev_loop_status()
     if status.get("status") == "running":
         raise HTTPException(
@@ -60,7 +68,7 @@ async def trigger_loop_cycle():
 
     return {
         "status": "triggered",
-        "message": "Cycle initiated successfully in background.",
+        "message": "8-phase optimization cycle initiated successfully in background.",
     }
 
 

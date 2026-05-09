@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { BASE_URL, WS_URL } from '../config'
 import { 
   Play, 
   Workflow, 
@@ -148,12 +149,12 @@ export default function DevLoopDashboard() {
   
   const [loading, setLoading] = useState<boolean>(true)
   const [triggering, setTriggering] = useState<boolean>(false)
+  const [triggerMessage, setTriggerMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [expandedFix, setExpandedFix] = useState<string | null>(null)
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null)
 
   const fetchTelemetry = async () => {
     try {
-      const BASE_URL = 'http://localhost:3001'
       const [
         statusRes,
         pendingRes,
@@ -200,7 +201,7 @@ export default function DevLoopDashboard() {
   const fetchAgentSignals = async () => {
     if (!selectedAgentId) return
     try {
-      const res = await fetch(`http://localhost:3001/api/dev-loop/signals/${selectedAgentId}`)
+      const res = await fetch(`${BASE_URL}/api/dev-loop/signals/${selectedAgentId}`)
       if (res.ok) {
         setSignals(await res.json())
       }
@@ -212,7 +213,7 @@ export default function DevLoopDashboard() {
   // Fetch individual skill content on demand
   const viewSkillDetail = async (skillName: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/dev-loop/skills/${skillName}`)
+      const res = await fetch(`${BASE_URL}/api/dev-loop/skills/${skillName}`)
       if (res.ok) {
         setSelectedSkill(await res.json())
       }
@@ -221,35 +222,141 @@ export default function DevLoopDashboard() {
     }
   }
 
+  // WebSocket for real-time updates (ARCH-002)
+  useEffect(() => {
+    let ws: WebSocket | null = null
+    let reconnectTimeout: any = null
+    let pingInterval: any = null
+
+    const connect = () => {
+      try {
+        const wsUrl = `${WS_URL}/ws/factory`.replace('http://', 'ws://').replace('https://', 'wss://')
+        ws = new WebSocket(wsUrl)
+
+        ws.onopen = () => {
+          console.log('Connected to Factory WebSocket')
+          // Periodic ping to keep connection alive
+          pingInterval = setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send('ping')
+            }
+          }, 20000)
+        }
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+            if (data.type === 'dev_loop_update' && data.payload) {
+              console.log('WebSocket Dev Loop update received:', data.payload)
+              setStatus(data.payload)
+              // Dynamically refresh related lists instantly
+              fetchTelemetry()
+            }
+          } catch (e) {
+            // Ignore non-JSON (like 'pong') or format issues
+          }
+        }
+
+        ws.onclose = () => {
+          console.log('Factory WebSocket disconnected. Reconnecting in 3s...')
+          cleanup()
+          reconnectTimeout = setTimeout(connect, 3000)
+        }
+
+        ws.onerror = (err) => {
+          console.error('Factory WebSocket error:', err)
+        }
+      } catch (err) {
+        console.error('Error establishing Factory WebSocket:', err)
+      }
+    }
+
+    const cleanup = () => {
+      if (ws) {
+        ws.close()
+        ws = null
+      }
+      if (pingInterval) {
+        clearInterval(pingInterval)
+        pingInterval = null
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout)
+        reconnectTimeout = null
+      }
+    }
+
+    connect()
+    return cleanup
+  }, [])
+
+  // Dynamic Telemetry Polling (ENH-001)
   useEffect(() => {
     fetchTelemetry()
-    const timer = setInterval(fetchTelemetry, 8000)
+    // Poll every 2 seconds during active cycles, 8 seconds otherwise
+    const pollInterval = status?.status === 'running' ? 2000 : 8000
+    const timer = setInterval(fetchTelemetry, pollInterval)
     return () => clearInterval(timer)
-  }, [])
+  }, [status?.status])
 
   useEffect(() => {
     fetchAgentSignals()
   }, [selectedAgentId])
 
+  // Pre-flight health checked Trigger mechanism (ENH-003)
   const handleTriggerCycle = async () => {
     setTriggering(true)
+    setTriggerMessage(null)
+
+    // Pre-flight check: ping backend /health endpoint with 3s timeout
     try {
-      const res = await fetch('http://localhost:3001/api/dev-loop/trigger', {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      const healthRes = await fetch(`${BASE_URL}/health`, { signal: controller.signal })
+      clearTimeout(timeoutId)
+
+      if (!healthRes.ok) {
+        setTriggerMessage({ type: 'error', text: 'Backend service reports unhealthy state.' })
+        setTriggering(false)
+        return
+      }
+
+      const healthData = await healthRes.json()
+      if (healthData.db !== 'connected') {
+        setTriggerMessage({ type: 'error', text: 'MongoDB is offline. Cannot start optimization cycle.' })
+        setTriggering(false)
+        return
+      }
+    } catch (err) {
+      setTriggerMessage({ type: 'error', text: 'Backend is unreachable. Is the server running?' })
+      setTriggering(false)
+      return
+    }
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/dev-loop/trigger`, {
         method: 'POST'
       })
       if (res.ok) {
+        const data = await res.json()
+        setTriggerMessage({ type: 'success', text: data.message || 'Cycle initiated successfully.' })
         await fetchTelemetry()
+      } else {
+        const err = await res.json().catch(() => ({ detail: 'Unknown error' }))
+        setTriggerMessage({ type: 'error', text: err.detail || `Error ${res.status}` })
       }
-    } catch (err) {
+    } catch (err: any) {
+      setTriggerMessage({ type: 'error', text: 'Failed to initiate optimization cycle.' })
       console.error('Error triggering cycle:', err)
     } finally {
       setTriggering(false)
+      setTimeout(() => setTriggerMessage(null), 8000)
     }
   }
 
   const handleApprove = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/dev-loop/approve/${id}`, {
+      const res = await fetch(`${BASE_URL}/api/dev-loop/approve/${id}`, {
         method: 'POST'
       })
       if (res.ok) {
@@ -263,7 +370,7 @@ export default function DevLoopDashboard() {
 
   const handleReject = async (id: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/dev-loop/reject/${id}`, {
+      const res = await fetch(`${BASE_URL}/api/dev-loop/reject/${id}`, {
         method: 'POST'
       })
       if (res.ok) {
@@ -327,7 +434,9 @@ export default function DevLoopDashboard() {
   }
 
   // Calculate Autonomy Percentage
-  const autonomyPct = autonomy ? Math.round(autonomy.autonomy_score * 100) : 100
+  const autonomyPct = !autonomy || autonomy.total_actions === 0
+    ? 0
+    : Math.round(autonomy.autonomy_score * 100)
 
   return (
     <div className="p-8 min-h-screen bg-[#03060c] text-[#f0f4f8] font-sans overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -355,28 +464,39 @@ export default function DevLoopDashboard() {
         </div>
 
         {/* Action Button Controls */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleTriggerCycle}
-            disabled={status?.status === 'running' || triggering}
-            className={`px-6 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 flex items-center gap-3 border shadow-[0_4px_20px_rgba(0,0,0,0.3)] ${
-              status?.status === 'running'
-                ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400/50 cursor-not-allowed'
-                : 'bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 border-indigo-400/20 text-white hover:shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98]'
-            }`}
-          >
-            {status?.status === 'running' ? (
-              <>
-                <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
-                <span>Cycle Running...</span>
-              </>
-            ) : (
-              <>
-                <Play size={15} fill="currentColor" />
-                <span>Trigger Optimization Cycle</span>
-              </>
-            )}
-          </button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleTriggerCycle}
+              disabled={status?.status === 'running' || triggering}
+              className={`px-6 py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 flex items-center gap-3 border shadow-[0_4px_20px_rgba(0,0,0,0.3)] ${
+                status?.status === 'running'
+                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400/50 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 border-indigo-400/20 text-white hover:shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98]'
+              }`}
+            >
+              {status?.status === 'running' ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span>{status?.current_phase ? `Cycle: ${status.current_phase}` : 'Cycle Running...'}</span>
+                </>
+              ) : (
+                <>
+                  <Play size={15} fill="currentColor" />
+                  <span>Trigger Optimization Cycle</span>
+                </>
+              )}
+            </button>
+          </div>
+          {triggerMessage && (
+            <div className={`px-3 py-2 rounded text-sm font-mono max-w-md ${
+              triggerMessage.type === 'success'
+                ? 'bg-green-900/40 border border-green-500/50 text-green-400'
+                : 'bg-red-900/40 border border-red-500/50 text-red-400'
+            }`}>
+              {triggerMessage.type === 'success' ? '✓' : '✗'} {triggerMessage.text}
+            </div>
+          )}
         </div>
       </header>
 

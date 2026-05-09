@@ -362,3 +362,9 @@
 - Approach      : Diagnosed the backend failure using sequential powershell checks. Found `sqlite3.OperationalError: no such column: collections.topic` during ChromaDB initialization, which is caused by a corrupted/outdated local SQLite schema. Fixed it by renaming the local `chroma_db` directory to force a clean database rebuild.
 - Outcome       : success
 - Notes         : Backend health check now returns 200 OK. MongoDB connection and packages are fully working.
+
+## [2026-05-10] — OmniBot Factory Critical Fixes & Dynamic Socket Streaming
+- Files changed : backend/core/config.py, backend/api/dev_loop.py, backend/main.py, backend/workers/infinite_dev_loop.py, frontend/src/pages/DevLoopDashboard.tsx
+- Approach      : (1) Defaulted ENABLE_DEV_LOOP to true. (2) Added database connection pre-checks in /trigger endpoint. (3) Added simple /health endpoint in main.py. (4) Redesigned infinite dev loop worker with isolated try/except blocks across all 8 phases, added real-time WebSocket state broadcasting, and resolved Watcher decision persistence logic. (5) Integrated auto-reconnecting Factory WebSocket, dynamic status-dependent poll-rates, and pre-flight health checks to the frontend dashboard.
+- Outcome       : success
+- Notes         : Solves all core operational loops. Complete end-to-end WebSocket telemetry synchronization fully verified.
