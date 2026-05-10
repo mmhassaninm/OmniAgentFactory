@@ -1,5 +1,11 @@
 # MODIFICATION HISTORY
 
+## [2026-05-10] — Shopify Theme Factory Engine
+- Files changed : backend/shopify/ (full module), backend/routers/shopify.py, backend/api/websocket.py, backend/main.py, backend/requirements.txt, frontend/src/pages/ShopifyFactory.tsx, frontend/src/hooks/useShopifySocket.ts, frontend/src/App.tsx, frontend/src/components/MainLayout.tsx, .env.example
+- Approach      : Added additive backend/shopify/ module with 7-agent swarm (MarketResearcher, CreativeDirector, UXDesigner, LiquidDeveloper, ContentWriter, QAReviewer, VersionManager), Shopify OS 2.0 base theme skeleton, ZIP builder, MongoDB persistence, /ws/shopify/live WebSocket endpoint, /api/shopify/* REST API, and a full frontend dashboard at /shopify
+- Outcome       : success
+- Notes         : ANTHROPIC_KEY required for all 7 agents. UNSPLASH_ACCESS_KEY optional (falls back to picsum.photos). Set SHOPIFY_SWARM_AUTOSTART=true to auto-start on boot, or use POST /api/shopify/start. Old factory code untouched.
+
 ## [2026-05-10] — Silent Startup & System Tray Lifecycle Management
 - Files changed : launcher.py, scripts/create_desktop_shortcut.py, start_omnibot.bat, backend/requirements.txt
 - Approach      : Redirected sys.stdout/stderr to logs to prevent pythonw crashes, implemented thread-safe system tray icon via pystray, set CREATE_NO_WINDOW on subprocesses, created pywin32 desktop shortcut creator, and updated batch orchestrator with ping-based delays.

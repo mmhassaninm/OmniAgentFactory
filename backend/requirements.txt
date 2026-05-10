@@ -34,6 +34,11 @@ websockets
 pystray>=0.19.0
 pillow>=10.0.0
 
+# ── Shopify Theme Factory ───────────────
+semver==3.0.2                       # semantic versioning for theme versions
+lxml==5.2.2                         # fast HTML/XML parser for market scraper
+aiofiles==23.2.1                    # async file I/O for theme builder
+
 # ── Money Agent ─────────────────────────
 playwright                      # browser automation (already used in browser_tool.py)
 anthropic                       # Claude API for pitch generation

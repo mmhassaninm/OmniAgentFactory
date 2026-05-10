@@ -28,6 +28,8 @@ class ConnectionManager:
         self._agent_connections: Dict[str, Set[WebSocket]] = {}
         # Factory-wide connections
         self._factory_connections: Set[WebSocket] = set()
+        # Shopify swarm connections
+        self._shopify_connections: Set[WebSocket] = set()
 
     async def connect_agent(self, agent_id: str, websocket: WebSocket):
         await websocket.accept()
@@ -51,6 +53,26 @@ class ConnectionManager:
 
     def disconnect_factory(self, websocket: WebSocket):
         self._factory_connections.discard(websocket)
+
+    async def connect_shopify(self, websocket: WebSocket):
+        await websocket.accept()
+        self._shopify_connections.add(websocket)
+        logger.info("WebSocket connected for Shopify swarm (total: %d)",
+                     len(self._shopify_connections))
+
+    def disconnect_shopify(self, websocket: WebSocket):
+        self._shopify_connections.discard(websocket)
+
+    async def broadcast_to_shopify(self, data: dict):
+        """Send data to all Shopify swarm connections."""
+        dead_connections = set()
+        for ws in self._shopify_connections:
+            try:
+                await ws.send_json(data)
+            except Exception:
+                dead_connections.add(ws)
+        for ws in dead_connections:
+            self.disconnect_shopify(ws)
 
     async def broadcast_to_agent(self, agent_id: str, data: dict):
         """Send data to all connections watching a specific agent."""
@@ -86,7 +108,7 @@ class ConnectionManager:
     @property
     def total_connections(self) -> int:
         agent_conns = sum(len(s) for s in self._agent_connections.values())
-        return agent_conns + len(self._factory_connections)
+        return agent_conns + len(self._factory_connections) + len(self._shopify_connections)
 
 
 # ── Singleton ───────────────────────────────────────────────────────────────
@@ -132,3 +154,17 @@ async def websocket_factory(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect_factory(websocket)
         logger.info("WebSocket disconnected for factory viewer")
+
+
+@router.websocket("/shopify/live")
+async def websocket_shopify_live(websocket: WebSocket):
+    """Stream live events from the Shopify theme swarm."""
+    await manager.connect_shopify(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
+    except WebSocketDisconnect:
+        manager.disconnect_shopify(websocket)
+        logger.info("WebSocket disconnected from Shopify swarm viewer")

@@ -132,6 +132,22 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Infinite Dev Loop Orchestrator failed to start: %s", e)
 
+    # ── Shopify Theme Factory ───────────────────────────────────────────
+    try:
+        import os
+        from shopify.swarm_engine import get_swarm_engine
+        from api.websocket import manager as ws_manager
+        _shopify_engine = get_swarm_engine()
+        _shopify_engine.set_broadcast(ws_manager.broadcast_to_shopify)
+        app.state.shopify_engine = _shopify_engine
+        if os.getenv("SHOPIFY_SWARM_AUTOSTART", "false").lower() == "true":
+            _shopify_engine.start(db)
+            logger.info("✓ Shopify Swarm Engine started (AUTOSTART)")
+        else:
+            logger.info("✓ Shopify Swarm Engine initialized (start via POST /api/shopify/start)")
+    except Exception as e:
+        logger.warning("Shopify Swarm Engine failed to initialize: %s", e)
+
     logger.info("═══ OmniBot Agent Factory — ONLINE ═══")
     yield
 
@@ -279,6 +295,14 @@ try:
     logger.info("✓ Model Hub router loaded")
 except Exception as e:
     logger.warning("Model Hub router failed to load: %s", e)
+
+# ── Shopify Theme Factory Router ─────────────────────────────────────────────
+try:
+    from routers.shopify import router as shopify_router
+    app.include_router(shopify_router, prefix="/api/shopify", tags=["Shopify Factory"])
+    logger.info("✓ Shopify Factory router loaded")
+except Exception as e:
+    logger.warning("Shopify Factory router failed to load: %s", e)
 
 
 
