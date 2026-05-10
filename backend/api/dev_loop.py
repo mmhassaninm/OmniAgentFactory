@@ -77,7 +77,7 @@ async def get_bootstrap_status():
     """Returns the current state of the synthetic self-play bootstrap process."""
     from core.bootstrap_engine import BootstrapEngine
     db = get_db()
-    if not db:
+    if db is None:
         raise HTTPException(status_code=500, detail="DB offline")
         
     doc = await db.system.find_one({"key": "bootstrap_state"})
@@ -105,7 +105,7 @@ async def get_bootstrap_status():
 async def reset_bootstrap():
     """Clears the bootstrap flag, allowing the self-play to run again on next startup."""
     db = get_db()
-    if not db:
+    if db is None:
         raise HTTPException(status_code=500, detail="DB offline")
         
     await db.system.update_one({"key": "bootstrap_state"}, {"$set": {"bootstrap_complete": False}})

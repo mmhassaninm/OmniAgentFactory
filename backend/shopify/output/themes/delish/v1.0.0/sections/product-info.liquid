@@ -1,0 +1,39 @@
+<!-- Product Info Section -->
+<section class="product-info" role="section" aria-label="Product Info">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center">
+        <h2>{{ settings.name | escape }}</h2>
+        <p>Price: {{ settings.price | money }}</p>
+        <p>{{ settings.description | escape }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product Info",
+  "settings": [
+    {
+      "type": "text",
+      "id": "name",
+      "label": "Product name"
+    },
+    {
+      "type": "text",
+      "id": "price",
+      "label": "Price",
+      "default": "$15.99"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description",
+      "default": "Freshly baked pizza"
+    }
+  ],
+  "blocks": [],
+  "responsive_notes": "Price and description reduce to one line on mobile"
+}
+{% endschema %}

@@ -1,0 +1,40 @@
+<section class="blog-hero" data-section-id="blog-hero">
+  <div class="container">
+    <div class="blog-hero-image">
+      <img src="{{ settings.image | img_url: 'large' }}" alt="Blog Hero Image" width="800" height="400" loading="lazy">
+    </div>
+    <div class="blog-hero-content">
+      <h1 id="blog-hero-heading" class="heading">{{ settings.heading | escape }}</h1>
+      <p id="blog-hero-subheading" class="subheading">{{ settings.subheading | escape }}</p>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Blog Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Blog Image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {}
+    }
+  ]
+}
+{% endschema %}

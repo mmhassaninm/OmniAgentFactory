@@ -1,0 +1,52 @@
+{% schema %}
+{
+  "name": "Page Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "About Us"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": ""
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {
+        "image": "https://example.com/image.jpg",
+        "heading": "Page Hero",
+        "subheading": ""
+      }
+    }
+  ]
+}
+{% endschema %}
+
+<section class="page-hero" style="background-image: url({{ settings.image | img_url: '1x' }});">
+  <div class="container">
+    <h1>{{ settings.heading }}</h1>
+    <p>{{ settings.subheading }}</p>
+  </div>
+</section>
+
+<style>
+.page-hero {
+  background-size: cover;
+  background-position: center;
+}
+.page-hero .container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+</style>

@@ -208,6 +208,9 @@ async def route_completion(messages: list, **kwargs) -> Any:
     Main router entry point. Implements the 5-tier cascade sequence.
     Never raises router exceptions except RouterExhaustedError when absolutely blocked.
     """
+    if isinstance(messages, str):
+        messages = [{"role": "user", "content": messages}]
+
     # Force lowercase models parameter removal to prevent overriding cascade tiers
     if "model" in kwargs:
         del kwargs["model"]

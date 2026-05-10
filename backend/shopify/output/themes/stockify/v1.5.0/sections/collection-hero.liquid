@@ -1,0 +1,49 @@
+<!-- theme settings -->
+{% schema %}
+{
+  'name': 'collection-hero",
+  'settings': [
+    {
+      'type': 'image_picker",
+      'id': 'image",
+      'label': 'Background image'
+    },
+    {
+      'type': 'text",
+      'id': 'title",
+      'label': 'Title'
+    },
+    {
+      'type': 'text",
+      'id': 'description",
+      'label': 'Description'
+    }
+  ],
+  'presets': []
+}
+{% endschema %}
+
+<!-- section content -->
+<div class="collection-hero" role="region" aria-label="{{ 'collection-hero.label' | t }}">
+  <img src="{{ settings.image | img_url: 'large' }}" alt="{{ settings.title | escape }}">
+  <h2>{{ settings.title | escape }}</h2>
+  <p>{{ settings.description | escape }}</p>
+</div>
+
+<!-- styles -->
+<style>
+  .collection-hero {
+    background-color: {{ theme.settings.backgroundcolor | escape }};
+    color: {{ theme.settings.textcolor | escape }};
+  }
+  .collection-hero img {
+    width: 100%;
+    height: auto;
+  }
+  .collection-hero h2 {
+    font-family: 'Montserrat', sans-serif;
+  }
+  .collection-hero p {
+    font-family: 'Lato', sans-serif;
+  }
+</style>

@@ -1,0 +1,7 @@
+<section id="hero" class="bg-[#f9f9f9] py-12 text-center text-[#3498db] leading-tight font-sans text-3xl font-bold" style="background-image: url('{{ settings.image | img_url: 'grayscale' }}'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;">
+    <div class="container mx-auto px-4 py-4">
+      <h1 class="font-montserrat text-5xl leading-tight">{{ settings.heading }}</h1>
+      <p class="font-lato text-2xl pb-4">{{ settings.subheading }}</p>
+      <a href="{{ settings.cta_url }}" class="bg-[#3498db] hover:bg-[#2ecc71] text-white font-bold py-2 px-4 rounded">{{ settings.cta_label }}</a>
+    </div>
+  </section>{% schema %}{% if section.settings.image %}{% schema-setting id="image" type="image_picker" label="Background image" %}{% endif %}{% schema-setting id="heading" type="text" label="Heading" default="Effortless Inventory Management" %}{% schema-setting id="subheading" type="text" label="Subheading" default="Streamline your business with Stockify" %}{% schema-setting id="cta_label" type="text" label="Button label" default="Get Started" %}{% schema-setting id="cta_url" type="url" label="Button URL" %}{% endschema %}

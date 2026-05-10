@@ -1,0 +1,58 @@
+{% schema %}
+{
+  'name': 'footer',
+  'settings': [
+    {
+      'type': 'text',
+      'id': 'copyright',
+      'label': 'Copyright text'
+    },
+    {
+      'type': 'text',
+      'id': 'terms',
+      'label': 'Terms of Service'
+    },
+    {
+      'type': 'link_list',
+      'id': 'social_links',
+      'label': 'Social links'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'default',
+      'settings': {
+        'copyright': 'Copyright 2023 Stockify',
+        'terms': 'Terms of Service',
+        'social_links': [
+          {
+            'label': 'Facebook',
+            'url': 'https://www.facebook.com'
+          },
+          {
+            'label': 'Twitter',
+            'url': 'https://www.twitter.com'
+          }
+        ]
+      }
+    }
+  ]
+}
+{% endschema %}
+
+<footer class="footer" style="background-color: #f9f9f9;">
+  <div class="container">
+    <p>{{ settings.copyright | escape }}</p>
+    <p>{{ settings.terms | escape }}</p>
+    <ul class="social-links">
+      {% for link in settings.social_links %}
+        <li>
+          <a href="{{ link.url }}" class="social-link" aria-label="{{ link.label }}" role="link" target="_blank">
+            <span class="sr-only">{{ link.label }}</span>
+            <i class="fa fa-{{ link.label | replace: ' ', '-' | downcase }}"></i>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</footer>

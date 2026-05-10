@@ -1,0 +1,28 @@
+{% schema %}
+{
+  "name": "Collection Products",
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Products",
+      "default": ""
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+<div class="collection-products">
+  <div class="container">
+    <h2>Products in {{ collection.title }}</h2>
+    <div class="product-grid">
+      {% for product in collection.products %}
+        <div class="product">
+          <img src="{{ product.image | img_url: 'medium' }}" alt="{{ product.title }}" lazy-load>
+          <h3>{{ product.title }}</h3>
+          <p>{{ product.price | money }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

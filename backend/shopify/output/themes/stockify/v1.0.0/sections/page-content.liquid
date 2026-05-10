@@ -1,0 +1,46 @@
+<section class="page-content" role="region" aria-label="Page Content">
+  <h2 class="page-content__heading" id="page-content-heading">{{ settings.heading }}</h2>
+  <div class="page-content__content">
+    {% for block in page.content %}
+      <div class="page-content__item">
+        <p class="page-content__text">{{ block.text }}</p>
+        {% if block.image %}
+          <img class="page-content__image" src="{{ block.image | img_url: 'master' }}" alt="{{ block.text }}">
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "page-content",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Page content",
+      "default": "Page content"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "content-block",
+      "name": "content-block",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        }
+      ]
+    }
+  ],
+  "presets": []
+}
+{% endschema %}

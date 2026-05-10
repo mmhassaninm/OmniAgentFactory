@@ -1,0 +1,27 @@
+{% schema %}
+{
+  "name": "Cart Hero",
+  "settings": [
+    {
+      "type": "money",
+      "id": "subtotal",
+      "label": "Subtotal",
+      "default": ""
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label",
+      "default": "Checkout Now"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+<div class="cart-hero" style="background-color: #f9f9f9; padding: 20px; text-align: center;">
+  <div class="container">
+    <h1>Shopping Cart</h1>
+    <h2>Subtotal: {{ settings.subtotal }}</h2>
+    <button>{{ settings.cta_label }}</button>
+  </div>
+</div>

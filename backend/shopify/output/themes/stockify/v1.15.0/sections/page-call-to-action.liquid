@@ -1,0 +1,54 @@
+
+{% schema %}
+{
+  "name": "Page Call-to-Action",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Ready to take action?"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Contact us now to get started"
+    }
+  ],
+  "presets": [
+    [
+      {
+        "setting": [
+          {
+            "id": "heading",
+            "value": "Ready to take action?"
+          },
+          {
+            "id": "subheading",
+            "value": "Contact us now to get started"
+          }
+        ]
+      }
+    ]
+  ]
+}
+{% endschema %}
+
+<div class="page-call-to-action" aria-label="Page Call-to-Action">
+  <h2>{{ settings.heading }}</h2>
+  <p>{{ settings.subheading }}</p>
+</div>
+
+<style>
+  .page-call-to-action {
+    text-align: center;
+    padding: 50px;
+  }
+  
+  @media (max-width: 768px) {
+    .page-call-to-action {
+      text-align: center;
+    }
+  }
+</style>

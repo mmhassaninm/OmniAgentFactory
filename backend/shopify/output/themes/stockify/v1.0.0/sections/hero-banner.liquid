@@ -1,0 +1,62 @@
+{% schema %}
+  {
+    "name": "Hero Banner",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "image",
+        "label": "Background image"
+      },
+      {
+        "type": "text",
+        "id": "heading",
+        "label": "Heading",
+        "default": "Manage Your Dropshipping Inventory with Ease"
+      },
+      {
+        "type": "text",
+        "id": "subheading",
+        "label": "Effortlessly track your stock and grow your business",
+        "default": ""
+      },
+      {
+        "type": "text",
+        "id": "cta_label",
+        "label": "Get Started",
+        "default": "Get Started"
+      },
+      {
+        "type": "url",
+        "id": "cta_url",
+        "label": "Button URL"
+      }
+    ],
+    "presets": [
+      [
+        {
+          "setting": [
+            "image",
+            "heading",
+            "subheading",
+            "cta_label",
+            "cta_url"
+          ],
+          "default": [
+            "{{ 'hero-banner-background-image.jpg' | img_url }}",
+            "Manage Your Dropshipping Inventory with Ease",
+            "Effortlessly track your stock and grow your business",
+            "Get Started",
+            "https://example.com"
+          ]
+        }
+      ]
+    ]
+  }
+  {% endschema %}
+  <section class="hero-banner" style="background-image: url('{{ settings.image | img_url }}');">
+    <div class="container">
+      <h1>{{ settings.heading | escape }}</h1>
+      <p>{{ settings.subheading | escape }}</p>
+      <a href="{{ settings.cta_url | escape }}" class="cta-button">{{ settings.cta_label | escape }}</a>
+    </div>
+  </section>

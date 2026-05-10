@@ -1,0 +1,56 @@
+{% schema %}
+{
+  'name': 'header',
+  'settings': [
+    {
+      'type': 'image_picker',
+      'id': 'logo',
+      'label': 'Logo'
+    },
+    {
+      'type': 'range',
+      'id': 'logo_width',
+      'min': 80,
+      'max': 300,
+      'step': 10,
+      'unit': 'px',
+      'label': 'Logo width',
+      'default': 150
+    },
+    {
+      'type': 'link_list',
+      'id': 'menu',
+      'label': 'Navigation menu',
+      'default': 'main-menu'
+    }
+  ],
+  'presets': []
+}
+{% endschema %}
+<header class="header" style="--primary-color: #8B9467;">
+  <div class="container">
+    <nav>
+      <div class="logo">
+        <img src="{{ settings.logo | img_url: 'master' }}" alt="Logo" style="width: {{ settings.logo_width }}px">
+      </div>
+      <div class="menu">
+        <button aria-label="Toggle menu" class="toggle-menu" type="button" aria-controls="main-menu">
+          <span class="sr-only">Toggle menu</span>
+        </button>
+        <ul id="main-menu">
+          <li><a href="#">Home</a></li>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="search">
+        <input type="search" placeholder="Search..." aria-label="Search">
+      </div>
+      <div class="cart">
+        <a href="#" class="cart-link">
+          <i class="fas fa-shopping-cart"></i>
+        </a>
+      </div>
+    </nav>
+  </div>
+</header>

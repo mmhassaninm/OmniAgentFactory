@@ -128,8 +128,8 @@ class ThemeValidator:
             open_counts: dict = {}
             close_counts: dict = {}
             for tag, close in LIQUID_CLOSE_TAGS.items():
-                open_counts[tag] = text.count("{%") and text.lower().count(f"{{% {tag} ") + text.lower().count(f"{%- {tag} ")
-                close_counts[tag] = text.lower().count(f"{{% {close}") + text.lower().count(f"{%- {close}")
+                open_counts[tag] = text.count("{%") and text.lower().count(f"{{% {tag} ") + text.lower().count(f"{{%- {tag} ")
+                close_counts[tag] = text.lower().count(f"{{% {close}") + text.lower().count(f"{{%- {close}")
             for tag in LIQUID_CLOSE_TAGS:
                 o = open_counts[tag]
                 c = close_counts[tag]

@@ -1,0 +1,153 @@
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Contact Us"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Get in touch with us"
+    },
+    {
+      "type": "text",
+      "id": "address",
+      "label": "Address",
+      "default": "123 Main St, Anytown, USA"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Phone",
+      "default": "(555) 555-5555"
+    },
+    {
+      "type": "text",
+      "id": "email",
+      "label": "Email",
+      "default": "info@example.com"
+    },
+    {
+      "type": "link_list",
+      "id": "social_links",
+      "label": "Social Media Links"
+    }
+  ],
+  "presets": [
+    [
+      {
+        "setting": [
+          {
+            "id": "heading",
+            "value": "Contact Us"
+          },
+          {
+            "id": "subheading",
+            "value": "Get in touch with us"
+          },
+          {
+            "id": "address",
+            "value": "123 Main St, Anytown, USA"
+          },
+          {
+            "id": "phone",
+            "value": "(555) 555-5555"
+          },
+          {
+            "id": "email",
+            "value": "info@example.com"
+          },
+          {
+            "id": "social_links",
+            "value": "social-links"
+          }
+        ]
+      }
+    ]
+  ]
+}
+{% endschema %}
+
+<footer class="footer" aria-label="Footer">
+  <div class="footer-content">
+    <h2>{{ settings.heading }}</h2>
+    <p>{{ settings.subheading }}</p>
+    <p>{{ settings.address }}</p>
+    <p>Phone: {{ settings.phone }}</p>
+    <p>Email: {{ settings.email }}</p>
+    <ul>
+      <li><a href="https://www.facebook.com/">Facebook</a></li>
+      <li><a href="https://www.twitter.com/">Twitter</a></li>
+      <li><a href="https://www.instagram.com/">Instagram</a></li>
+    </ul>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background-color: #f9f9f9;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .footer-content {
+    width: 80%;
+  }
+  
+  .footer-content h2 {
+    font-family: Montserrat;
+    font-size: 24px;
+    color: #3498db;
+  }
+  
+  .footer-content p {
+    font-family: Lato;
+    font-size: 16px;
+    color: #666;
+  }
+  
+  .footer-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .footer-content li {
+    display: inline-block;
+    margin-right: 20px;
+  }
+  
+  .footer-content a {
+    color: #3498db;
+    text-decoration: none;
+  }
+  
+  @media (max-width: 768px) {
+    .footer {
+      flex-direction: column;
+    }
+    
+    .footer-content {
+      width: 100%;
+    }
+    
+    .footer-content ul {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .footer-content li {
+      margin-right: 0;
+      margin-bottom: 10px;
+    }
+  }
+</style>

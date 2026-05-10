@@ -1,0 +1,32 @@
+{% schema %}
+{
+  "name": "cart-summary",
+  "settings": []
+}
+{% endschema %}
+
+<section class="cart-summary" role="region">
+  <h1>Cart Summary</h1>
+  <ul>
+    {% for item in cart.items %}
+      <li>
+        {{ item.count }} x {{ item.product.title }} {{ item.price | money }}
+      </li>
+    {% endfor %}
+  </ul>
+  <p>Total: {{ cart.subtotal_price | money }}</p>
+</section>
+
+<script>
+  function updateCartSummary() {
+    const cartSummary = document.querySelector('.cart-summary');
+    const cartItems = cart.items;
+    const cartSummaryHtml = '';
+    cartItems.forEach((item) => {
+      cartSummaryHtml += `<li>${item.count} x ${item.product.title} ${item.price | money}</li>`;
+    });
+    cartSummary.innerHTML = `\n      <h1>Cart Summary</h1>\n      <ul>\n        ${cartSummaryHtml}\n      </ul>\n      <p>Total: ${cart.subtotal_price | money}</p>`;
+  };
+  updateCartSummary();
+  document.addEventListener('cart:updated', updateCartSummary);
+</script>

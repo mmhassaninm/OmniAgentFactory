@@ -1,0 +1,25 @@
+<!-- Product Hero Section -->
+<section class="product-hero" role="region" aria-label="Product Hero">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center">
+        <img src="{{ settings.image | img_url }}" alt="Product Image" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Product image"
+    }
+  ],
+  "blocks": [],
+  "responsive_notes": "Image size reduces on mobile to fit screen"
+}
+{% endschema %}

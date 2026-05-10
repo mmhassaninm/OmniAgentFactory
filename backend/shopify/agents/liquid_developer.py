@@ -10,6 +10,7 @@ from typing import Any, Dict
 
 from core.model_router import call_model
 from shopify.models import SharedContext
+from shopify.utils import robust_parse_json
 
 logger = logging.getLogger(__name__)
 
@@ -117,8 +118,4 @@ No markdown fences. No explanation. Valid JSON only.
         return {"status": "done", "summary": summary, "data": data}
 
     def _parse_json(self, text: str) -> dict:
-        text = text.strip()
-        m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
-        if m:
-            text = m.group(1).strip()
-        return json.loads(text)
+        return robust_parse_json(text)

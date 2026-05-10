@@ -1,0 +1,48 @@
+{% schema %}
+  {
+    "name": "Feature Grid",
+    "settings": [
+      {
+        "type": "text",
+        "id": "heading",
+        "label": "Key Features",
+        "default": "Key Features"
+      },
+      {
+        "type": "text",
+        "id": "subheading",
+        "label": "What sets Stockify apart",
+        "default": ""
+      }
+    ],
+    "presets": [
+      [
+        {
+          "setting": [
+            "heading",
+            "subheading"
+          ],
+          "default": [
+            "Key Features",
+            "What sets Stockify apart"
+          ]
+        }
+      ]
+    ]
+  }
+  {% endschema %}
+  <section class="feature-grid">
+    <div class="container">
+      <h2>{{ settings.heading | escape }}</h2>
+      <p>{{ settings.subheading | escape }}</p>
+      <div class="feature-grid-inner">
+        {% for feature in block.feature %}
+        <div class="feature">
+          <img src="{{ feature.icon | img_url }}" alt="">
+          <h3>{{ feature.title | escape }}</h3>
+          <p>{{ feature.description | escape }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>

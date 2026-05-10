@@ -1,0 +1,14 @@
+<section id="features" class="container mx-auto px-4 py-4">
+    <h2 class="font-montserrat text-3xl leading-tight">Featured Products</h2>
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5{% if section.settings.products == null %} hidden{% endif %}">
+      {% if section.settings.products != blank %}
+        {% for product in section.settings.products %}
+          <div class="bg-white shadow-md p-4 rounded{% if loop.last %} mb-4{% endif %}">
+            <h3 class="font-montserrat text-2xl leading-tight">{{ product.title }}</h3>
+            <p class="font-lato text-lg pb-4">{{ product.description | escape }}</p>
+            <a href="{{ product.url }}" class="bg-[#3498db] hover:bg-[#2ecc71] text-white font-bold py-2 px-4 rounded">View Product</a>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </section>{% schema %}{% schema-setting id="products" type="product_list" label="Products" default="" %}{% endschema %}

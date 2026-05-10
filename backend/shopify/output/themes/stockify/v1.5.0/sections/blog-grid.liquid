@@ -1,0 +1,43 @@
+<section class="blog-grid" role="region" aria-label="Blog Grid">
+  <h2>Blog Articles</h2>
+  <div class="grid">
+    {% for article in collection.products %}
+      <div class="grid-item">
+        <img src="{{ article.featured_image | img_url | escape }}" alt="{{ article.title }}" width="100" height="100">
+        <h3>{{ article.title }}</h3>
+        {% if settings.show_excerpt %}
+          <p>{{ article.description | escape }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Blog Grid",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "blog_collection",
+      "label": "Blog Collection"
+    },
+    {
+      "type": "range",
+      "id": "grid_columns",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "unit": "",
+      "label": "Grid columns",
+      "default": 3
+    },
+    {
+      "type": "checkbox",
+      "id": "show_excerpt",
+      "label": "Show excerpt"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}

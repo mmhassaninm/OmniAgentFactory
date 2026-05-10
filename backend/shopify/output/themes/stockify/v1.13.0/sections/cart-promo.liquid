@@ -1,0 +1,26 @@
+<section class="cart-promo" aria-label="Promotional message and discount code">
+  <h2>{{ settings.heading }}</h2>
+  <p>{{ settings.subheading }}</p>
+</section>
+
+{% schema %}
+{
+  "name":"Cart Promo",
+  "settings":[
+    {
+      "type":"text",
+      "id":"heading",
+      "label":"Heading",
+      "default":"Free Shipping on Orders Over $50"
+    },
+    {
+      "type":"text",
+      "id":"subheading",
+      "label":"Subheading",
+      "default":"Use code FREETEE at checkout"
+    }
+  ],
+  "presets":[
+  ]
+}
+{% endschema %}

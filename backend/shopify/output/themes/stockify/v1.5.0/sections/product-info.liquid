@@ -1,0 +1,30 @@
+<section class="product-info" role="region" aria-label="Product info">
+  <div class="container">
+    <h1>{{ settings.description | escape }}</h1>
+    <h2>{{ settings.features | escape }}</h2>
+    <h3>{{ settings.benefits | escape }}</h3>
+  </div>
+{% schema %}
+{
+  "name": "product-info",
+  "settings": [
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description"
+    },
+    {
+      "type": "text",
+      "id": "features",
+      "label": "Features"
+    },
+    {
+      "type": "text",
+      "id": "benefits",
+      "label": "Benefits"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+</section>

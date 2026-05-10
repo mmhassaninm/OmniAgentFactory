@@ -31,8 +31,8 @@ class ShopifySwarmEngine:
         "ux_designer",
         "liquid_developer",
         "content_writer",
-        "qa_reviewer",
         "shopify_builder",
+        "qa_reviewer",
         "version_manager",
     ]
 
@@ -41,8 +41,8 @@ class ShopifySwarmEngine:
         "version_manager",
         "ux_designer",
         "liquid_developer",
-        "qa_reviewer",
         "shopify_builder",
+        "qa_reviewer",
         "version_manager",
     ]
 
@@ -80,6 +80,8 @@ class ShopifySwarmEngine:
                 logger.warning("Broadcast failed: %s", e)
 
     def _get_agent(self, name: str):
+        if name == "shopify_builder":
+            return "shopify_builder"
         if name not in self._agents:
             if name == "market_researcher":
                 from shopify.agents.market_researcher import MarketResearcher
@@ -184,7 +186,7 @@ class ShopifySwarmEngine:
 
     async def run_improvement_cycle(self, db=None):
         """Improve the most recent theme with a new version."""
-        if not db:
+        if db is None:
             return
         try:
             # Load most recently created theme

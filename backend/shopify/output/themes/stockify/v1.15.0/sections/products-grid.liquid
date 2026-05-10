@@ -1,0 +1,27 @@
+{% schema %}
+{
+  "name": "Products Grid",
+  "settings": [
+    {
+      "type": "collection_list",
+      "id": "collection_id",
+      "label": "Featured Collection"
+    }
+  ],
+  "presets": [
+    [
+      "collection_id"
+    ]
+  ]
+}
+{% endschema %}
+
+<div class="products-grid">
+  {% for product in collection.products %}
+    <div class="product">
+      <img src="{{ product.image | img_url: 'medium' }}" alt="{{ product.title | escape }}">
+      <h2>{{ product.title | escape }}</h2>
+      <p>{{ product.description | escape }}</p>
+    </div>
+  {% endfor %}
+</div>

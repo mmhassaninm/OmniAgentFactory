@@ -1,0 +1,37 @@
+<section class="announcement-bar bg-white shadow-sm p-4 text-center" style="--primary-color:#8B9467;--background-color:#F2F2F2">
+  <div class="container-fluid">
+    <div class="row justify-content-center align-items-center">
+      <div class="col-12 col-md-10 col-lg-8 text-left">
+        <h4 class="mb-1 text-primary font-weight-bold" style="font-family:Montserrat">{{ settings.message | escape }}</h4>
+        <p class="mb-2 text-gray-500" style="font-family:Lato">{{ settings.message | escape }}</p>
+        <a href="{{ settings.url | escape }}" class="btn btn-primary" style="font-family:Montserrat">{{ 'general.button.learn_more' | t }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% schema %}
+{
+  "name":"announcement-bar",
+  "settings":[
+    {
+      "type":"text",
+      "id":"message",
+      "label":"Message",
+      "default":"Get 10% off your first order!"
+    },
+    {
+      "type":"url",
+      "id":"url",
+      "label":"URL"
+    }
+  ],
+  "presets":[
+    {
+      "name":"default",
+      "settings":{
+        "message":"Welcome to Delish!"
+      }
+    }
+  ]
+}
+{% endschema %}

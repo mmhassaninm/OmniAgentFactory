@@ -1,0 +1,34 @@
+{% schema %}
+{
+  "name": "Page Content",
+  "settings": [
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description",
+      "default": ""
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {
+        "description": "This is the page content"
+      }
+    }
+  ]
+}
+{% endschema %}
+
+<div class="page-content">
+  <div class="container">
+    <p>{{ settings.description }}</p>
+  </div>
+</div>
+
+<style>
+.page-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+</style>

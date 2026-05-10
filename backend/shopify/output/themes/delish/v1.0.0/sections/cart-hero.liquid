@@ -1,0 +1,23 @@
+{% schema %}
+{
+  'name': 'cart_hero',
+  'settings': [
+    {
+      'type': 'image_picker',
+      'id': 'image',
+      'label': 'Cart image'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Default',
+      'settings': {
+        'image': "image.jpg"
+      }
+    }
+  ]
+}
+{% endschema %}
+<div class="bg-cover bg-center bg-image {{ settings.image | img_url: 'master' }} h-screen w-full object-cover">
+  <h1 class="text-4xl text-center pt-12 pb-4 text-white">Your Cart</h1>
+</div>

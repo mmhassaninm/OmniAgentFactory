@@ -10,6 +10,7 @@ from typing import Any, Dict
 
 from core.model_router import call_model
 from shopify.models import SharedContext
+from shopify.utils import robust_parse_json
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,8 @@ For EACH section, specify:
 - blocks: Array of block type objects [{type, name, settings: [...]}] (for repeatable elements)
 - responsive_notes: How layout changes on mobile
 
-REQUIRED PAGES (include all):
-index, product, collection, list-collections, cart, blog, article, page, 404, search, customers/login, customers/register
+REQUIRED PAGES (include exactly these 6 core pages):
+index, product, collection, cart, blog, page
 
 REQUIRED GLOBAL SECTIONS (included in every page via layout/theme.liquid):
 header, footer, announcement-bar
@@ -68,7 +69,8 @@ OUTPUT ONLY valid JSON:
   ]
 }
 
-Be thorough — include at least 5 sections for the homepage, 8+ sections total across all templates.
+Be brief and concise — include max 3 sections per page, and exactly 6 pages total.
+Return ONLY a valid JSON object. No markdown. No explanation. Start your response with { and end with }
 """
 
 
@@ -82,14 +84,23 @@ class UXDesigner:
 
         brief = context.creative_brief or {}
 
+        # Strip down the brief
+        stripped_brief = {
+            "theme_name": brief.get("theme_name", ""),
+            "niche": brief.get("niche", ""),
+            "colors": brief.get("colors", {}),
+            "font_primary": brief.get("font_primary", ""),
+            "price_range": brief.get("recommended_price", "") or brief.get("price_range", "")
+        }
+
         user_content = f"""
 Create a complete UX Blueprint for this Shopify theme.
 
 CREATIVE BRIEF:
-{json.dumps(brief, indent=2)}
+{json.dumps(stripped_brief, indent=2)}
 
-Design all sections for all required pages. Make them conversion-optimized for the {brief.get('niche', 'e-commerce')} niche.
-Output ONLY valid JSON — no markdown, no explanation.
+Design all sections for the 6 required pages (index, product, collection, cart, blog, page) and global sections. Make them conversion-optimized for the {stripped_brief.get('niche', 'e-commerce')} niche, with max 3 sections per page.
+Return ONLY a valid JSON object. No markdown. No explanation. Start your response with {{ and end with }}
 """
 
         text = await call_model(
@@ -98,7 +109,7 @@ Output ONLY valid JSON — no markdown, no explanation.
                 {"role": "user",   "content": user_content},
             ],
             task_type="general",
-            max_tokens=4000,
+            max_tokens=3000,
             temperature=0.7,
         )
         data = self._parse_json(text)
@@ -111,8 +122,4 @@ Output ONLY valid JSON — no markdown, no explanation.
         return {"status": "done", "summary": summary, "data": data}
 
     def _parse_json(self, text: str) -> dict:
-        text = text.strip()
-        m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
-        if m:
-            text = m.group(1).strip()
-        return json.loads(text)
+        return robust_parse_json(text)

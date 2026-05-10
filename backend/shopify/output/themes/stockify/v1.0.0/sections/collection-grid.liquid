@@ -1,0 +1,44 @@
+{% schema %}
+{
+  "name": "collection-grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Products in this collection",
+      "default": "Products in this collection"
+    }
+  ],
+  "presets": [
+    [
+      {
+        "settings": {
+          "heading": "Women's Fashion"
+        }
+      }
+    ],
+    [
+      {
+        "settings": {
+          "heading": "Men's Style"
+        }
+      }
+    ]
+  ]
+}
+{% endschema %}
+
+<section class="collection-grid" role="region">
+  <h1>{{ settings.heading | escape }}</h1>
+  <div class="grid" data-grid-items="{% for item in collection.items %}
+    {{ item.id }},
+  {% endfor %}">
+    {% for item in collection.items %}
+      <div class="grid-item">
+        <img src="{{ item.image | img_url: 'large' }}" alt="{{ item.title | escape }}" loading="lazy">
+        <h2>{{ item.title | escape }}</h2>
+        <p>{{ item.price | money }} {{ item.price_vendor }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>

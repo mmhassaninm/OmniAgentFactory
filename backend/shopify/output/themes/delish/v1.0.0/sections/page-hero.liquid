@@ -1,0 +1,21 @@
+{% schema %}
+{
+  'name': 'page-hero',
+  'settings': [
+    {
+      'type': 'image_picker',
+      'id': 'image',
+      'label': 'Page image'
+    }
+  ],
+  'presets': []
+}
+{% endschema %}
+<section class="page-hero" style="--primary-color: #8B9467;">
+  <img src="{{ settings.image | img_url: 'master' }}" alt="Page hero image">
+  <div class="container">
+    <h1>
+      Page Title
+    </h1>
+  </div>
+</section>

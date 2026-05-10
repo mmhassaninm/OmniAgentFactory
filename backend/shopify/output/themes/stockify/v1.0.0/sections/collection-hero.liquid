@@ -1,0 +1,41 @@
+{% schema %}
+{
+  "name": "collection-hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Collection image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Collection name",
+      "default": "Collection name"
+    }
+  ],
+  "presets": [
+    [
+      {
+        "settings": {
+          "image": "collections/hero1.jpg",
+          "heading": "Women's Fashion"
+        }
+      }
+    ],
+    [
+      {
+        "settings": {
+          "image": "collections/hero2.jpg",
+          "heading": "Men's Style"
+        }
+      }
+    ]
+  ]
+}
+{% endschema %}
+
+<section class="collection-hero" role="region">
+  <img src="{{ settings.image | img_url: 'large' }}" alt="{{ settings.heading | escape }}" loading="lazy">
+  <h1>{{ settings.heading | escape }}</h1>
+</section>

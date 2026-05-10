@@ -1,0 +1,5 @@
+<section id="call-to-action" class="container mx-auto px-4 py-4 text-center text-[#3498db] leading-tight font-sans text-3xl font-bold">
+    <h1 class="font-montserrat text-5xl leading-tight">{{ settings.heading }}</h1>
+    <p class="font-lato text-2xl pb-4">{{ settings.subheading }}</p>
+    <a href="{{ settings.cta_url }}" class="bg-[#3498db] hover:bg-[#2ecc71] text-white font-bold py-2 px-4 rounded">{{ settings.cta_label }}</a>
+  </section>{% schema %}{% schema-setting id="heading" type="text" label="Heading" default="Try Stockify for Free" %}{% schema-setting id="subheading" type="text" label="Subheading" default="Get started with a free 14-day trial" %}{% schema-setting id="cta_label" type="text" label="Button label" default="Sign Up" %}{% schema-setting id="cta_url" type="url" label="Button URL" %}{% endschema %}

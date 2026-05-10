@@ -1,5 +1,68 @@
 # OmniBot — Living Project Instructions
 
+## ⚠️ MANDATORY RULES — NON-NEGOTIABLE
+
+### RULE 1 — Read the Constitution First
+Before writing a single line of code, making any edit, or 
+proposing any change, the agent MUST fully read and analyze 
+this entire file (PROJECT_INSTRUCTIONS.md).
+
+Not skimming. Not reading headings only.
+Full comprehension of: project goal, quality standards, 
+architecture conventions, and all rules below.
+
+Any modification made without reading this file first is a 
+direct violation and the work must be redone from scratch.
+
+---
+
+### RULE 2 — Zero Tolerance for Fake or Cosmetic Code
+It is strictly FORBIDDEN to write code whose purpose is to 
+simulate success, fake output, or pass a test without real 
+execution.
+
+This includes:
+- Hardcoded return values disguised as real results
+- Silent fallbacks that hide failures and pretend success
+- Stub functions that log "done" without doing actual work
+- Any pattern where the code "looks like it works" but doesn't
+
+Every line of code must perform a real, verifiable function.
+If something cannot be implemented correctly right now, the 
+agent must say so explicitly — NOT fake it.
+
+---
+
+### RULE 3 — Everything Must Be Tested and Verified
+Every feature, fix, or change implemented must be tested 
+by the agent itself before declaring it done.
+
+Testing methods available (use all that apply):
+- Browser: navigate to the relevant page and verify visually
+- Project API: call the relevant endpoint directly 
+  (e.g. via curl, httpx, or Invoke-RestMethod in terminal)
+- Terminal: run the relevant script, module, or command 
+  and observe real output
+
+The agent must not stop at "I implemented the fix."
+The agent must continue until it has confirmed with its 
+own eyes (logs, response, UI, file output) that the feature 
+works correctly end-to-end.
+
+If any problem is found during testing:
+1. Read the full error — do not guess
+2. Analyze the root cause in the actual source file
+3. Design and implement a targeted fix
+4. Re-run the full test from the beginning
+5. Repeat until zero errors remain
+
+The agent must keep iterating through this loop — 
+fix → test → fix → test — until everything works.
+There is no acceptable state between "fully working" 
+and "still investigating."
+
+---
+
 ## Project Context
 - **Project Name**: OmniBot — Autonomous Agent Factory
 - **Vision**: A high-end self-evolving agent factory that continuously runs, tests, and refines specialized autonomous agents.

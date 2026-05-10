@@ -1,0 +1,75 @@
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {
+        "logo": "https://example.com/logo.png",
+        "logo_width": 150,
+        "menu": "main-menu"
+      }
+    }
+  ]
+}
+{% endschema %}
+
+<div class="header" style="background-color: #f9f9f9;">
+  <div class="container">
+    <div class="logo">
+      <img src="{{ settings.logo | img_url: '1x' }}" width="{{ settings.logo_width }}" alt="Logo">
+    </div>
+    <nav role="navigation" aria-label="Main menu">
+      <ul>
+        {% for item in settings.menu %}
+          <li><a href="{{ item.url }}">{{ item.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<style>
+.header {
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+.header .logo {
+  float: left;
+}
+.header nav {
+  float: right;
+}
+.header nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.header nav li {
+  display: inline-block;
+  margin-right: 20px;
+}
+</style>

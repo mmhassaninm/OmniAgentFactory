@@ -1,0 +1,28 @@
+{% schema %}
+{
+  "name": "product-grid-item",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Product image"
+    },
+    {
+      "type": "text",
+      "id": "name",
+      "label": "Product name"
+    },
+    {
+      "type": "price",
+      "id": "price",
+      "label": "Price"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="product-grid-item" role="listitem">
+  <img src="{{ settings.image | img_url: 'large' }}" alt="{{ settings.name | escape }}" loading="lazy">
+  <h2>{{ settings.name | escape }}</h2>
+  <p>{{ settings.price | money }}</p>
+</div>

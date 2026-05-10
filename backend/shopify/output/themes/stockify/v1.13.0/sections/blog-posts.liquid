@@ -1,0 +1,27 @@
+<section class="blog-posts" aria-label="List of blog posts">
+  <h2>{{ settings.posts }}</h2>
+  <ul>
+    {% for post in blogs.entries %}
+      <li>
+        <h3>{{ post.title }}</h3>
+        <p>{{ post.content }}</p>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% schema %}
+{
+  "name":"Blog Posts",
+  "settings":[
+    {
+      "type":"blog_list",
+      "id":"posts",
+      "label":"Posts",
+      "default":""
+    }
+  ],
+  "presets":[
+  ]
+}
+{% endschema %}

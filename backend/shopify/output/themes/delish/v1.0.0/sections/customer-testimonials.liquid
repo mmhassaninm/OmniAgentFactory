@@ -1,0 +1,43 @@
+<!-- Customer Testimonials Section -->
+<section class="customer-testimonials" role="section" aria-label="Customer Testimonials">
+  <div class="container">
+    <div class="row">
+      {%- for testimonial in testimonials -%}
+        <div class="col-md-4 text-center">
+          <div class="testimonial-box">
+            <img src="{{ testimonial.image | img_url }}" alt="{{ testimonial.name | escape }}" loading="lazy">
+            <p>{{ testimonial.testimonial | escape }}</p>
+            <p>- {{ testimonial.name | escape }}</p>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Customer Testimonials",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Testimonial image"
+    },
+    {
+      "type": "text",
+      "id": "testimonial",
+      "label": "Testimonial",
+      "default": "Best food delivery experience ever!"
+    },
+    {
+      "type": "text",
+      "id": "name",
+      "label": "Name",
+      "default": "John Doe"
+    }
+  ],
+  "blocks": [],
+  "responsive_notes": "Grid of 3 testimonials on desktop, list on mobile"
+}
+{% endschema %}

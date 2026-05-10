@@ -1,0 +1,23 @@
+{% schema %}
+{
+  'name': 'page-call-to-action',
+  'settings': [
+    {
+      'type': 'text',
+      'id': 'label',
+      'label': 'Label'
+    },
+    {
+      'type': 'url',
+      'id': 'url',
+      'label': 'URL'
+    }
+  ],
+  'presets': []
+}
+{% endschema %}
+<section class="page-call-to-action" style="--primary-color: #8B9467;">
+  <div class="container">
+    <a href="{{ settings.url }}" class="btn">{{ settings.label }}</a>
+  </div>
+</section>

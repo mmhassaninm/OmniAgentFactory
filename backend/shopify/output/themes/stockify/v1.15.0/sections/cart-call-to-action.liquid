@@ -1,0 +1,33 @@
+<section class="cart-call-to-action" data-section-id="cart-call-to-action">
+  <div class="container">
+    <h2 id="cart-call-to-action-heading" class="heading">{{ settings.heading | escape }}</h2>
+    <p id="cart-call-to-action-subheading" class="subheading">{{ settings.subheading | escape }}</p>
+    <a href="{{ cart.url }}" class="button">Proceed to checkout</a>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Cart Call-to-Action",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Ready to checkout?"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Proceed to checkout now"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {}
+    }
+  ]
+}
+{% endschema %}

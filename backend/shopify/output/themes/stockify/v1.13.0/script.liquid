@@ -1,0 +1,11 @@
+<script>
+  function lazyLoadImage(img) {
+    img.src = img.dataset.src;
+  }
+
+  // Lazy load announcement bar image
+  const announcementBarImage = document.querySelector('.announcement-bar img');
+  if (announcementBarImage) {
+    lazyLoadImage(announcementBarImage);
+  }
+</script>

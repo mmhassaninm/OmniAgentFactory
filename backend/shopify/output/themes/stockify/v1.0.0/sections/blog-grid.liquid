@@ -1,0 +1,50 @@
+<section class="blog-grid" role="region" aria-label="Blog Grid">
+  <h2 class="blog-grid__heading" id="blog-grid-heading">{{ settings.heading }}</h2>
+  <div class="blog-grid__content">
+    {% for post in blog-posts %}
+      <div class="blog-grid__item">
+        <img class="blog-grid__image" src="{{ post.image | img_url: 'master' }}" alt="{{ post.title }}">
+        <h3 class="blog-grid__title">{{ post.title }}</h3>
+        <p class="blog-grid__description">{{ post.description }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "blog-grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Blog posts",
+      "default": "Blog posts"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "blog-post",
+      "name": "blog-post",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Blog post image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title"
+        },
+        {
+          "type": "text",
+          "id": "description",
+          "label": "Description"
+        }
+      ]
+    }
+  ],
+  "presets": []
+}
+{% endschema %}

@@ -1,0 +1,26 @@
+<!-- sections/collection-grid.liquid -->
+
+<div class="collection-grid">
+  {% for product in collection.products %}
+    <div class="collection-grid-item">
+      <a href="{{ product.url }}" role="link" aria-label="{{ product.title | escape }}">
+        <img src="{{ product.image | img_url: '1x' }}" alt="{{ product.title | escape }}" style="width: 100%; height: auto;" role="img" aria-label="{{ product.title | t }}">
+        <h2>{{ product.title | escape }}</h2>
+      </a>
+    </div>
+  {% endfor %}
+</div>
+
+{% schema %}
+{
+  "name":"collection-grid",
+  "settings":[
+    {
+      "type":"collection_list",
+      "id":"collection_id",
+      "label":"Collection ID"
+    }
+  ],
+  "presets":[]
+}
+{% endschema %}
