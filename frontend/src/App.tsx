@@ -23,6 +23,7 @@ import Settings from './pages/Settings'
 import KeyVault from './pages/KeyVault'
 import ModelHub from './pages/ModelHub'
 import DevLoopDashboard from './pages/DevLoopDashboard'
+import MoneyAgent from './pages/MoneyAgent'
 import { LanguageProvider } from './i18n/LanguageContext'
 import { PreLoader } from './components/PreLoader'
 
@@ -42,6 +43,9 @@ export default function App() {
                 
                 <Route path="/dev-loop" element={<DevLoopDashboard />} />
                 <Route path="/devloop" element={<DevLoopDashboard />} />
+
+                <Route path="/money-agent" element={<MoneyAgent />} />
+                <Route path="/money" element={<MoneyAgent />} />
                 
                 {/* Support both new /agents/:id and legacy /agent/:agentId routes */}
                 <Route path="/agents/:agentId" element={<AgentDetail />} />

@@ -374,3 +374,9 @@
 - Approach      : Created the primary standalone autonomous worker script `money_agent.py` in the root folder with non-headless Playwright Chromium automation capabilities to scrape freelance/micro-task jobs, execute tasks using our cascading LLM model router fallback, and log income audits to a local SQLite database (`income.db`). Built a state-of-the-art FastAPI telemetry web dashboard on port 8095 (featuring live browser screenshot streaming, progress metrics, and auto-scrolling log streams) and secured console print encoding against Windows terminal CharMap errors.
 - Outcome       : success
 - Notes         : Verified clean syntax compilation and full operational dashboard telemetry via browser automation audits.
+
+## [2026-05-10] — Money Agent core implementation
+- Files changed : backend/services/paypal_service.py (new), backend/agent/money_agent_loop.py (new), backend/core/money_roi_tracker.py (new), backend/api/money.py (new), backend/services/telegram_commander.py (upgraded), backend/tools/browser_tool.py (upgraded), backend/tools/email_tool.py (upgraded), backend/core/config.py (extended), backend/main.py (wired), .env.example (extended), backend/requirements.txt (extended), frontend/src/components/EarningsDashboard.tsx (new), frontend/src/pages/MoneyAgent.tsx (new), frontend/src/App.tsx (route added), frontend/src/components/MainLayout.tsx (nav link added)
+- Approach      : Human-in-the-loop income agent — agent finds opportunities, writes cold email pitches via Claude API, notifies human via Telegram/dashboard; human approves to send. PayPal REST API for real invoicing. Separate money_roi_tracker.py from token ROI tracker.
+- Outcome       : success
+- Notes         : PayPal defaults to sandbox (PAYPAL_SANDBOX=true); set PAYPAL_SANDBOX=false and add live credentials to go live. ANTHROPIC_KEY required for pitch generation. Browser runs headless=False in human_in_loop mode so user can monitor.

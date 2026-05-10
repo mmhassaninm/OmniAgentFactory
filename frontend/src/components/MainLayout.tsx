@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Shield, Cpu, Key, Settings, Activity, Workflow } from 'lucide-react'
+import { Shield, Cpu, Key, Settings, Activity, Workflow, DollarSign } from 'lucide-react'
 import { useFactoryStatus } from '../hooks/useAgent'
 
 export default function MainLayout() {
@@ -54,6 +54,20 @@ export default function MainLayout() {
             >
               <Workflow size={16} />
               <span>Dev Loop</span>
+            </NavLink>
+
+            <NavLink
+              to="/money-agent"
+              className={({ isActive }) =>
+                `py-2.5 px-4 rounded-lg mx-2 flex items-center gap-3 text-sm transition-all duration-150 ${
+                  isActive
+                    ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-emerald-400 font-semibold'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                }`
+              }
+            >
+              <DollarSign size={16} />
+              <span>Money Agent</span>
             </NavLink>
 
             <NavLink

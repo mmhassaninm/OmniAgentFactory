@@ -77,6 +77,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Telegram Commander failed: %s", e)
 
+    # 5b. Initialize Money Agent
+    try:
+        settings = get_settings()
+        if settings.agent_mode in ("human_in_loop", "supervised", "review_only"):
+            from agent.money_agent_loop import get_money_agent
+            _money_agent = get_money_agent()
+            app.state.money_agent = _money_agent
+            logger.info("✓ Money Agent initialized (mode: %s)", settings.agent_mode)
+    except Exception as e:
+        logger.warning("Money Agent init failed: %s", e)
+
     # 5. Initialize Prompt Evolver (Phase 7: Self-Rewriting Prompt Templates)
     try:
         from core.prompt_evolver import get_prompt_evolver
@@ -231,6 +242,14 @@ app.include_router(factory_control_router, prefix="/api/factory", tags=["Factory
 app.include_router(factory_settings_router, prefix="/api/factory/settings", tags=["Factory Settings"])
 app.include_router(dev_loop_router, prefix="/api/dev-loop", tags=["Dev Loop"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
+
+# ── Money Agent Router ───────────────────────────────────────────────────────
+try:
+    from api.money import router as money_router
+    app.include_router(money_router, prefix="/api/money", tags=["Money Agent"])
+    logger.info("✓ Money Agent router loaded")
+except Exception as e:
+    logger.warning("Money Agent router failed to load: %s", e)
 
 # ── OS Shell UI Routers (desktop shell) ─────────────────────────────────
 try:

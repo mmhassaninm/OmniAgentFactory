@@ -81,9 +81,18 @@ class Settings:
         self.max_tokens_per_key_per_day: int = int(os.getenv("MAX_TOKENS_PER_KEY_PER_DAY", "100000"))
 
         # ── Revenue Engine ───────────────────────
-        self.paypal_me_link: str = os.getenv("PAYPAL_ME_LINK", "").strip()
+        self.paypal_me_link: str = os.getenv("PAYPAL_ME_LINK", "paypal.me/mmhassanin").strip()
         self.default_service_price: int = int(os.getenv("DEFAULT_SERVICE_PRICE", "25"))
         self.revenue_mode: bool = os.getenv("REVENUE_MODE", "false").lower() == "true"
+
+        # ── Money Agent ──────────────────────────
+        self.paypal_client_id: str = os.getenv("PAYPAL_CLIENT_ID", "").strip()
+        self.paypal_client_secret: str = os.getenv("PAYPAL_CLIENT_SECRET", "").strip()
+        self.paypal_email: str = os.getenv("PAYPAL_EMAIL", "").strip()
+        self.paypal_sandbox: bool = os.getenv("PAYPAL_SANDBOX", "true").lower() != "false"
+        self.gmail_address: str = os.getenv("GMAIL_ADDRESS", "").strip()
+        self.gmail_app_password: str = os.getenv("GMAIL_APP_PASSWORD", "").strip()
+        self.agent_mode: str = os.getenv("AGENT_MODE", "human_in_loop").strip()
 
         # ── Telegram Command Center ──────────────
         self.telegram_bot_token: str = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
