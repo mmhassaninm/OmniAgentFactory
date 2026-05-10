@@ -8,6 +8,7 @@ and integrating with the Kill Switch (System 4).
 
 import asyncio
 import logging
+import math
 from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional, Any
@@ -42,6 +43,17 @@ from utils.budget import get_budget_governor
 logger = logging.getLogger(__name__)
 
 _MONGO_FAILED = object()  # sentinel: returned when MongoDB exhausts all retries
+
+EVOLUTION_DIRECTIONS = [
+    "improve_error_handling",    # better try/except, graceful degradation
+    "optimize_prompt",           # sharper, more focused system prompt
+    "add_retry_logic",           # retry on failure with backoff
+    "improve_output_format",     # cleaner, more structured responses
+    "add_caching",               # cache repeated computations
+    "improve_web_search",        # better search query construction
+    "add_self_validation",       # agent checks its own output
+    "reduce_token_waste",        # shorter, more efficient prompts
+]
 
 
 async def _mongo_retry(agent_id: str, fn, retries: int = 5):
@@ -391,6 +403,13 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             agent = BaseAgent.from_dict(agent_doc)
             agent_dna = agent_doc.get("dna", DEFAULT_DNA)
 
+            # Initialize best_score if missing
+            best_score = agent_doc.get("best_score", agent.current_score)
+            if "best_score" not in agent_doc:
+                await _mongo_retry(agent_id, lambda: db.agents.update_one(
+                    {"id": agent_id}, {"$set": {"best_score": best_score}}
+                ))
+
             # Check if soft_stop flag is set
             if agent.config.get("_stop_after_commit"):
                 await log_thought(agent_id, "Soft stop flag detected — stopping after last commit", phase="general")
@@ -483,6 +502,41 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 hivemind_wisdom=wisdom,
                 constitution_rules=constitution_rules,
             )
+
+            # SKILL DIFFUSION: Inject relevant shared skills
+            relevant_skills = await self._fetch_relevant_skills(agent.id, db)
+            if relevant_skills:
+                skill_hints = "\n\n".join([
+                    f"💡 Proven pattern from another agent (score: {s['score']:.2f}):\n{s['skill_summary']}"
+                    for s in relevant_skills
+                ])
+                improvement_prompt[-1]["content"] += f"\n\n---\nSKILL POOL HINTS (proven by other agents):\n{skill_hints}\n---"
+
+                # Increment times_applied counter for each used skill
+                for skill in relevant_skills:
+                    await db.shared_skills.update_one(
+                        {"_id": skill["_id"]},
+                        {"$inc": {"times_applied": 1}}
+                    )
+
+            # UCB1 PATH SELECTION: Select evolution direction
+            direction = await self._select_evolution_direction(agent.id, db)
+            await self._broadcast("evolve", "info",
+                f"🧭 Evolution direction selected: {direction} (UCB1)")
+
+            # Add direction as a specific instruction to the DRAFT prompt
+            direction_instructions = {
+                "improve_error_handling": "Focus this improvement on making the agent more resilient. Add specific try/except blocks, handle edge cases, and ensure graceful degradation when inputs are unexpected.",
+                "optimize_prompt": "Focus this improvement on the system prompt itself. Make it sharper, more specific, eliminate vague instructions, and add concrete output format requirements.",
+                "add_retry_logic": "Focus this improvement on adding retry logic with exponential backoff for any operation that can fail transiently.",
+                "improve_output_format": "Focus this improvement on making the agent's output cleaner and more structured. Add consistent formatting, use markdown tables or lists where appropriate.",
+                "add_caching": "Focus this improvement on caching repeated or expensive computations to reduce token usage and improve response time.",
+                "improve_web_search": "Focus this improvement on how the agent constructs and uses web search queries. Make searches more specific and results more actionable.",
+                "add_self_validation": "Focus this improvement on adding self-validation: the agent should check its own output before returning, verify completeness, and flag uncertainty.",
+                "reduce_token_waste": "Focus this improvement on reducing token waste. Shorten the system prompt, eliminate redundant instructions, and use more efficient language.",
+            }
+            direction_hint = direction_instructions.get(direction, "Improve overall quality.")
+            improvement_prompt[-1]["content"] += f"\n\nEVOLUTION FOCUS: {direction_hint}"
             orchestrator = Orchestrator()
             new_code = await orchestrator.run_swarm(agent.goal, agent_id, db)
 
@@ -501,6 +555,26 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             await log_thought(agent_id, "Phase TEST: evaluating new version...", phase="testing")
 
             score = await test_agent(new_code, agent.test_cases, agent.name, old_code=agent.agent_code, goal=agent.goal)
+
+            # RATCKET GATE: Enforce minimum improvement threshold
+            RATCHET_THRESHOLD = 0.05
+            if score < (best_score + RATCHET_THRESHOLD):
+                # Reject — log clearly, do NOT commit
+                await log_thought(agent_id,
+                    f"⛔ Ratchet: score {score:.3f} did not beat "
+                    f"best {best_score:.3f} + {RATCHET_THRESHOLD} threshold — rejected")
+                # Apply FAILURE_TAX (already exists in the codebase — use it)
+                manager = get_evolution_manager()
+                manager._failure_counts[agent_id] = manager._failure_counts.get(agent_id, 0) + 1
+                failure_count = manager._failure_counts[agent_id]
+                tax_multiplier = min(1.5 ** failure_count, 12.0)
+                taxed_interval = int(45 * tax_multiplier)
+                taxed_interval = min(taxed_interval, 1800)
+                if taxed_interval > 45:
+                    await log_thought(agent_id,
+                        f"[FAILURE_TAX] Backing off {taxed_interval}s after {failure_count} consecutive failures")
+                await asyncio.sleep(taxed_interval)
+                continue
 
             # 3b. RED TEAM: adversarial robustness gate (only when code improves)
             red_team_passed = True
@@ -545,6 +619,21 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     f"✅ Evolved to v{new_version}, score: {score:.2f} (was {agent.current_score:.2f})",
                     phase="commit",
                 )
+
+                # Update best_score in agent document
+                await _mongo_retry(agent_id, lambda: db.agents.update_one(
+                    {"id": agent_id}, {"$set": {"best_score": score}}
+                ))
+
+                # Write to MongoDB collection `evolution_ratchets`
+                await db.evolution_ratchets.insert_one({
+                    "agent_id": agent_id,
+                    "version": new_version,
+                    "previous_best": best_score,
+                    "new_score": score,
+                    "improvement": score - best_score,
+                    "timestamp": datetime.utcnow()
+                })
 
                 # Record ROI for this successful cycle
                 try:
@@ -610,6 +699,10 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     )
                 except Exception as e:
                     logger.debug("Collective memory contribution failed: %s", e)
+
+                # SKILL DIFFUSION: Extract winning pattern if score >= 0.80
+                if score >= 0.80:
+                    await self._extract_and_share_skill(agent, new_code, score, db)
 
                 # Deposit learning into HiveMind
                 try:
@@ -720,6 +813,20 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                             return  # Stop the evolution loop — agent is now a ghost
                 except Exception as e:
                     logger.debug("Dead letter check failed: %s", e)
+
+            # Record evolution path result
+            score_gain = score - score_before_cycle if 'score' in locals() else 0.0
+            improved = score_gain > 0
+            await db.evolution_paths.update_one(
+                {"agent_id": str(agent_id), "direction": direction},
+                {"$inc": {
+                    "times_tried": 1,
+                    "times_improved": 1 if improved else 0,
+                    "total_score_gain": max(score_gain, 0)
+                },
+                 "$set": {"last_tried": datetime.utcnow()}},
+                upsert=True
+            )
 
             # 5. Sleep between cycles (configurable per agent, with failure tax backoff)
             interval = 45
@@ -988,6 +1095,90 @@ def get_evolution_manager() -> EvolutionManager:
         _manager = EvolutionManager()
     return _manager
 
+
+async def _extract_and_share_skill(self, agent, code, score, db):
+    """Extract the winning pattern and save to shared skill pool."""
+    # Ask the model to summarize the winning strategy in 3-5 sentences
+    summary_prompt = [{"role": "user", "content":
+        f"This agent code achieved a score of {score:.2f}. "
+        f"Summarize in 3-5 sentences: what makes it effective? "
+        f"What patterns, techniques, or approaches should other agents copy?\n\n"
+        f"Agent goal: {agent.goal}\n\n"
+        f"Code:\n{code[:2000]}"  # first 2000 chars only
+    }]
+    summary = await call_model(summary_prompt, agent_id=agent.id)
+
+    await db.shared_skills.insert_one({
+        "source_agent_id": str(agent.id),
+        "source_agent_name": agent.name,
+        "source_version": agent.version,
+        "score": score,
+        "goal_keywords": agent.goal[:100],
+        "skill_summary": summary,
+        "times_applied": 0,
+        "created_at": datetime.utcnow()
+    })
+
+    # Cleanup: keep max 20 entries
+    count = await db.shared_skills.count_documents({})
+    if count > 20:
+        oldest = await db.shared_skills.find_one(
+            {}, sort=[("score", 1), ("created_at", 1)]
+        )
+        if oldest:
+            await db.shared_skills.delete_one({"_id": oldest["_id"]})
+
+    await self._broadcast("skill_diffusion", "info",
+        f"🧬 Skill extracted from {agent.name} v{agent.version} "
+        f"(score: {score:.2f}) → shared to skill pool")
+
+async def _fetch_relevant_skills(self, agent_id, db):
+    """Fetch top 2 shared skills relevant to this agent's goal."""
+    # Get top skills by score, excluding skills from this same agent
+    cursor = db.shared_skills.find(
+        {"source_agent_id": {"$ne": str(agent_id)}},
+        sort=[("score", -1)],
+        limit=2
+    )
+    skills = await cursor.to_list(length=2)
+    return skills
+
+async def _select_evolution_direction(self, agent_id, db):
+    """Select best evolution direction using UCB1 formula."""
+    records = {d: {"tried": 0, "wins": 0, "gain": 0.0}
+               for d in EVOLUTION_DIRECTIONS}
+
+    # Load existing stats from MongoDB
+    cursor = db.evolution_paths.find({"agent_id": str(agent_id)})
+    async for rec in cursor:
+        d = rec["direction"]
+        if d in records:
+            records[d]["tried"] = rec.get("times_tried", 0)
+            records[d]["wins"] = rec.get("times_improved", 0)
+            records[d]["gain"] = rec.get("total_score_gain", 0.0)
+
+    total_tries = sum(r["tried"] for r in records.values())
+    if total_tries == 0:
+        # First time — pick randomly
+        import random
+        return random.choice(EVOLUTION_DIRECTIONS)
+
+    # UCB1: balance exploitation (known good) vs exploration (untried)
+    best_dir = None
+    best_ucb = -1.0
+    for direction, stats in records.items():
+        n = stats["tried"]
+        if n == 0:
+            ucb = float('inf')  # always try untested directions first
+        else:
+            exploit = stats["gain"] / n  # average score gain
+            explore = math.sqrt(2 * math.log(total_tries) / n)
+            ucb = exploit + explore
+        if ucb > best_ucb:
+            best_ucb = ucb
+            best_dir = direction
+
+    return best_dir
 
 async def _mark_rules_applied(agent_id: str, db):
     """

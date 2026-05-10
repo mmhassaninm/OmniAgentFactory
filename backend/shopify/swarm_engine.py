@@ -168,6 +168,43 @@ class ShopifySwarmEngine:
             while self.paused and self.running:
                 await asyncio.sleep(2)
 
+            if agent_name == "ux_designer":
+                # Parallel Stage: UXDesigner + ContentWriter
+                await self._broadcast("swarm", "info",
+                    "⚡ Parallel Stage: launching UXDesigner + ContentWriter simultaneously")
+
+                import copy
+                ux_context = copy.deepcopy(context)
+                content_context = copy.deepcopy(context)
+
+                ux_task = asyncio.create_task(
+                    self._run_agent("ux_designer", ux_context)
+                )
+                content_task = asyncio.create_task(
+                    self._run_agent("content_writer", content_context)
+                )
+
+                results = await asyncio.gather(ux_task, content_task, return_exceptions=True)
+
+                # Handle results individually — one failure must not kill the other
+                ux_result, content_result = results
+                if isinstance(ux_result, Exception):
+                    await self._broadcast("ux_designer", "error",
+                        f"UXDesigner failed in parallel stage: {ux_result}")
+                else:
+                    context.update("ux_designer", ux_result)
+                if isinstance(content_result, Exception):
+                    await self._broadcast("content_writer", "error",
+                        f"ContentWriter failed in parallel stage: {content_result}")
+                else:
+                    context.update("content_writer", content_result)
+
+                # After gather, merge both results back into context before Stage 4
+                # Already done via context.update above
+
+                await self._broadcast("swarm", "info", "✅ Parallel Stage complete")
+                continue  # Skip the normal _run_agent call
+
             await self._run_agent(agent_name, context)
 
         if context.zip_path and db is not None:

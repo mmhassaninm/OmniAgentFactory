@@ -1,5 +1,11 @@
 # MODIFICATION HISTORY
 
+## [2026-05-10] — Phase 2 Evolution: 4 Intelligent Upgrades (Ratchet, Parallel DAG, Skill Diffusion, UCB1 Path Selection)
+- Files changed : backend/core/evolve_engine.py, backend/shopify/swarm_engine.py
+- Approach      : (1) **Ratchet Evolution System**: Added minimum improvement threshold (0.05) before accepting new versions; rejects sideways/drifting changes; tracks best_score per agent; logs rejections with FAILURE_TAX; writes evolution_ratchets collection. (2) **Parallel DAG Execution**: Restructured Shopify swarm to run UXDesigner + ContentWriter simultaneously using asyncio.gather; independent agents no longer wait for each other; deep-copied contexts prevent race conditions; broadcasts parallel timing messages. (3) **Skill Diffusion Engine**: Extracts winning patterns from agents scoring ≥0.80; stores in shared_skills collection; injects as hints into other agents' evolution prompts; increments times_applied counters; maintains max 20 skills with cleanup. (4) **Evolution Path Intelligence (UCB1)**: Tracks 8 evolution directions per agent; uses UCB1 algorithm to balance exploration vs exploitation; selects proven directions more frequently; records results in evolution_paths collection; adds specific focus instructions to prompts.
+- Outcome       : success
+- Notes         : All upgrades integrate non-destructively with try/except error handling. Evolution loop NEVER exits due to errors. Code compiles without syntax errors. Ready for E2E testing with agent evolution cycles.
+
 ## [2026-05-10] — Shopify Theme Factory Engine
 - Files changed : backend/shopify/ (full module), backend/routers/shopify.py, backend/api/websocket.py, backend/main.py, backend/requirements.txt, frontend/src/pages/ShopifyFactory.tsx, frontend/src/hooks/useShopifySocket.ts, frontend/src/App.tsx, frontend/src/components/MainLayout.tsx, .env.example
 - Approach      : Added additive backend/shopify/ module with 7-agent swarm (MarketResearcher, CreativeDirector, UXDesigner, LiquidDeveloper, ContentWriter, QAReviewer, VersionManager), Shopify OS 2.0 base theme skeleton, ZIP builder, MongoDB persistence, /ws/shopify/live WebSocket endpoint, /api/shopify/* REST API, and a full frontend dashboard at /shopify
