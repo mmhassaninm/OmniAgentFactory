@@ -11,6 +11,7 @@ import {
   Package,
   TrendingUp,
   Clock,
+  Rocket,
 } from 'lucide-react'
 import { BASE_URL } from '../config'
 import { useShopifySocket, SwarmEvent } from '../hooks/useShopifySocket'
@@ -217,7 +218,15 @@ function AgentFeedPanel({ events, connected }: { events: SwarmEvent[]; connected
   )
 }
 
-function ThemeCard({ theme, onDownload }: { theme: Theme; onDownload: (id: string, version: string) => void }) {
+function ThemeCard({
+  theme,
+  onDownload,
+  onDeploy,
+}: {
+  theme: Theme
+  onDownload: (id: string, version: string) => void
+  onDeploy: (id: string, version: string) => void
+}) {
   return (
     <div className="bg-white/5 border border-white/8 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between">
@@ -246,6 +255,14 @@ function ThemeCard({ theme, onDownload }: { theme: Theme; onDownload: (id: strin
       >
         <Download size={12} />
         Download ZIP
+      </button>
+
+      <button
+        onClick={() => onDeploy(theme.id, theme.current_version)}
+        className="flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-300 hover:text-indigo-200 text-xs font-medium py-2 px-3 rounded-lg transition-colors"
+      >
+        <Rocket size={12} />
+        Deploy to Shopify
       </button>
     </div>
   )
@@ -278,6 +295,7 @@ export default function ShopifyFactory() {
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null)
   const [versions, setVersions] = useState<ThemeVersion[]>([])
   const [loading, setLoading] = useState(false)
+  const [deployResult, setDeployResult] = useState<{ previewUrl: string; editorUrl: string } | null>(null)
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -331,6 +349,20 @@ export default function ShopifyFactory() {
     window.open(`${BASE_URL}/api/shopify/themes/${themeId}/download/${version}`, '_blank')
   }
 
+  const handleDeploy = useCallback(async (themeId: string, version: string) => {
+    try {
+      const res = await fetch(`${BASE_URL}/api/shopify/deploy/${themeId}/${version}`, { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) {
+        setDeployResult({ previewUrl: data.preview_url, editorUrl: data.editor_url })
+      } else {
+        alert(data.detail || 'Deploy failed')
+      }
+    } catch (_) {
+      alert('Deploy request failed — check your Shopify credentials in Settings → Shopify')
+    }
+  }, [])
+
   return (
     <div className="p-6 space-y-6 min-h-screen" style={{ background: '#060a12' }}>
       {/* Header */}
@@ -361,6 +393,24 @@ export default function ShopifyFactory() {
         </div>
       </div>
 
+      {/* Deploy result banner */}
+      {deployResult && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between gap-4">
+          <span className="text-emerald-300 text-sm font-medium">Theme deployed to Shopify!</span>
+          <div className="flex gap-4 text-xs">
+            <a href={deployResult.previewUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">
+              Preview Store
+            </a>
+            <a href={deployResult.editorUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">
+              Edit in Shopify
+            </a>
+          </div>
+          <button onClick={() => setDeployResult(null)} className="text-white/30 hover:text-white/60 transition-colors text-base leading-none">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Theme Library */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -390,6 +440,7 @@ export default function ShopifyFactory() {
                 <ThemeCard
                   theme={theme}
                   onDownload={handleDownload}
+                  onDeploy={handleDeploy}
                 />
                 <button
                   onClick={() => setSelectedTheme(selectedTheme === theme.id ? null : theme.id)}

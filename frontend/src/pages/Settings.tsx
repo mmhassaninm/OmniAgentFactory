@@ -74,6 +74,7 @@ export default function Settings() {
   const { t } = useLang()
   const qc = useQueryClient()
 
+  const [activeTab, setActiveTab] = useState<'general' | 'shopify'>('general')
   const [keyValues, setKeyValues] = useState<Record<string, string>>({})
   const [showKey, setShowKey] = useState<Record<string, boolean>>({})
   const [revealedGroq, setRevealedGroq] = useState(1)
@@ -81,6 +82,16 @@ export default function Settings() {
   const [revealedOther, setRevealedOther] = useState(1)
   const [toast, setToast] = useState<string | null>(null)
   const [validatingKeys, setValidatingKeys] = useState<Record<string, boolean>>({})
+
+  // Shopify tab state
+  const [shopifyForm, setShopifyForm] = useState({
+    store_url: '', admin_token: '', unsplash_access_key: '', swarm_autostart: false, output_folder: '',
+  })
+  const [showAdminToken, setShowAdminToken] = useState(false)
+  const [showUnsplash, setShowUnsplash] = useState(false)
+  const [shopifyTestResult, setShopifyTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [shopifySaving, setShopifySaving] = useState(false)
+  const [shopifyTesting, setShopifyTesting] = useState(false)
 
   // Factory Constitution Rules States & Hooks
   const [editedRules, setEditedRules] = useState<ConstitutionRule[]>([])
@@ -608,6 +619,139 @@ export default function Settings() {
     )
   }
 
+  // Load Shopify settings when tab is activated
+  useEffect(() => {
+    if (activeTab === 'shopify') {
+      fetch('/api/shopify/settings')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setShopifyForm(f => ({ ...f, ...d })) })
+        .catch(() => {})
+    }
+  }, [activeTab])
+
+  function renderShopifyPanel() {
+    const field = (
+      label: string,
+      key: keyof typeof shopifyForm,
+      opts?: { type?: string; placeholder?: string; readOnly?: boolean; show?: boolean; onToggle?: () => void }
+    ) => (
+      <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] hover:border-[#00d4ff]/20 transition-colors flex flex-col gap-1.5">
+        <label className="text-xs font-semibold text-[#94a3b8]">{label}</label>
+        <div className="flex gap-2">
+          <input
+            type={opts?.show === false ? 'password' : (opts?.type ?? 'text')}
+            readOnly={opts?.readOnly}
+            placeholder={opts?.placeholder}
+            value={String(shopifyForm[key] ?? '')}
+            onChange={e => !opts?.readOnly && setShopifyForm(f => ({ ...f, [key]: e.target.value }))}
+            className="flex-1 px-3 py-2.5 rounded-lg bg-[#04060b] border border-[#1e293b] text-[#f0f4f8] text-sm font-mono placeholder:text-[#64748b]/40 focus:outline-none focus:border-[#00d4ff]/40 transition-all read-only:opacity-50"
+          />
+          {opts?.onToggle && (
+            <button
+              type="button"
+              onClick={opts.onToggle}
+              className="px-3 py-2 rounded-lg border border-[#1e293b] text-[#64748b] hover:text-[#f0f4f8] hover:border-[#1e293b] bg-[#090d16] text-sm transition-colors"
+            >
+              {opts.show === false ? '👁' : '🔒'}
+            </button>
+          )}
+        </div>
+      </div>
+    )
+
+    return (
+      <div className="glass-panel border border-[#141b2c] rounded-2xl p-6 bg-[#070b13]/60 space-y-4">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-xl">🛍️</div>
+          <div>
+            <h2 className="text-base font-bold text-[#f0f4f8]">Shopify Integration</h2>
+            <p className="text-xs text-[#64748b]">Connect your Shopify store to deploy generated themes directly.</p>
+          </div>
+        </div>
+
+        {field('Store URL', 'store_url', { placeholder: 'yourstore.myshopify.com' })}
+        {field('Admin API Token', 'admin_token', {
+          placeholder: 'shpat_...',
+          show: showAdminToken ? undefined : false,
+          onToggle: () => setShowAdminToken(v => !v),
+        })}
+        {field('Unsplash Access Key', 'unsplash_access_key', {
+          placeholder: 'your unsplash access key',
+          show: showUnsplash ? undefined : false,
+          onToggle: () => setShowUnsplash(v => !v),
+        })}
+
+        {/* Auto-start toggle */}
+        <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] hover:border-[#00d4ff]/20 transition-colors flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-[#94a3b8]">Swarm Auto-Start</p>
+            <p className="text-xs text-[#64748b] mt-0.5">Start the theme generation swarm automatically on backend launch.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShopifyForm(f => ({ ...f, swarm_autostart: !f.swarm_autostart }))}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              shopifyForm.swarm_autostart ? 'bg-[#00d4ff]' : 'bg-[#1e293b]'
+            }`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              shopifyForm.swarm_autostart ? 'translate-x-6' : 'translate-x-1'
+            }`} />
+          </button>
+        </div>
+
+        {field('Output Folder', 'output_folder', { readOnly: true, placeholder: 'Loading...' })}
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-2 flex-wrap">
+          <button
+            onClick={async () => {
+              setShopifySaving(true)
+              try {
+                const res = await fetch('/api/shopify/settings', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(shopifyForm),
+                })
+                const d = await res.json()
+                setToast(d.ok ? '✓ Shopify settings saved!' : '✗ Save failed')
+                setTimeout(() => setToast(null), 4000)
+              } catch { setToast('✗ Save failed'); setTimeout(() => setToast(null), 4000) }
+              setShopifySaving(false)
+            }}
+            disabled={shopifySaving}
+            className="px-5 py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00d4ff] to-[#7c3aed] text-[#030508] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            {shopifySaving ? 'Saving...' : 'Save Settings'}
+          </button>
+
+          <button
+            onClick={async () => {
+              setShopifyTesting(true)
+              setShopifyTestResult(null)
+              try {
+                const res = await fetch('/api/shopify/settings/test', { method: 'POST' })
+                const d = await res.json()
+                setShopifyTestResult({ ok: d.ok, msg: d.ok ? `✓ Connected: ${d.shop_name}` : `✗ ${d.error}` })
+              } catch { setShopifyTestResult({ ok: false, msg: '✗ Request failed' }) }
+              setShopifyTesting(false)
+            }}
+            disabled={shopifyTesting}
+            className="px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition-all disabled:opacity-50"
+          >
+            {shopifyTesting ? 'Testing...' : 'Test Connection'}
+          </button>
+
+          {shopifyTestResult && (
+            <span className={`text-sm font-medium ${shopifyTestResult.ok ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {shopifyTestResult.msg}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-[#030508] p-4 sm:p-6 lg:p-8 text-text-primary">
       {toast && (
@@ -668,6 +812,27 @@ export default function Settings() {
             </button>
           </div>
         </div>
+
+        {/* Tab bar */}
+        <div className="flex gap-1 mb-6 border-b border-[#141b2c]">
+          {(['general', 'shopify'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-sm font-semibold capitalize transition-colors border-b-2 -mb-px ${
+                activeTab === tab
+                  ? 'border-[#00d4ff] text-[#00d4ff]'
+                  : 'border-transparent text-[#64748b] hover:text-[#f0f4f8]'
+              }`}
+            >
+              {tab === 'general' ? 'General' : 'Shopify'}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'shopify' && renderShopifyPanel()}
+
+        {activeTab === 'general' && <>
 
         {renderHealthPanel()}
 
@@ -759,6 +924,8 @@ export default function Settings() {
           <p>🔒 {t('settings.encrypted_note')}</p>
           <p>{t('settings.env_note')}</p>
         </div>
+
+        </>}
       </div>
     </div>
   )

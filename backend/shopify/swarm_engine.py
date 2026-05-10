@@ -113,29 +113,44 @@ class ShopifySwarmEngine:
         self.current_agent = name
         await self._broadcast(name, "running", f"Starting {name.replace('_', ' ').title()}...")
 
-        try:
-            if name == "shopify_builder":
-                from shopify.tools.shopify_builder import ShopifyBuilder
-                builder = ShopifyBuilder()
-                package = await builder.build_theme(context)
-                result = {
-                    "status": "done",
-                    "summary": f"Theme packaged: {package.zip_path}",
-                    "zip_path": package.zip_path,
-                    "qa_score": package.qa_score,
-                }
-            elif name == "version_manager":
-                result = await agent.run(context)
-            else:
-                result = await agent.run(context)
+        last_exc: Optional[Exception] = None
+        for attempt in range(1, 4):  # 3 attempts
+            try:
+                if name == "shopify_builder":
+                    from shopify.tools.shopify_builder import ShopifyBuilder
+                    builder = ShopifyBuilder()
+                    package = await builder.build_theme(context)
+                    result = {
+                        "status": "done",
+                        "summary": f"Theme packaged: {package.zip_path}",
+                        "zip_path": package.zip_path,
+                        "qa_score": package.qa_score,
+                    }
+                else:
+                    result = await agent.run(context)
 
-            context.update(name, result)
-            await self._broadcast(name, "done", result.get("summary", "Completed"))
-            return result
-        except Exception as e:
-            logger.error("[%s] Error: %s", name, e)
-            await self._broadcast(name, "error", f"Error: {e}")
-            return {"status": "error", "summary": str(e)}
+                context.update(name, result)
+                await self._broadcast(name, "done", result.get("summary", "Completed"))
+                return result
+
+            except Exception as e:
+                last_exc = e
+                if attempt < 3:
+                    delay = 2 ** attempt  # 2s then 4s
+                    logger.warning("[%s] Attempt %d/3 failed: %s — retrying in %ds", name, attempt, e, delay)
+                    await self._broadcast(
+                        name, "retrying",
+                        f"Attempt {attempt}/3 failed: {type(e).__name__}: {e} — retrying in {delay}s",
+                    )
+                    await asyncio.sleep(delay)
+
+        # All 3 attempts exhausted — skip agent, cycle continues
+        logger.error("[%s] Failed after 3 attempts: %s", name, last_exc, exc_info=True)
+        await self._broadcast(
+            name, "error",
+            f"SKIPPED after 3 retries — {type(last_exc).__name__}: {last_exc}",
+        )
+        return {"status": "error", "summary": str(last_exc)}
 
     async def run_production_cycle(self, db=None):
         context = SharedContext()
@@ -225,27 +240,34 @@ class ShopifySwarmEngine:
         self.running = True
         logger.info("Shopify Swarm Engine — infinite loop started")
 
-        try:
-            while self.running:
-                if self.paused:
-                    await asyncio.sleep(2)
-                    continue
+        while self.running:
+            if self.paused:
+                await asyncio.sleep(2)
+                continue
 
+            try:
                 # Every 3rd cycle: improve an existing theme
                 if self.cycle_count > 0 and self.cycle_count % 3 == 0 and self.theme_count > 0:
                     await self.run_improvement_cycle(db)
                 else:
                     await self.run_production_cycle(db)
+            except asyncio.CancelledError:
+                logger.info("Swarm Engine loop cancelled")
+                break
+            except Exception as e:
+                logger.error("Swarm cycle crashed: %s", e, exc_info=True)
+                await self._broadcast(
+                    "swarm", "error",
+                    f"Cycle crashed ({type(e).__name__}: {e}) — recovering in 15s",
+                )
+                await asyncio.sleep(15)
+                continue  # restart the while loop — never stop
 
-                # Brief pause between cycles
-                if self.running:
-                    await asyncio.sleep(60)
-        except asyncio.CancelledError:
-            logger.info("Swarm Engine loop cancelled")
-        except Exception as e:
-            logger.error("Swarm Engine fatal error: %s", e)
-        finally:
-            self.running = False
+            if self.running:
+                await asyncio.sleep(60)
+
+        self.running = False
+        logger.info("Swarm Engine stopped")
 
     def start(self, db=None):
         if self._task and not self._task.done():

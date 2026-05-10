@@ -5,11 +5,10 @@ Reviews generated code and returns a structured quality report.
 
 import json
 import logging
-import os
+import re
 from typing import Any, Dict
 
-import anthropic
-
+from core.model_router import call_model
 from shopify.models import SharedContext
 from shopify.tools.validator import ThemeValidator
 from shopify.tools.shopify_builder import OUTPUT_ROOT
@@ -63,7 +62,6 @@ OUTPUT ONLY valid JSON:
 class QAReviewer:
 
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_KEY", ""))
         self.validator = ThemeValidator()
 
     async def run(self, context: SharedContext) -> Dict[str, Any]:
@@ -97,25 +95,16 @@ Score this theme from 0-100 and list all issues found.
 Output ONLY valid JSON — no markdown, no explanation.
 """
 
-        try:
-            response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1500,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_content}],
-            )
-            text = response.content[0].text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            data = json.loads(text)
-        except json.JSONDecodeError as e:
-            logger.error("[QAReviewer] JSON parse error: %s", e)
-            data = self._fallback_report(struct_result)
-        except Exception as e:
-            logger.error("[QAReviewer] LLM error: %s", e)
-            data = self._fallback_report(struct_result)
+        text = await call_model(
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_content},
+            ],
+            task_type="general",
+            max_tokens=1500,
+            temperature=0.3,
+        )
+        data = self._parse_json(text)
 
         score = data.get("score", 0)
         passed = data.get("passed", False)
@@ -124,16 +113,9 @@ Output ONLY valid JSON — no markdown, no explanation.
 
         return {"status": "done", "summary": summary, "data": data}
 
-    def _fallback_report(self, struct_result=None) -> dict:
-        score = struct_result.score if struct_result else 70.0
-        return {
-            "passed": score >= 80,
-            "score": score,
-            "structure_ok": struct_result.passed if struct_result else True,
-            "liquid_ok": True,
-            "performance_ok": True,
-            "accessibility_ok": True,
-            "issues": struct_result.issues if struct_result else [],
-            "fixes_required": [],
-            "positive_notes": ["Theme structure validated"],
-        }
+    def _parse_json(self, text: str) -> dict:
+        text = text.strip()
+        m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
+        if m:
+            text = m.group(1).strip()
+        return json.loads(text)

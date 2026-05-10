@@ -185,7 +185,7 @@ async def _try_completion(model: str, api_key: str, messages: list, **kwargs) ->
         elif model.startswith("ollama/"):
             from core.config import get_settings
             call_kwargs["api_base"] = get_settings().ollama_base_url
-            # Ollama does not require api_key parameter in LiteLLM
+            call_kwargs["timeout"] = 300  # local inference can take minutes for large outputs
             if "api_key" in call_kwargs:
                 del call_kwargs["api_key"]
                 
@@ -313,9 +313,9 @@ async def route_completion(messages: list, **kwargs) -> Any:
     # ━━━ TIER 5: Last resort - Local Ollama models ━━━
     logger.info("[ROUTER] Cascade Failover — Tier 5 (Local Ollama offline models)")
     t5_models = [
+        "ollama/qwen2.5-coder:7b",
         "ollama/qwen2.5-coder:14b",
         "ollama/qwen3.6:35b-a3b",
-        "ollama/qwen2.5-coder:7b"
     ]
     for model in t5_models:
         logger.info(f"[ROUTER] [T5] Attempting local Ollama model {model}")

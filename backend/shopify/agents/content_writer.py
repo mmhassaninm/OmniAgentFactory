@@ -5,11 +5,10 @@ Writes all placeholder copy and image queries for the theme demo.
 
 import json
 import logging
-import os
+import re
 from typing import Any, Dict
 
-import anthropic
-
+from core.model_router import call_model
 from shopify.models import SharedContext
 
 logger = logging.getLogger(__name__)
@@ -72,7 +71,7 @@ Rules:
 class ContentWriter:
 
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_KEY", ""))
+        pass
 
     async def run(self, context: SharedContext) -> Dict[str, Any]:
         logger.info("[ContentWriter] Writing theme content...")
@@ -95,25 +94,16 @@ All content must feel authentic and premium for the {niche} niche.
 Output ONLY valid JSON — no markdown, no explanation.
 """
 
-        try:
-            response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=3000,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_content}],
-            )
-            text = response.content[0].text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            data = json.loads(text)
-        except json.JSONDecodeError as e:
-            logger.error("[ContentWriter] JSON parse error: %s", e)
-            data = self._fallback_content(brief)
-        except Exception as e:
-            logger.error("[ContentWriter] LLM error: %s", e)
-            data = self._fallback_content(brief)
+        text = await call_model(
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_content},
+            ],
+            task_type="general",
+            max_tokens=3000,
+            temperature=0.7,
+        )
+        data = self._parse_json(text)
 
         product_count = len(data.get("products", []))
         image_count = len(data.get("image_queries", []))
@@ -122,27 +112,9 @@ Output ONLY valid JSON — no markdown, no explanation.
 
         return {"status": "done", "summary": summary, "data": data}
 
-    def _fallback_content(self, brief: dict) -> dict:
-        niche = brief.get("niche", "e-commerce")
-        return {
-            "hero_headline": "Elevate Your Everyday",
-            "hero_subheading": "Discover our curated collection of premium products",
-            "hero_cta": "Shop Now",
-            "features": [
-                {"icon": "truck", "title": "Free Shipping", "description": "On all orders over $50 worldwide."},
-                {"icon": "shield", "title": "Secure Payments", "description": "Your payment information is always protected."},
-                {"icon": "refresh-cw", "title": "Easy Returns", "description": "30-day hassle-free return policy."},
-            ],
-            "products": [
-                {"name": f"Premium {niche.split()[0].title()} Essential", "short_description": "Your daily essential, elevated.", "long_description": "Experience the difference that quality makes.", "price": 49.00, "compare_at_price": 69.00, "tags": ["bestseller"], "image_query": f"{niche} product white background"}
-                for _ in range(4)
-            ],
-            "testimonials": [
-                {"author": "Sarah M.", "location": "New York, USA", "rating": 5, "text": "Absolutely love this product. It's changed my daily routine completely.", "image_query": "woman smiling portrait"},
-            ],
-            "about_story": f"We believe in the power of quality products crafted for the modern lifestyle.",
-            "blog_posts": [
-                {"title": f"The Ultimate Guide to {niche.title()}", "excerpt": "Everything you need to know to get started.", "image_query": f"{niche} lifestyle photo"},
-            ],
-            "image_queries": [f"{niche} hero lifestyle", f"{niche} product shot", "happy customer portrait"],
-        }
+    def _parse_json(self, text: str) -> dict:
+        text = text.strip()
+        m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
+        if m:
+            text = m.group(1).strip()
+        return json.loads(text)

@@ -5,11 +5,10 @@ Researches trending themes, niches, and opportunities in the Shopify marketplace
 
 import json
 import logging
-import os
+import re
 from typing import Any, Dict
 
-import anthropic
-
+from core.model_router import call_model
 from shopify.models import SharedContext
 from shopify.tools.market_scraper import MarketScraper
 
@@ -59,7 +58,6 @@ Output ONLY valid JSON in this exact structure:
 class MarketResearcher:
 
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_KEY", ""))
         self.scraper = MarketScraper()
 
     async def run(self, context: SharedContext) -> Dict[str, Any]:
@@ -88,26 +86,22 @@ Based on this data, identify the top 5 niche opportunities and the single best o
 Output ONLY valid JSON — no markdown, no explanation.
 """
 
-        try:
-            response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=2000,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_content}],
+        text = await call_model(
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_content},
+            ],
+            task_type="general",
+            max_tokens=2000,
+            temperature=0.7,
+        )
+        if not text or not text.strip():
+            raise ValueError("Empty response from model in MarketResearcher")
+        data = self._parse_json(text)
+        if not isinstance(data, dict):
+            raise ValueError(
+                f"Expected JSON object from LLM, got {type(data).__name__}: {repr(text[:100])}"
             )
-            text = response.content[0].text.strip()
-            # Strip markdown code fences if present
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            data = json.loads(text)
-        except json.JSONDecodeError as e:
-            logger.error("[MarketResearcher] JSON parse error: %s", e)
-            data = self._fallback_report()
-        except Exception as e:
-            logger.error("[MarketResearcher] LLM error: %s", e)
-            data = self._fallback_report()
 
         best = data.get("best_opportunity", {})
         summary = (
@@ -118,25 +112,9 @@ Output ONLY valid JSON — no markdown, no explanation.
 
         return {"status": "done", "summary": summary, "data": data}
 
-    def _fallback_report(self) -> dict:
-        return {
-            "opportunities": [
-                {
-                    "niche": "luxury beauty & skincare",
-                    "market_score": 8.5,
-                    "competition_level": "medium",
-                    "recommended_price": 149,
-                    "key_features": ["Clean minimal layout", "Before/after galleries", "Ingredient spotlights", "Subscription support"],
-                    "top_competitors": ["Prestige", "Impulse"],
-                }
-            ],
-            "best_opportunity": {
-                "niche": "luxury beauty & skincare",
-                "market_score": 8.5,
-                "competition_level": "medium",
-                "recommended_price": 149,
-                "key_features": ["Clean minimal layout", "Before/after galleries", "Ingredient spotlights"],
-                "top_competitors": ["Prestige", "Impulse"],
-            },
-            "market_summary": "Luxury beauty DTC brands are underserved with high-converting themes.",
-        }
+    def _parse_json(self, text: str) -> dict:
+        text = text.strip()
+        m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
+        if m:
+            text = m.group(1).strip()
+        return json.loads(text)

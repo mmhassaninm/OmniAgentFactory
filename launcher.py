@@ -265,9 +265,35 @@ def _graceful_shutdown(icon, item=None):
     os._exit(0)
 
 def _open_dashboard(icon, item):
-    """Open browser to dashboard."""
+    """Open browser to factory dashboard."""
     import webbrowser
     webbrowser.open("http://localhost:5173/factory")
+
+def _open_shopify_factory(icon, item):
+    """Open browser to Shopify theme factory."""
+    import webbrowser
+    webbrowser.open("http://localhost:5173/shopify")
+
+def _start_shopify_swarm(icon, item):
+    """Start the Shopify theme generation swarm via API."""
+    import urllib.request
+    import json
+    try:
+        req = urllib.request.Request(
+            "http://localhost:3001/api/shopify/start",
+            data=json.dumps({}).encode('utf-8'),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            if response.status == 200:
+                icon.notify("Shopify Swarm Started", "Success")
+                log_message("[TRAY] Shopify Swarm started via API")
+            else:
+                icon.notify("Failed to start Shopify Swarm", "Error")
+    except Exception as e:
+        icon.notify(f"Error starting Shopify Swarm: {e}", "Error")
+        log_message(f"[TRAY] Error starting Shopify Swarm: {e}")
 
 def _show_status(icon, item):
     """Show current status in a notification."""
@@ -286,7 +312,10 @@ def start_tray_icon():
     menu = pystray.Menu(
         pystray.MenuItem("OmniBot Factory", None, enabled=False),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Open Dashboard", _open_dashboard, default=True),
+        pystray.MenuItem("📊 Factory Dashboard", _open_dashboard, default=True),
+        pystray.MenuItem("🏪 Shopify Factory", _open_shopify_factory),
+        pystray.MenuItem("▶️ Start Shopify Swarm", _start_shopify_swarm),
+        pystray.Menu.SEPARATOR,
         pystray.MenuItem("Show Status", _show_status),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Exit", _graceful_shutdown),
@@ -334,8 +363,8 @@ def main():
         except Exception:
             pass
         import webbrowser
-        webbrowser.open("http://localhost:5173/factory")
-        log_message("All services ready — Dashboard opened")
+        webbrowser.open("http://localhost:5173/shopify")
+        log_message("All services ready — Shopify Factory dashboard opened")
     else:
         log_message("Some services failed to start — check logs")
     

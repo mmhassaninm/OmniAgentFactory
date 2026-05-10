@@ -5,11 +5,10 @@ Plans every page's section structure and schema.
 
 import json
 import logging
-import os
+import re
 from typing import Any, Dict
 
-import anthropic
-
+from core.model_router import call_model
 from shopify.models import SharedContext
 
 logger = logging.getLogger(__name__)
@@ -76,7 +75,7 @@ Be thorough — include at least 5 sections for the homepage, 8+ sections total 
 class UXDesigner:
 
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_KEY", ""))
+        pass
 
     async def run(self, context: SharedContext) -> Dict[str, Any]:
         logger.info("[UXDesigner] Planning UX blueprint...")
@@ -93,25 +92,16 @@ Design all sections for all required pages. Make them conversion-optimized for t
 Output ONLY valid JSON — no markdown, no explanation.
 """
 
-        try:
-            response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=4000,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_content}],
-            )
-            text = response.content[0].text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            data = json.loads(text)
-        except json.JSONDecodeError as e:
-            logger.error("[UXDesigner] JSON parse error: %s", e)
-            data = self._fallback_blueprint()
-        except Exception as e:
-            logger.error("[UXDesigner] LLM error: %s", e)
-            data = self._fallback_blueprint()
+        text = await call_model(
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_content},
+            ],
+            task_type="general",
+            max_tokens=4000,
+            temperature=0.7,
+        )
+        data = self._parse_json(text)
 
         page_count = len(data.get("pages", []))
         section_count = sum(len(p.get("sections", [])) for p in data.get("pages", []))
@@ -120,27 +110,9 @@ Output ONLY valid JSON — no markdown, no explanation.
 
         return {"status": "done", "summary": summary, "data": data}
 
-    def _fallback_blueprint(self) -> dict:
-        return {
-            "pages": [
-                {
-                    "template": "index",
-                    "sections": [
-                        {"file_name": "hero-banner.liquid", "purpose": "Full-width hero", "settings": [], "blocks": [], "responsive_notes": "Stack on mobile"},
-                        {"file_name": "featured-collection.liquid", "purpose": "Product grid showcase", "settings": [], "blocks": [], "responsive_notes": "2 columns on mobile"},
-                        {"file_name": "features-list.liquid", "purpose": "Brand value propositions", "settings": [], "blocks": [], "responsive_notes": "Single column on mobile"},
-                        {"file_name": "testimonials.liquid", "purpose": "Customer reviews", "settings": [], "blocks": [], "responsive_notes": "Slider on mobile"},
-                        {"file_name": "newsletter.liquid", "purpose": "Email signup", "settings": [], "blocks": [], "responsive_notes": "Full width"},
-                    ],
-                },
-                {"template": "product", "sections": [{"file_name": "main-product.liquid", "purpose": "Product detail with variants", "settings": [], "blocks": [], "responsive_notes": "Stack on mobile"}]},
-                {"template": "collection", "sections": [{"file_name": "main-collection.liquid", "purpose": "Product grid with filters", "settings": [], "blocks": [], "responsive_notes": "2 col grid on mobile"}]},
-                {"template": "cart", "sections": [{"file_name": "main-cart.liquid", "purpose": "Cart items and checkout", "settings": [], "blocks": [], "responsive_notes": "Stack on mobile"}]},
-                {"template": "404", "sections": [{"file_name": "main-404.liquid", "purpose": "404 error page", "settings": [], "blocks": [], "responsive_notes": "Centered"}]},
-            ],
-            "global_sections": [
-                {"file_name": "header.liquid", "purpose": "Sticky navigation", "settings": [], "blocks": [], "responsive_notes": "Hamburger on mobile"},
-                {"file_name": "footer.liquid", "purpose": "Footer with links and newsletter", "settings": [], "blocks": [], "responsive_notes": "Stack columns on mobile"},
-                {"file_name": "announcement-bar.liquid", "purpose": "Promo announcement strip", "settings": [], "blocks": [], "responsive_notes": "Full width, smaller text"},
-            ],
-        }
+    def _parse_json(self, text: str) -> dict:
+        text = text.strip()
+        m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
+        if m:
+            text = m.group(1).strip()
+        return json.loads(text)

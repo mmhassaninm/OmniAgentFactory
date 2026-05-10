@@ -5,11 +5,10 @@ Receives market research and creates a complete creative brief.
 
 import json
 import logging
-import os
+import re
 from typing import Any, Dict
 
-import anthropic
-
+from core.model_router import call_model
 from shopify.models import SharedContext
 
 logger = logging.getLogger(__name__)
@@ -55,7 +54,7 @@ Rules:
 class CreativeDirector:
 
     def __init__(self):
-        self.client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_KEY", ""))
+        pass
 
     async def run(self, context: SharedContext) -> Dict[str, Any]:
         logger.info("[CreativeDirector] Creating creative brief...")
@@ -77,51 +76,25 @@ The theme name should be distinctive and memorable.
 Output ONLY valid JSON — no markdown, no explanation.
 """
 
-        try:
-            response = await self.client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=1500,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_content}],
-            )
-            text = response.content[0].text.strip()
-            if text.startswith("```"):
-                text = text.split("```")[1]
-                if text.startswith("json"):
-                    text = text[4:]
-            data = json.loads(text)
-        except json.JSONDecodeError as e:
-            logger.error("[CreativeDirector] JSON parse error: %s", e)
-            data = self._fallback_brief(best)
-        except Exception as e:
-            logger.error("[CreativeDirector] LLM error: %s", e)
-            data = self._fallback_brief(best)
+        text = await call_model(
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user",   "content": user_content},
+            ],
+            task_type="general",
+            max_tokens=1500,
+            temperature=0.7,
+        )
+        data = self._parse_json(text)
 
         summary = f"Theme: '{data.get('theme_name')}' | Niche: {data.get('niche')} | ${data.get('recommended_price')}"
         logger.info("[CreativeDirector] %s", summary)
 
         return {"status": "done", "summary": summary, "data": data}
 
-    def _fallback_brief(self, best: dict) -> dict:
-        return {
-            "theme_name": "Lumière",
-            "tagline": "Where luxury meets conversion.",
-            "niche": best.get("niche", "luxury beauty & skincare"),
-            "mood": ["clean", "premium", "minimal"],
-            "colors": {
-                "primary": "#1A1A2E",
-                "secondary": "#16213E",
-                "accent": "#C9A86C",
-                "background": "#FAFAFA",
-                "text": "#1A1A2E",
-            },
-            "font_primary": "Cormorant Garamond",
-            "font_secondary": "Inter",
-            "border_radius": "soft",
-            "design_language": "luxury",
-            "pages": ["index", "product", "collection", "list-collections", "about", "contact", "blog", "article", "cart", "404", "search"],
-            "sections_overview": ["hero-banner", "featured-collection", "features-list", "testimonials", "newsletter", "instagram-feed"],
-            "competitive_advantage": "Combines editorial photography layouts with high-converting product pages optimized for AOV and LTV.",
-            "recommended_price": best.get("recommended_price", 149),
-            "target_customer": "DTC beauty brands seeking a premium, editorial-feel storefront.",
-        }
+    def _parse_json(self, text: str) -> dict:
+        text = text.strip()
+        m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
+        if m:
+            text = m.group(1).strip()
+        return json.loads(text)
