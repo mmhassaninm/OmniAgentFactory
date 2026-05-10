@@ -1,0 +1,33 @@
+{% schema %}
+{
+  "name": "Announcement Bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "message",
+      "label": "Promo message"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "CTA URL"
+    }
+  ],
+  "presets": [
+    {
+      "enable": true,
+      "settings": {
+        "message": "New arrivals now available!",
+        "cta_url": "https://example.com/arrivals"
+      }
+    }
+  ]
+}
+{% endschema %}
+
+<div class="announcement-bar" role="alert">
+  <div class="container">
+    <p>{{ settings.message }}</p>
+    <a href="{{ settings.cta_url }}" class="cta">Shop Now</a>
+  </div>
+</div>

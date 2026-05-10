@@ -1,0 +1,32 @@
+{% schema %}
+{
+  'name': 'Cart Call to Action',
+  'settings': [
+    {
+      'type': 'text',
+      'id': 'heading',
+      'label': 'Heading'
+    },
+    {
+      'type': 'text',
+      'id': 'subheading',
+      'label': 'Subheading'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Default',
+      'settings': {
+        'heading': 'Proceed to Checkout',
+        'subheading': 'Complete your order'
+      }
+    }
+  ]
+}
+{% endschema %}
+
+<div class="cart-call-to-action">
+  <h2>{{ settings.heading | escape }}</h2>
+  <p>{{ settings.subheading | escape }}</p>
+  <a href="/cart/checkout" class="btn">{{ 'cart.call-to-action.button' | t }}</a>
+</div>

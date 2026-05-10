@@ -1,0 +1,42 @@
+{% comment %} HauteVue theme: announcement bar {% endcomment %}
+
+<div class="announcement-bar" role="alert" aria-label="{{ 'announcement-bar.aria-label' | t }}">
+  <div class="announcement-bar__content" style="background-color: {{ theme.settings.backgroundColor | hex }};">
+    <h2 class="announcement-bar__heading" style="color: {{ theme.settings.primaryColor | hex }};">{{ settings.heading | escape }}</h2>
+    <p class="announcement-bar__subheading" style="color: {{ theme.settings.primaryColor | hex }};">{{ settings.subheading | escape }}</p>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "announcement-bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "{{ 'announcement-bar.heading' | t }}",
+      "default": "{{ 'announcement-bar.heading.default' | t }}"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "{{ 'announcement-bar.subheading' | t }}",
+      "default": "{{ 'announcement-bar.subheading.default' | t }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "default",
+      "settings": {
+        "heading": "Exclusive offer",
+        "subheading": "Get 10% off your first order"
+      }
+    }
+  ],
+  "blocks": [],
+  "classes": [
+    "announcement-bar"
+  ],
+  "responsive_notes": "Stack announcement bar fields vertically on mobile"
+}
+{% endschema %}

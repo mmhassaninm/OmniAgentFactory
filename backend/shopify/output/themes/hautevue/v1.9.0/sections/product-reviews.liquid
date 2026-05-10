@@ -1,0 +1,38 @@
+{% schema %}
+{
+  "name": "Product Reviews",
+  "settings": [
+    {
+      "type": "range",
+      "id": "num_reviews",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "unit": "",
+      "label": "Number of reviews",
+      "default": 3
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {
+        "num_reviews": 3
+      }
+    }
+  ]
+}
+{% endschema %}
+<div class="product-reviews" aria-label="Product Reviews">
+  {% for block in section.blocks %}
+    {% if block.type == 'product_review' %}
+      <div class="review">
+        <h2>{{ block.settings.title }}</h2>
+        <p>{{ block.settings.rating }}/{{ block.settings.description }}</p>
+      </div>
+    {% endif %}
+  {% endfor %}
+  {% if section.settings.num_reviews > 0 %}
+    <button class="load-more">Load more reviews</button>
+  {% endif %}
+</div>

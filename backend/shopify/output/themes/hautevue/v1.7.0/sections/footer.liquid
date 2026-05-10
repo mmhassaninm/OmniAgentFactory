@@ -1,0 +1,27 @@
+<footer class="site-footer" role="contentinfo" style="background-color: #F2F2F2; padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+	<div class="container">
+		<p>{{ settings.copyright | escape }}</p>
+		<ul style="list-style: none; margin: 0; padding: 0;">
+			{% for link in settings.social_links %}
+				<li style="margin-right: 1rem;"><a href="{{ link.url | url }}" style="color: #3B3F4E;">{{ link.title | escape }}</a></li>
+			{% endfor %}
+		</ul>
+	</div>
+</footer>{% schema %}
+{
+  "name": "footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "copyright",
+      "label": "Copyright text"
+    },
+    {
+      "type": "link_list",
+      "id": "social_links",
+      "label": "Social links",
+      "default": "social-media"
+    }
+  ],
+  "presets": []
+}{% endschema %}

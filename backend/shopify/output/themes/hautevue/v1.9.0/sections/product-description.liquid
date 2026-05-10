@@ -1,0 +1,48 @@
+{% schema %}
+{
+  "name": "Product Description",
+  "settings": [
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description",
+      "default": "Product description"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_features",
+      "label": "Show features"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_feature",
+      "name": "Product Feature",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title"
+        },
+        {
+          "type": "text",
+          "id": "description",
+          "label": "Description"
+        }
+      ]
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+
+<div class="product-description">
+  <h1>{{ settings.description | escape }}</h1>
+  {% if settings.show_features %}
+    <ul>
+      {% for block in blocks %}
+        <li>{{ block.settings.title | escape }}: {{ block.settings.description | escape }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>

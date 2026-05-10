@@ -1,0 +1,25 @@
+{% schema %}
+{
+  'name': 'Cart Products',
+  'settings': [],
+  'presets': [
+    {
+      'name': 'Default',
+      'settings': {}
+    }
+  ]
+}
+{% endschema %}
+
+<div class="cart-products">
+  <h2>{{ 'cart.products.title' | t }}</h2>
+  <ul>
+    {% for product in cart.items %}
+      <li>
+        {{ product.name }}
+        <span>{{ product.quantity }}</span>
+        <span>{{ product.price | money }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</div>

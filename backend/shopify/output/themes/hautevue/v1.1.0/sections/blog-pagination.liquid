@@ -1,0 +1,21 @@
+{% schema %}
+{
+  'name': 'Blog Pagination',
+  'settings': [],
+  'presets': [
+    {
+      'name': 'Default',
+      'settings': {}
+    }
+  ]
+}
+{% endschema %}
+
+<div class="blog-pagination">
+  {% if collection.has_next_page %}
+    <a href="{{ collection.next_page }}" class="btn">{{ 'blog.pagination.button' | t }}</a>
+  {% endif %}
+  {% if collection.has_prev_page %}
+    <a href="{{ collection.prev_page }}" class="btn">{{ 'blog.pagination.button' | t }}</a>
+  {% endif %}
+</div>

@@ -1,0 +1,32 @@
+{% schema %}
+{
+  'name': 'Collection Hero',
+  'settings': [
+    {
+      'type': 'image_picker',
+      'id': 'image',
+      'label': 'Collection image'
+    },
+    {
+      'type': 'text',
+      'id': 'name',
+      'label': 'Collection name',
+      'default': 'Collection Name'
+    },
+    {
+      'type': 'text',
+      'id': 'description',
+      'label': 'Collection description',
+      'default': 'Collection description'
+    }
+  ],
+  'presets': [],
+  'sections': []
+}
+{% endschema %}
+<div class="collection-hero">
+  <img src="{{ settings.image | img_url: '800x600' }}" alt="{{ settings.name }}" />
+  <h1>{{ settings.name }}</h1>
+  <p>{{ settings.description }}</p>
+  <a href="/collections/{{ settings.name | handle }}" class="btn">Browse {{ settings.name }}</a>
+</div>

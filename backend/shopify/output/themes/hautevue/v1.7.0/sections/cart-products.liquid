@@ -1,0 +1,31 @@
+{% schema %}
+{
+  'name': 'cart-products'
+}
+{
+  'settings': [
+    {
+      'type': 'cart',
+      'id': 'cart',
+      'label': 'Cart'
+    }
+  ]
+}
+{
+  'presets': [
+    {
+      'name': 'default',
+      'settings': {}
+    }
+  ]
+}
+<div class="cart-grid">
+  {% for item in cart.items %}
+    <div class="cart-item">
+      <h2>{{ item.title | escape }}</h2>
+      <p>{{ item.price | money }}</p>
+      <img src="{{ item.image | img_url: 'medium' }}" alt="{{ item.title | escape }}">
+    </div>
+  {% endfor %}
+</div>
+{% schema %}{% endschema %}

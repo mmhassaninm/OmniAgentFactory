@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from core.model_router import call_model
 from shopify.models import SharedContext, save_theme, save_market_research
 
 logger = logging.getLogger(__name__)
@@ -154,6 +155,119 @@ class ShopifySwarmEngine:
         )
         return {"status": "error", "summary": str(last_exc)}
 
+    async def _load_evolution_lessons(self, db) -> str:
+        """
+        Fetch 5 most recent documents from db.shopify_lessons
+        Deduplicate all lessons_extracted lists (max 10 unique lessons)
+        Increment times_applied on fetched docs
+        Return formatted string block or "" on any error
+        """
+        try:
+            if db is None:
+                return ""
+            lesson_docs = await db.shopify_lessons.find(
+                {}, sort=[("created_at", -1)], limit=5
+            ).to_list(length=5)
+            if not lesson_docs:
+                return ""
+
+            all_lessons: list[str] = []
+            for doc in lesson_docs:
+                all_lessons.extend([str(x).strip() for x in doc.get("lessons_extracted", []) if str(x).strip()])
+
+            seen: set[str] = set()
+            unique_lessons: list[str] = []
+            for lesson in all_lessons:
+                key = lesson.lower()
+                if key not in seen:
+                    seen.add(key)
+                    unique_lessons.append(lesson)
+                if len(unique_lessons) >= 10:
+                    break
+
+            if not unique_lessons:
+                return ""
+
+            ids = [doc.get("_id") for doc in lesson_docs if doc.get("_id") is not None]
+            if ids:
+                await db.shopify_lessons.update_many(
+                    {"_id": {"$in": ids}},
+                    {"$inc": {"times_applied": 1}},
+                )
+
+            return (
+                "\n\n━━━ EVOLUTION MEMORY — MANDATORY RULES FROM PAST CYCLES ━━━\n"
+                "These rules were learned from real failures. NEVER violate them:\n"
+                + "\n".join(f"• {lesson}" for lesson in unique_lessons)
+                + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            )
+        except Exception as e:
+            logger.error("Failed to load evolution lessons: %s", e)
+            return ""
+
+    async def _save_cycle_lessons(self, context: SharedContext, theme_doc: dict, db) -> None:
+        """
+        Only run if context.qa_errors or context.build_warnings are non-empty
+        Call call_model() with prompt asking for 2-4 ALWAYS/NEVER rules
+        extracted from the errors
+        Parse lines starting with ALWAYS or NEVER
+        Insert document into db.shopify_lessons
+        If collection has more than 50 docs, delete the oldest one
+        Wrap everything in try/except — never crash the loop
+        """
+        try:
+            if db is None:
+                return
+            qa_errors = list(getattr(context, "qa_errors", []) or [])
+            build_warnings = list(getattr(context, "build_warnings", []) or [])
+            if not qa_errors and not build_warnings:
+                return
+            source_errors = qa_errors + build_warnings
+
+            prompt = (
+                f"Theme: {theme_doc.get('name', 'Unknown')} | Niche: {theme_doc.get('niche', '')}\n\n"
+                "Given these build/QA issues, extract 2-4 hard prevention rules.\n"
+                "Each line MUST start with ALWAYS or NEVER.\n\n"
+                "Issues:\n"
+                + "\n".join(f"- {e}" for e in source_errors[:20])
+                + "\n\nReturn ONLY the rules, one per line."
+            )
+
+            lessons_text = await call_model(
+                messages=[{"role": "user", "content": prompt}],
+                task_type="general",
+                max_tokens=400,
+                temperature=0.3,
+            )
+            lessons = [
+                line.strip()
+                for line in (lessons_text or "").splitlines()
+                if line.strip().startswith(("ALWAYS", "NEVER"))
+            ]
+            if not lessons:
+                return
+
+            await db.shopify_lessons.insert_one({
+                "theme_name": theme_doc.get("name", "Unknown"),
+                "niche": theme_doc.get("niche", ""),
+                "lessons_extracted": lessons,
+                "source_errors": source_errors,
+                "times_applied": 0,
+                "created_at": datetime.utcnow(),
+            })
+            await self._broadcast("swarm", "info",
+                f"📚 {len(lessons)} lessons extracted from this cycle → added to evolution memory")
+
+            count = await db.shopify_lessons.count_documents({})
+            if count > 50:
+                oldest = await db.shopify_lessons.find_one(
+                    {}, sort=[("created_at", 1)]
+                )
+                if oldest:
+                    await db.shopify_lessons.delete_one({"_id": oldest["_id"]})
+        except Exception as e:
+            logger.error("Failed to save cycle lessons: %s", e)
+
     async def run_production_cycle(self, db=None):
         context = SharedContext()
         context.theme_id = str(uuid.uuid4())
@@ -161,6 +275,14 @@ class ShopifySwarmEngine:
 
         logger.info("=== PRODUCTION CYCLE %d STARTED ===", self.cycle_count + 1)
         await self._broadcast("swarm", "cycle_start", f"Production cycle #{self.cycle_count + 1} started")
+
+        lessons_block = ""
+        if db is not None:
+            lessons_block = await self._load_evolution_lessons(db)
+        context.evolution_lessons = lessons_block
+        if lessons_block:
+            await self._broadcast("swarm", "info",
+                f"🧠 Evolution memory loaded: {len(lessons_block.splitlines())} active rules")
 
         for agent_name in self.PRODUCTION_CYCLE:
             if not self.running:
@@ -214,6 +336,11 @@ class ShopifySwarmEngine:
             await save_theme(db, context, context.zip_path, qa_score)
             if context.market_report:
                 await save_market_research(db, context.market_report)
+
+        # Extract and save lessons from this cycle's errors
+        if db is not None and context.theme_name:
+            theme_doc = {"name": context.theme_name, "niche": context.niche}
+            await self._save_cycle_lessons(context, theme_doc, db)
 
         self.cycle_count += 1
         self.theme_count += 1

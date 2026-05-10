@@ -1,0 +1,55 @@
+
+  <section class="product-details">
+    <div class="container">
+      <h2>{{ settings.title }}</h2>
+      <p>{{ settings.description }}</p>
+      <div class="specifications">
+        {% for specification in settings.specifications %}
+          <div>
+            <h3>{{ specification.title }}</h3>
+            <p>{{ specification.value }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% schema %}
+  {
+    "name": "product-details",
+    "settings":
+      [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title"
+        },
+        {
+          "type": "text",
+          "id": "description",
+          "label": "Description"
+        }
+      ],
+    "blocks":
+      [
+        {
+          "type": "product-specification",
+          "name": "specification",
+          "settings":
+            [
+              {
+                "type": "text",
+                "id": "title",
+                "label": "Specification title"
+              },
+              {
+                "type": "text",
+                "id": "value",
+                "label": "Specification value"
+              }
+            ]
+        }
+      ],
+    "presets": []
+  }
+  {% endschema %}
+  

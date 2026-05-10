@@ -1,0 +1,33 @@
+{% comment %} Announcement bar with promotional message {% endcomment %}
+{% schema %}
+{
+  "name": "announcement-bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Sale Alert"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Up to 50% off select items"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+<div class="announcement-bar" aria-label="Announcement bar">
+  <h3>{{ settings.heading | escape }}</h3>
+  <p>{{ settings.subheading | escape }}</p>
+</div>
+<style>
+.announcement-bar {
+  background-color: {{ theme.settings.bg_color | default: '#F2F2F2' }};
+  color: {{ theme.settings.primary_color | default: '#3B3F4E' }};
+  font-family: Montserrat, Lato;
+  padding: 10px;
+}
+</style>

@@ -1,0 +1,39 @@
+{% schema %}
+{
+  'name': 'Blog Hero',
+  'settings': [
+    {
+      'type': 'image_picker',
+      'id': 'image',
+      'label': 'Blog image'
+    },
+    {
+      'type': 'text',
+      'id': 'name',
+      'label': 'Blog name'
+    },
+    {
+      'type': 'text',
+      'id': 'description',
+      'label': 'Blog description'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Default',
+      'settings': {
+        'image': '',
+        'name': 'Blog Name',
+        'description': 'Blog description'
+      }
+    }
+  ]
+}
+{% endschema %}
+
+<section class="blog-hero" style="background-image: url('{{ settings.image | img_url }}');">
+  <div class="container">
+    <h1>{{ settings.name | escape }}</h1>
+    <p>{{ settings.description | escape }}</p>
+  </div>
+</section>

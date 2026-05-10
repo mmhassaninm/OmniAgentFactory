@@ -1,0 +1,38 @@
+<section class="cart-hero" style="--primary-color: #3B3F4E; --bg-color: #F2F2F2;" role="region" aria-label="Cart hero">
+  <img src="{{ settings.image | img_url: 'medium' }}" style="width: 100%; height: 100vh; object-fit: cover;" alt="Hero image">
+  <div class="cart-hero-container">
+    <h1>{{ settings.title }}</h1>
+    <p>{{ settings.description }}</p>
+  </div>
+  {% schema %}
+  {
+    "name": "cart-hero",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "image",
+        "label": "Hero image"
+      },
+      {
+        "type": "text",
+        "id": "title",
+        "label": "Cart title"
+      },
+      {
+        "type": "text",
+        "id": "description",
+        "label": "Cart description"
+      }
+    ],
+    "presets": []
+  }
+  {% endschema %}
+</section>
+
+<style>
+  @media only screen and (max-width: 768px) {
+    .cart-hero {
+      height: 50vh;
+    }
+  }
+</style>

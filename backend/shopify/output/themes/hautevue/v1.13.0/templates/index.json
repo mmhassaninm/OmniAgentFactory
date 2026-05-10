@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "announcement-bar": { "type": "announcement-bar", "disabled": false },
+    "hero-banner": { "type": "hero-banner" },
+    "featured-collection": { "type": "featured-collection" },
+    "features-list": { "type": "features-list" },
+    "testimonials": { "type": "testimonials" },
+    "newsletter": { "type": "newsletter" }
+  },
+  "order": ["announcement-bar", "hero-banner", "featured-collection", "features-list", "testimonials", "newsletter"]
+}

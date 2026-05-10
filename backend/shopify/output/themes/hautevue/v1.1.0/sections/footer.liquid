@@ -1,0 +1,33 @@
+{"% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "address",
+      "label": "Address",
+      "default": "123 Main St"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Phone",
+      "default": "555-555-5555"
+    },
+    {
+      "type": "text",
+      "id": "email",
+      "label": "Email",
+      "default": "info@example.com"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+<footer class="footer" role="contentinfo" aria-label="Footer">
+  <div class="wrap">
+    <p>{{ settings.address }}</p>
+    <p>{{ settings.phone }}</p>
+    <p>{{ settings.email }}</p>
+  </div>
+</footer>

@@ -1,0 +1,1 @@
+<section class="call-to-action"><div class="container"><h2>{{ settings.heading | escape }}</h2><p>{{ settings.subheading | escape }}</p><a href="{{ settings.cta_url }}" class="btn">Explore More</a></div></section>{% schema %}{% assigns settings = settings %}{% schema %}{% name "Call to Action" %}{% settings ["heading", "subheading", "cta_url"] %}{% presets [] %}{% endschema %}

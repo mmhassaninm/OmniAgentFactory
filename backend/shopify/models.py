@@ -33,6 +33,9 @@ class SharedContext:
         self.qa_report: Optional[Dict[str, Any]] = None
         self.zip_path: Optional[str] = None
         self.changelog: str = ""
+        self.qa_errors: list = []
+        self.build_warnings: list = []
+        self.evolution_lessons: str = ""
 
     def update(self, agent_name: str, result: dict):
         mapping = {

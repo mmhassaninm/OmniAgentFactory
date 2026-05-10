@@ -1,0 +1,28 @@
+{% schema %}
+{
+  "name": "Blog Call-to-Action",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Read more"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description",
+      "default": "Get 15% off your first purchase"
+    }
+  ],
+  "presets": [
+  ],
+  "blocks": [],
+  "default_mode": "edit"
+}
+{% endschema %}
+
+<div class="blog-call-to-action" role="button" aria-label="Blog call-to-action">
+  <h2>{{ settings.heading }}</h2>
+  <p>{{ settings.description }}</p>
+</div>

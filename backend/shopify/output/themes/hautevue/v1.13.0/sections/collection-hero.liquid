@@ -1,0 +1,41 @@
+{% schema %}
+{
+  'name': 'collection-hero',
+  'settings': [
+    {
+      'type': 'image_picker',
+      'id': 'image',
+      'label': 'Collection image'
+    },
+    {
+      'type': 'text',
+      'id': 'heading',
+      'label': 'Heading',
+      'default': 'Collection Name'
+    },
+    {
+      'type': 'text',
+      'id': 'subheading',
+      'label': 'Subheading',
+      'default': 'Collection description'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'default',
+      'settings': {
+        'image': '',
+        'heading': 'Collection Name',
+        'subheading': 'Collection description'
+      }
+    }
+  ],
+  'blocks': []
+}{% endschema %}
+
+<div class="collection-hero">
+  <img src="{{ settings.image | img_url }}" alt="" class="hero-image">
+  <h2>{{ settings.heading }}</h2>
+  <p>{{ settings.subheading }}</p>
+  <a href="#" class="cta-button">Learn More</a>
+</div>

@@ -1,0 +1,44 @@
+{% schema %}
+{
+  "name": "Hero Banner",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Welcome to HauteVue"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Shop the latest fashion trends"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button label",
+      "default": "Shop Now"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "Button URL"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+
+<section class="hero-banner" style="background-image: {{ settings.image | img_url: 'master' }};">
+  <div class="container">
+    <h1>{{ settings.heading | escape }}</h1>
+    <p>{{ settings.subheading | escape }}</p>
+    <a href="{{ settings.cta_url | escape }}" class="btn">{{ settings.cta_label | escape }}</a>
+  </div>
+</section>

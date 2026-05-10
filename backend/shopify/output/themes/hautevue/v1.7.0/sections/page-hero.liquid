@@ -1,0 +1,27 @@
+<section class="page-hero" role="region" aria-label="{{ settings.title | escape }}" style="background-image: url('{{ settings.image | img_url: 'large' }}'); background-size: cover; background-position: center; height: 100vh; display: flex; justify-content: center; align-items: center;">
+	<div class="container">
+		<h1>{{ settings.title | escape }}</h1>
+		<p>{{ settings.description | escape }}</p>
+	</div>
+</section>{% schema %}
+{
+  "name": "page-hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Hero image"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Page title"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Page description"
+    }
+  ],
+  "presets": []
+}{% endschema %}

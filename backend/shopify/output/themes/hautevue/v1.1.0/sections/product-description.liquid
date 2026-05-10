@@ -1,0 +1,25 @@
+{% schema %}
+{
+  "name": "Product Description",
+  "settings": [
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description",
+      "default": "Product description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {}
+    }
+  ]
+}
+{% endschema %}
+
+<div class="product-description">
+  <div class="container">
+    <p>{{ settings.description }}</p>
+  </div>
+</div>

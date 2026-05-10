@@ -1,0 +1,37 @@
+{% schema %}
+{
+  "name": "Product Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Product image"
+    },
+    {
+      "type": "text",
+      "id": "name",
+      "label": "Product name",
+      "default": "Product Name"
+    },
+    {
+      "type": "text",
+      "id": "price",
+      "label": "Price",
+      "default": "$50.00"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default",
+      "settings": {}
+    }
+  ]
+}
+{% endschema %}
+
+<div class="product-hero" style="background-image: {{ settings.image | img_url: 'master' }}; background-size: cover; background-position: center; background-color: #F2F2F2;">
+  <div class="container">
+    <h1>{{ settings.name }}</h1>
+    <p>{{ settings.price }}</p>
+  </div>
+</div>

@@ -1,0 +1,39 @@
+{"% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": []
+}
+{% endschema %}
+<nav class="header" role="navigation" aria-label="Header">
+  <div class="wrap">
+    <a class="logo" href="#"><img src="{{ settings.logo | img_url: 'master' }}" alt="{{ shop.name }}" width="{{ settings.logo_width }}"></a>
+    <ul class="menu">
+      {% for link in settings.menu %}
+        <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+</nav>

@@ -29,8 +29,8 @@ STRUCTURE (25 points):
 
 LIQUID CODE (25 points):
 - No unclosed tags ({% for %}...{% endfor %}, {% if %}...{% endif %}, etc.)
-- Correct Liquid filter usage (| money, | img_url, | escape, | t)
-- Schema blocks are complete JSON with name, settings, presets fields
+- Correct Liquid filter usage (| money, | image_url, | escape, | t) — flag deprecated legacy image filters as an error
+- Schema blocks are complete JSON with name, settings, presets fields (each preset must have "name")
 - No undefined or missing variables
 
 PERFORMANCE (25 points):
@@ -95,6 +95,8 @@ STRUCTURAL VALIDATOR RESULTS:
 Score this theme from 0-100 and list all issues found.
 Output ONLY valid JSON — no markdown, no explanation.
 """
+        if hasattr(context, "evolution_lessons") and context.evolution_lessons:
+            user_content += context.evolution_lessons
 
         text = await call_model(
             messages=[
@@ -106,6 +108,12 @@ Output ONLY valid JSON — no markdown, no explanation.
             temperature=0.3,
         )
         data = self._parse_json(text)
+
+        issues = data.get("issues", [])
+        fixes = data.get("fixes_required", [])
+        all_errors = issues + fixes
+        if all_errors:
+            context.qa_errors = getattr(context, "qa_errors", []) + all_errors
 
         score = data.get("score", 0)
         passed = data.get("passed", False)

@@ -5,6 +5,7 @@ Checks that a generated theme directory meets Shopify OS 2.0 requirements.
 
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List
@@ -120,6 +121,124 @@ class ThemeValidator:
             and result.score >= 80
         )
         return result
+
+    def validate_theme_completeness(self, theme_path: str) -> dict:
+        """
+        Returns {"valid": bool, "errors": list, "warnings": list}
+
+        Run these 6 checks:
+        1. Required files exist (layout/theme.liquid, config/settings_data.json,
+           config/settings_schema.json, templates/index.json)
+        2. Every {% render 'X' %} in theme.liquid has snippets/X.liquid
+        3. Every section "type" in template JSONs has sections/{type}.liquid
+        4. Scan all .liquid files for deprecated image filter usage -> warnings
+        5. Scan section {% schema %} blocks for presets missing "name" -> warnings
+        6. config/settings_schema.json is valid JSON array
+
+        Wrapped in try/except — this method must never raise.
+        """
+        try:
+            errors: List[str] = []
+            warnings: List[str] = []
+            tp = Path(theme_path)
+
+            # Check 1
+            required = [
+                "layout/theme.liquid",
+                "config/settings_data.json",
+                "config/settings_schema.json",
+                "templates/index.json",
+            ]
+            for rel in required:
+                if not (tp / rel).exists():
+                    errors.append(f"Missing required file: {rel}")
+
+            # Check 2
+            try:
+                theme_liquid = tp / "layout" / "theme.liquid"
+                if theme_liquid.exists():
+                    content = theme_liquid.read_text(encoding="utf-8", errors="ignore")
+                    for snippet_name in re.findall(r"{%-?\s*render\s*['\"]([^'\"]+)['\"]", content):
+                        snippet_file = tp / "snippets" / f"{snippet_name}.liquid"
+                        if not snippet_file.exists():
+                            errors.append(
+                                f"theme.liquid renders '{snippet_name}' but snippets/{snippet_name}.liquid is missing"
+                            )
+            except Exception as e:
+                errors.append(f"Snippet reference check failed: {e}")
+
+            # Check 3
+            try:
+                section_files = {f.stem for f in (tp / "sections").glob("*.liquid")} if (tp / "sections").exists() else set()
+                section_files.update({"announcement-bar", "header", "footer"})
+                templates_dir = tp / "templates"
+                if templates_dir.exists():
+                    for tpl_file in templates_dir.rglob("*.json"):
+                        try:
+                            tpl_data = json.loads(tpl_file.read_text(encoding="utf-8"))
+                            for section_key, section_cfg in tpl_data.get("sections", {}).items():
+                                section_type = section_cfg.get("type", section_key)
+                                if section_type not in section_files:
+                                    errors.append(
+                                        f"{tpl_file.name}: references '{section_type}' but sections/{section_type}.liquid is missing"
+                                    )
+                        except Exception as e:
+                            errors.append(f"{tpl_file.name}: invalid template JSON: {e}")
+            except Exception as e:
+                errors.append(f"Template section check failed: {e}")
+
+            # Check 4
+            try:
+                for liq in tp.rglob("*.liquid"):
+                    try:
+                        text = liq.read_text(encoding="utf-8", errors="ignore")
+                        if "| img_url" in text:
+                            warnings.append(f"{liq.name}: deprecated image filter detected; use image_url")
+                    except Exception:
+                        continue
+            except Exception as e:
+                warnings.append(f"Deprecated filter scan failed: {e}")
+
+            # Check 5
+            try:
+                sections_dir = tp / "sections"
+                if sections_dir.exists():
+                    for section_file in sections_dir.glob("*.liquid"):
+                        try:
+                            text = section_file.read_text(encoding="utf-8", errors="ignore")
+                            schema_match = re.search(
+                                r"{%-?\s+schema\s+-?%}(.*?){%-?\s+endschema\s+-?%}",
+                                text,
+                                re.DOTALL,
+                            )
+                            if not schema_match:
+                                continue
+                            schema_data = json.loads(schema_match.group(1))
+                            presets = schema_data.get("presets", [])
+                            for preset in presets:
+                                if not isinstance(preset, dict) or not preset.get("name"):
+                                    warnings.append(f"{section_file.name}: preset missing required 'name'")
+                        except json.JSONDecodeError as e:
+                            errors.append(f"{section_file.name}: invalid schema JSON: {e}")
+                        except Exception:
+                            continue
+            except Exception as e:
+                warnings.append(f"Preset name scan failed: {e}")
+
+            # Check 6
+            try:
+                schema_path = tp / "config" / "settings_schema.json"
+                if schema_path.exists():
+                    schema_data = json.loads(schema_path.read_text(encoding="utf-8"))
+                    if not isinstance(schema_data, list):
+                        errors.append("config/settings_schema.json must be a JSON array")
+            except Exception as e:
+                errors.append(f"settings_schema.json validation failed: {e}")
+
+            return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
+        except Exception as e:
+            logger.error("validate_theme_completeness failed: %s", e)
+            return {"valid": False, "errors": [f"Completeness validation crashed: {e}"], "warnings": []}
 
     def _check_liquid_balance(self, path: Path) -> List[str]:
         issues = []

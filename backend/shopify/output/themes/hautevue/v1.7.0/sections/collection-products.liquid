@@ -1,0 +1,57 @@
+<section class="collection-products" style="--primary-color: #3B3F4E; --bg-color: #F2F2F2;" role="region" aria-label="Collection products">
+  <div class="product-grid-container">
+    {% for product in collection.products %}
+      <div class="product-grid-item">
+        <h2>{{ product.title }}</h2>
+        <p>{{ product.price | money }}</p>
+        <img src="{{ product.image | img_url: 'medium' }}" alt="Product image">
+      </div>
+    {% endfor %}
+  </div>
+  {% schema %}
+  {
+    "name": "collection-products",
+    "settings": [
+      {
+        "type": "collection",
+        "id": "collection",
+        "label": "Collection"
+      }
+    ],
+    "blocks": [
+      {
+        "type": "product-grid",
+        "name": "product",
+        "settings": [
+          {
+            "type": "text",
+            "id": "title",
+            "label": "Product title"
+          },
+          {
+            "type": "text",
+            "id": "price",
+            "label": "Product price"
+          },
+          {
+            "type": "image_picker",
+            "id": "image",
+            "label": "Product image"
+          }
+        ]
+      }
+    ],
+    "presets": []
+  }
+  {% endschema %}
+</section>
+
+<style>
+  @media only screen and (max-width: 768px) {
+    .product-grid-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-gap: 10px;
+    }
+  }
+</style>

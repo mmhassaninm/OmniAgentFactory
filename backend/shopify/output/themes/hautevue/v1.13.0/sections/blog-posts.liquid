@@ -1,0 +1,43 @@
+
+{% schema %}
+{
+  "name": "Blog posts",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Latest Posts"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "blog-post",
+      "name": "Blog Post",
+      "settings": [
+        {
+          "type": "blog_picker",
+          "id": "post",
+          "label": "Post"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
+
+<section class="blog-posts">
+  <h2>{{ settings.heading }}</h2>
+  {% for post in blocks.blog_post %}
+  <article>
+    <img src="{{ post.settings.post.image | img_url }}" alt="{{ post.settings.post.title }}" />
+    <h3>{{ post.settings.post.title }}</h3>
+    <p>{{ post.settings.post.description }}</p>
+  </article>
+  {% endfor %}
+</section>

@@ -1,0 +1,1 @@
+<div class="product-info"><p class="price">{{ settings.price | escape }}</p><p>{{ settings.description | escape }}</p><img src="{{ settings.size_chart | img_url: 'master' }}" alt=""></div>{% schema %}{% assigns settings = settings %}{% schema %}{% name "Product Info" %}{% settings ["price", "description", "size_chart"] %}{% presets [] %}{% endschema %}

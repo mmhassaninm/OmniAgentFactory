@@ -1,0 +1,36 @@
+{% schema %}
+{
+  'name': 'Collection Grid',
+  'settings': [
+    {
+      'type': 'collection_picker',
+      'id': 'collection',
+      'label': 'Collection',
+      'default': ''
+    }
+  ],
+  'presets': [],
+  'sections': [{
+    'type': 'product-grid',
+    'name': 'product-grid',
+    'settings': [
+      {
+        'type': 'image_picker',
+        'id': 'image',
+        'label': 'Image'
+      }
+    ]
+  }]
+}
+{% endschema %}
+<div class="collection-grid">
+  {% if collection.settings.collection != blank %}
+    {% for product in collection.products %}
+      <div class="product-grid-item">
+        <img src="{{ product.settings.image | img_url: '150x150' }}" alt="{{ product.title }}">
+        <h2>{{ product.title }}</h2>
+        <p>{{ product.price | money }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>

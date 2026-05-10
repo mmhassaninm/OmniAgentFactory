@@ -17,13 +17,31 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """
 You are a Senior Shopify Liquid Developer. Write production-ready Shopify OS 2.0 theme code.
 
-Standards: OS 2.0 section architecture, complete {% schema %} blocks, Liquid filters (| money | img_url | escape | t), CSS custom properties, vanilla JS, lazy-load images, ARIA labels, mobile-first.
+Standards: OS 2.0 section architecture, complete {% schema %} blocks, Liquid filters (| money | image_url | escape | t), CSS custom properties, vanilla JS, lazy-load images, ARIA labels, mobile-first.
 
 OUTPUT ONLY a valid JSON object mapping relative file paths to complete file content strings.
 Example: {"sections/hero-banner.liquid": "<section>...</section>{% schema %}...{% endschema %}"}
 
 Every section must have a complete {% schema %} with name, settings array, and presets array.
 Write COMPLETE code — no placeholders, no TODOs.
+
+CRITICAL RULE — SECTION SYNC (Bug 1A):
+Every section "type" referenced in any template JSON MUST have a corresponding .liquid file in
+the sections/ folder. Before finalizing output: verify every JSON section reference has a matching
+.liquid file. If not — either create the .liquid file OR remove it from the JSON.
+Never leave orphaned references.
+
+SHOPIFY OS 2.0 IMAGE SYNTAX — MANDATORY:
+NEVER use deprecated legacy image filters from old themes.
+ALWAYS use: | image_url: width: 800   (standard)
+            | image_url: width: 1200  (hero/banner)
+            | image_url: width: 400   (thumbnails)
+RIGHT:  {{ section.settings.image | image_url: width: 1200 | image_tag }}
+
+SECTION SCHEMA PRESETS — MANDATORY:
+WRONG:  "presets": [{}]
+RIGHT:  "presets": [{"name": "Hero Banner"}]
+Every section MUST have at least one preset with a "name" field.
 """
 
 BATCH_SIZE = 5
@@ -88,6 +106,8 @@ SECTIONS ({len(batch)}):
 Return ONLY a JSON object: keys = file paths (e.g. "sections/hero-banner.liquid"), values = complete Liquid file content.
 No markdown fences. No explanation. Valid JSON only.
 """
+            if hasattr(context, "evolution_lessons") and context.evolution_lessons:
+                batch_content += context.evolution_lessons
             text = await call_model(
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
