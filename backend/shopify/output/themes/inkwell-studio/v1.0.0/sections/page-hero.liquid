@@ -1,0 +1,32 @@
+<section class="page-hero" aria-label="Page hero section">
+  <div class="page-hero__container">
+    <div class="page-hero__image" style="background-image: url('{{ section.settings.image | image_url: width: 1200 | image_tag }}');"></div>
+    <div class="page-hero__content">
+      <h1>{{ section.settings.heading | escape | default: 'Page title' }}</h1>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Page Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Page image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Page title"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Page Hero"
+    }
+  ]
+}
+{% endschema %}

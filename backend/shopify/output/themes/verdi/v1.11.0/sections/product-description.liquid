@@ -1,0 +1,27 @@
+{% schema %}
+{
+  "name": "Product description",
+  "settings": [
+    {
+      "type": "rich_text",
+      "id": "description",
+      "label": "Product description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": [
+  ],
+  "responsive_notes": "Hide description on mobile"
+}
+{% endschema %}
+<div class="description-container">
+  <h2>{{ 'products.description' | t }}</h2>
+  <div class="description-content"
+    aria-label="Product description">
+    {{ section.settings.description | escape }}
+  </div>
+</div>

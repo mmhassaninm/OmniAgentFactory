@@ -1,0 +1,37 @@
+<!-- Blog Grid Section -->
+<section class="blog-grid section section--padding section--lg-padding">
+    <div class="container">
+        <div class="grid grid--3x3 grid--2x2--tablet grid--1x1--mobile">
+            {% for post in posts %}
+                <div class="grid__item">
+                    <article>
+                        <h2>{{ post.title }}</h2>
+                        <p>{{ post.content }}</p>
+                        <p>Learn more about {{ post.eco_details }}.</p>
+                    </article>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% schema %}
+{
+    "name": "Blog Grid",
+    "settings": [
+        {
+            "type": "blog_list",
+            "id": "posts",
+            "label": "Blog posts"
+        }
+    ],
+    "presets": [
+        {
+            "name": "Blog Grid"
+        }
+    ],
+    "blocks": [
+    ],
+    "responsive_notes": "Grid 3x3 on desktop, 2x2 on tablet, 1x1 on mobile"
+}
+{% endschema %}

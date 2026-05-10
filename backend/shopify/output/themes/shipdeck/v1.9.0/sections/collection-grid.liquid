@@ -1,0 +1,76 @@
+<section class="collection-grid" role="region" aria-label="Collection Grid">{% schema %}
+{
+  "name": "collection-grid",
+  "settings": [
+    {
+      "type": "range",
+      "id": "product_grid_columns",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "unit": "columns",
+      "label": "Grid columns",
+      "default": 3
+    },
+    {
+      "type": "text",
+      "id": "grid_heading",
+      "label": "Grid heading",
+      "default": "Our Products"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_card",
+      "name": "Product Card",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Product image"
+        },
+        {
+          "type": "text",
+          "id": "price",
+          "label": "Price"
+        },
+        {
+          "type": "text",
+          "id": "cta_label",
+          "label": "Button label",
+          "default": "Buy Now"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Grid"
+    }
+  ]
+}{% endschema %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h2>{{ section.settings.grid_heading | escape }}</h2>
+      <div class="product-grid" style="grid-template-columns: repeat({{ section.settings.product_grid_columns }}, 1fr);">
+        {% for block in section.blocks %}
+          {% if block.settings.image %}
+            <div class="product-card">
+              <img src="{{ block.settings.image | image_url: width: 400 | alt: block.settings.name | escape }}" alt="{{ block.settings.name | escape }}"/>;
+              <h3>{{ block.settings.name | escape }}</h3>
+              <p>{{ block.settings.price | money }}</p>
+              <button>{{ block.settings.cta_label | escape }}</button>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.collection-grid { display: flex; justify-content: center; align-items: center; }
+.collection-grid .product-grid { display: grid; gap: 20px; }
+.collection-grid .product-card { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+</style>

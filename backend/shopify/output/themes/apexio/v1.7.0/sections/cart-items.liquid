@@ -1,0 +1,36 @@
+{% schema %}
+{
+  "name": "Cart Items",
+  "settings": [
+    {
+      "type": "text",
+      "id": "subtotal",
+      "label": "Subtotal",
+      "default": "$0.00"
+    },
+    {
+      "type": "text",
+      "id": "tax",
+      "label": "Tax",
+      "default": "$0.00"
+    },
+    {
+      "type": "text",
+      "id": "total",
+      "label": "Total",
+      "default": "$0.00"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart Items"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="container pt-6 pb-6 text-center">
+  <h2>Subtotal: <span>{{ section.settings.subtotal }}</span></h2>
+  <h2> Tax: <span>{{ section.settings.tax }}</span></h2>
+  <h2>Total: <span>{{ section.settings.total }}</span></h2>
+</div>

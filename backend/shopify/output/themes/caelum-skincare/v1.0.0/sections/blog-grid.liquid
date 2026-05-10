@@ -1,0 +1,41 @@
+<section class="blog-grid" aria-label="Blog Grid">
+  <div class="blog-posts" data-toggle="isotope">
+    {% for post in section.settings.posts %}
+      <div class="grid-item" style="background-image: url('{{ post.image | image_url: width: 400 }}');">
+        <h2>{{ post.title | escape }}</h2>
+        <p>{{ post.description | escape }}</p>
+      </div>
+    {% endfor %}
+  </div>
+  <button class="load-more">Load More</button>
+{% schema %}
+{
+  "name": "Blog Grid",
+  "settings": [
+    {
+      "type": "blog_picker",
+      "id": "posts",
+      "label": "Blog Posts",
+      "default": "recent-posts"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog Grid"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "blog-grid-item",
+      "name": "Blog Grid Item",
+      "settings": [
+        {
+          "type": "blog_picker",
+          "id": "post",
+          "label": "Post"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

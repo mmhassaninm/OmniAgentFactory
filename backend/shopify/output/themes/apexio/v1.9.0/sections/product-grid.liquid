@@ -1,0 +1,41 @@
+{% schema %}
+{
+  "name": "Product Grid",
+  "settings": [
+    {
+      "type": "range",
+      "id": "grid_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "unit": "",
+      "label": "Grid columns",
+      "default": 4
+    },
+    {
+      "type": "text",
+      "id": "price_range_label",
+      "label": "Price display",
+      "default": "from ${{price}}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Grid"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="product-grid" role="region" aria-label="Product grid">
+  <div class="grid" style="grid-template-columns: repeat({{ section.settings.grid_columns }}, 1fr);">
+    {% for product in collection.products %}
+      <div class="product-card">
+        <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.title }}"/>
+        <h2>{{ product.title }}</h2>
+        <p>{{ product.price | money }}</p>
+        <a href="{{ product.url }}" class="btn" role="button" aria-label="View {{ product.title }}">View {{ product.title }}</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>

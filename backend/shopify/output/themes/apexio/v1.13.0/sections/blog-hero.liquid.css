@@ -1,0 +1,30 @@
+.hero {
+  background-color: #f9f9f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-image {
+  width: 50%;
+  display: flex;
+  justify-content: center;
+}
+.hero-content {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    display: block;
+  }
+  .hero-image {
+    display: none;
+  }
+  .hero-content {
+    display: block;
+    width: 100%;
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "disabled": false
+    },
+    "header": {
+      "type": "header"
+    },
+    "collection-hero": {
+      "type": "collection-hero"
+    },
+    "collection-grid": {
+      "type": "collection-grid"
+    },
+    "footer": {
+      "type": "footer"
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header",
+    "collection-hero",
+    "collection-grid",
+    "footer"
+  ]
+}

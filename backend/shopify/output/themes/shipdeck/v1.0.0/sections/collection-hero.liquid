@@ -1,0 +1,40 @@
+
+{% schema %}
+{
+  "name": "Collection Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Collection image"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Collection title"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Collection description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Banner"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="collection-hero">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <img src="{{ settings.image | image_url: width: 1200 }}" alt="{{ settings.title }}"/>
+        <h1>{{ settings.title }}</h1>
+        <p>{{ settings.description }}</p>
+      </div>
+    </div>
+  </div>
+</div>

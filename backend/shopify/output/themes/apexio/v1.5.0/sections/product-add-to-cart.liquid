@@ -1,0 +1,17 @@
+{% schema %}{
+  "name": "Product Add to Cart",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Add to Cart" },
+    { "type": "price", "id": "price", "label": "Price", "default": "49.99" },
+    { "type": "url", "id": "cta_url", "label": "Button URL" }
+  ],
+  "presets": [
+    { "name": "Product Add to Cart" }
+  ]
+}{% endschema %}
+
+<div class="addToCartSection">
+  <h2>{{ section.settings.heading | escape }}</h2>
+  <p>{{ section.settings.price | money }}</p>
+  <a href="{{ section.settings.cta_url | escape }}" class="button">Add to Cart</a>
+</div>

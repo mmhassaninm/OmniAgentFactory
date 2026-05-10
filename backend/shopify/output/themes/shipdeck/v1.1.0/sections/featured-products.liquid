@@ -1,0 +1,49 @@
+<!-- Featured Products Section -->
+<section role="region" aria-label="Featured Products" class="featured-products">
+  <div class="container">
+    <h2>Featured Products</h2>
+    <div class="grid">
+      {% for product in section.settings.products %}
+        <div class="grid-item">
+          <a href="{{ product.url }}">
+            <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.title }}">
+            <h3>{{ product.title }}</h3>
+            <p>{{ product.price | money }}</p>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "featured-products",
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Featured products",
+      "default": "best-sellers"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured Products"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "product",
+      "settings": [
+        {
+          "type": "product_picker",
+          "id": "product_id",
+          "label": "Product"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

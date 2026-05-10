@@ -1,0 +1,42 @@
+<section class="collection-hero" role="region" aria-label="Collection Hero">{% schema %}
+{
+  "name": "collection-hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Collection image"
+    },
+    {
+      "type": "text",
+      "id": "name",
+      "label": "Collection name"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Collection description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Hero"
+    }
+  ]
+}{% endschema %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h2>{{ section.settings.name | escape }}</h2>
+      <p>{{ section.settings.description | escape }}</p>
+      <img src="{{ section.settings.image | image_url: width: 800 | alt: section.settings.name | escape }}" alt="{{ section.settings.name | escape }}"/>;
+    </div>
+  </div>
+</div>
+
+{% if section.settings.image %}
+<div class="hero-image" style="background-image: url('{{ section.settings.image | image_url: width: 1200 | alt: section.settings.name | escape }}');"></div>
+{% endif %}<style>
+.collection-hero { display: flex; justify-content: center; align-items: center; }
+.collection-hero .hero-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; }
+</style>

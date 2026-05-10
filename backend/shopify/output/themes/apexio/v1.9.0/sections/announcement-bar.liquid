@@ -1,0 +1,28 @@
+{% schema %}
+{
+  "name": "Announcement Bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "message",
+      "label": "Message"
+    },
+    {
+      "type": "text",
+      "id": "close_label",
+      "label": "Close label",
+      "default": "Close"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Announcement Bar"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="announcement-bar" style="--primary-color: #3498db; --bg-color: #f9f9f9;">
+  <p>{{ settings.message }}</p>
+  <button class="close" aria-label="Close" title="{{ settings.close_label }}"></button>
+</div>

@@ -1,0 +1,62 @@
+<!-- theme: Verdi, colors: #34C759, #F2F2F2 -->
+<div class="header">
+  <div class="container">
+    <div class="logo">
+      <img src="{{ settings.logo | image_url: width: 1200 }}" alt="{{ settings.logo.alt | escape }}" style="width: {{ settings.logo_width }}px;">
+    </div>
+    <div class="menu">
+      <nav>
+        <ul>
+          {% for item in settings.menu %}
+            <li><a href="{{ item.url | escape }}">{{ item.label | escape }}</a></li>
+          {% endfor %}
+        </ul>
+      </nav>
+    </div>
+    <div class="search">
+      <form>
+        <input type="search" placeholder="Search...">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+    <div class="cart">
+      <a href="#" aria-label="View cart" title="View cart">
+        <svg viewBox="0 0 24 24" enable-background="new 0 0 24 24" height="24" width="24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 2H6c-1.1 0-2 .9-2 2v18h2V4h10v18h2V4c0-1.1-.9-2-2-2zm0 14H6V6h12v12z" fill="#34C759"/></svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}

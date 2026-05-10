@@ -15,6 +15,15 @@ from shopify.utils import robust_parse_json
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
+CRITICAL — OUTPUT FORMAT:
+Return ONE valid JSON object. Keys = relative file paths. Values = file content.
+The JSON must be parseable by Python's json.loads().
+Write file content naturally — use real HTML quotes and real newlines.
+Do NOT manually escape quotes or newlines in your file content.
+The JSON serializer handles encoding automatically.
+If you cannot fit all sections, write fewer but fully complete ones.
+Never truncate a section mid-way.
+
 You are a Senior Shopify Liquid Developer. Write production-ready Shopify OS 2.0 theme code.
 
 Standards: OS 2.0 section architecture, complete {% schema %} blocks, Liquid filters (| money | image_url | escape | t), CSS custom properties, vanilla JS, lazy-load images, ARIA labels, mobile-first.
@@ -42,9 +51,28 @@ SECTION SCHEMA PRESETS — MANDATORY:
 WRONG:  "presets": [{}]
 RIGHT:  "presets": [{"name": "Hero Banner"}]
 Every section MUST have at least one preset with a "name" field.
+
+SCHEMA BLOCK — MANDATORY RULES:
+The {% schema %} block must contain ONLY valid JSON — no Liquid tags,
+no {% if %}, no {% for %}, no variables inside the schema block.
+Schema content must be pure JSON that Shopify can parse directly.
+
+WRONG:
+{% schema %}{% if settings.menu != blank %}...{% endif %}{% endschema %}
+
+RIGHT:
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    { "type": "link_list", "id": "menu", "label": "Navigation menu" }
+  ],
+  "presets": [{ "name": "Header" }]
+}
+{% endschema %}
 """
 
-BATCH_SIZE = 5
+BATCH_SIZE = 2
 
 
 class LiquidDeveloper:
@@ -108,25 +136,48 @@ No markdown fences. No explanation. Valid JSON only.
 """
             if hasattr(context, "evolution_lessons") and context.evolution_lessons:
                 batch_content += context.evolution_lessons
-            text = await call_model(
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user",   "content": batch_content},
-                ],
-                task_type="general",
-                max_tokens=6000,
-                temperature=0.7,
-            )
-            if not text or not text.strip():
-                raise ValueError(
-                    f"Empty model response for batch {batch_num}/{len(batches)}"
+            batch_files = {}
+            try:
+                text = await call_model(
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user",   "content": batch_content},
+                    ],
+                    task_type="general",
+                    max_tokens=3000,
+                    temperature=0.7,
                 )
-            batch_files = self._parse_json(text)
-            if not isinstance(batch_files, dict):
-                raise ValueError(
-                    f"Expected JSON object for batch {batch_num}, got {type(batch_files).__name__}"
+                if not text or not text.strip():
+                    raise ValueError(f"Empty response for batch {batch_num}")
+                batch_files = self._parse_json(text)
+                if not isinstance(batch_files, dict) or len(batch_files) == 0:
+                    raise ValueError(f"Empty or invalid batch result for batch {batch_num}")
+            except Exception as e:
+                logger.warning(
+                    "[LiquidDeveloper] Batch %d failed: %s — falling back to per-section", batch_num, e
                 )
+                # Per-section fallback: write each section individually
+                for section in batch:
+                    section_files = await self._write_section_individually(
+                        section, brief_summary, context
+                    )
+                    batch_files.update(section_files)
             all_files.update(batch_files)
+
+        # Post-parse cleanup: unescape double-escaped content
+        cleaned_files: Dict[str, str] = {}
+        for path, content in all_files.items():
+            if isinstance(content, str):
+                if '\\"' in content:
+                    content = content.replace('\\"', '"')
+                if '\\n' in content:
+                    content = content.replace('\\n', '\n')
+                if '\\t' in content:
+                    content = content.replace('\\t', '\t')
+                if "\\'" in content:
+                    content = content.replace("\\'", "'")
+            cleaned_files[path] = content
+        all_files = cleaned_files
 
         data = all_files
         file_count = len(data)
@@ -137,5 +188,45 @@ No markdown fences. No explanation. Valid JSON only.
         context.liquid_code = data
         return {"status": "done", "summary": summary, "data": data}
 
+    async def _write_section_individually(
+        self, section: dict, brief_summary: str, context: SharedContext
+    ) -> dict:
+        """
+        Fallback: write a single section when batch parsing fails.
+        Returns {file_path: content} or {} on failure.
+        """
+        try:
+            prompt = f"""Write ONE Shopify OS 2.0 section file.
+
+THEME: {brief_summary}
+SECTION: {json.dumps(section, indent=2)}
+
+Return ONLY a JSON object with ONE key (the file path) and ONE value
+(the complete Liquid file content as a properly escaped JSON string).
+Example: {{"sections/hero-banner.liquid": "<section>...</section>\\n{{% schema %}}...{{% endschema %}}"}}
+
+CRITICAL: escape ALL newlines as \\n inside the JSON string value.
+"""
+            if hasattr(context, "evolution_lessons") and context.evolution_lessons:
+                prompt += context.evolution_lessons
+            text = await call_model(
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt},
+                ],
+                task_type="general",
+                max_tokens=2000,
+                temperature=0.7,
+            )
+            result = self._parse_json(text)
+            return result if isinstance(result, dict) else {}
+        except Exception as e:
+            logger.warning("[LiquidDeveloper] Individual section failed (%s): %s",
+                           section.get("file_name", "?"), e)
+            return {}
+
     def _parse_json(self, text: str) -> dict:
-        return robust_parse_json(text)
+        parsed = robust_parse_json(text)
+        if not isinstance(parsed, dict) or len(parsed) == 0:
+            raise ValueError("Empty or invalid JSON object from LiquidDeveloper")
+        return parsed

@@ -1,0 +1,49 @@
+{% schema %}
+{
+  "name": "Blog Posts",
+  "settings": [
+    {
+      "type": "blog_list",
+      "id": "posts",
+      "label": "Posts to display",
+      "default": "latest"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "blog-post",
+      "name": "blog-post",
+      "settings": [
+        {
+          "type": "post_picker",
+          "id": "post",
+          "label": "Post"
+        }
+      ]
+    }
+  ],
+  "responsive_notes": "List 2 posts per row on desktop, 1 on tablet, 1 on mobile"
+}
+{% endschema %}
+<section class="blog-posts">
+  <div class="container">
+    <div class="row">
+      {% for post in section.settings.posts %}
+        <div class="col-6 col-md-4 col-lg-3">
+          <div class="blog-post" aria-label="Blog post {{ forloop.index }}">
+            <a href="{{ post.url }}">
+              <h3>{{ post.title }}</h3>
+              <p>{{ post.excerpt }}</p>
+              <img src="{{ post.image | image_url: width: 400 | image_tag }}" alt="{{ post.image.alt }}">
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

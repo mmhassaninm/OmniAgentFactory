@@ -1,0 +1,30 @@
+<section class="product-hero" aria-label="Product hero" data-section-id="product-hero">
+  <img class="product-hero-image" src="{% assign image = section.settings.image | escape %}{{ image | image_url: width: 1200 | img_url }}" alt="{{ section.settings.heading }}" />
+  <h2>{{ section.settings.heading }}</h2>
+  <p class="product-hero-price">{{ section.settings.price | money }}</p>
+  {% schema%
+    {
+      "name":"product-hero",
+      "settings":[
+        {
+          "type":"image_picker",
+          "id":"image",
+          "label":"Product image"
+        },{
+          "type":"text",
+          "id":"heading",
+          "label":"Product name"
+        },{
+          "type":"price",
+          "id":"price",
+          "label":"Price"
+        }
+      ],
+      "presets":[
+        {
+          "name":"Default"
+        }
+      ],
+      "blocks":[]
+    }
+  {% endschema %}

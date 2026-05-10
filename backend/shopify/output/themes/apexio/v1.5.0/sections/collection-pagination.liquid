@@ -1,0 +1,35 @@
+{% schema %}
+{
+  "name": "Collection Pagination",
+  "settings": [
+    {
+      "type": "range",
+      "id": "page_size",
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "unit": "",
+      "label": "Page size",
+      "default": 12
+    }
+  ],
+  "presets": [{"name": "Default Pagination"}]
+}
+{% endschema %}
+
+<div class="collection-pagination">
+  <h3>Page {{ settings.page_size }}</h3>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const pagination = document.querySelector(".collection-pagination");
+    if (pagination) {
+      const pageSize = parseInt(pagination.querySelector("h3").textContent.match(/Page (\d+)/)[1]);
+      const loadMoreButton = document.createElement("button");
+      loadMoreButton.textContent = "Load more";
+      loadMoreButton.classList.add("load-more-button");
+      pagination.appendChild(loadMoreButton);
+    }
+  });
+</script>

@@ -1,0 +1,27 @@
+{
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "disabled": false
+    },
+    "header": {
+      "type": "header"
+    },
+    "cart-hero": {
+      "type": "cart-hero"
+    },
+    "cart-items": {
+      "type": "cart-items"
+    },
+    "footer": {
+      "type": "footer"
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header",
+    "cart-hero",
+    "cart-items",
+    "footer"
+  ]
+}

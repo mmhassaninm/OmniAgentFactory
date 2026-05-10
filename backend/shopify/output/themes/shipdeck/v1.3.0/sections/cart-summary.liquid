@@ -1,0 +1,29 @@
+<section class="cart-summary" aria-label="Cart summary">
+  <h2>{{ 'cart.summary' | t }}</h2>
+  <p id="subtotal">{{ 'cart.subtotal' | t }}: {{ order.subtotal | money }})</p>
+  <p id="tax">{{ 'cart.tax' | t }}: {{ order.tax | money }}</p>
+  <p id="total">{{ 'cart.total' | t }}: {{ order.total | money }}</p>
+  {% schema %}
+  {
+    "name": "cart-summary",
+    "settings": [
+      {
+        "type": "text",
+        "id": "subtotal",
+        "label": "Subtotal"
+      },
+      {
+        "type": "text",
+        "id": "tax",
+        "label": "Tax"
+      },
+      {
+        "type": "text",
+        "id": "total",
+        "label": "Total"
+      }
+    ],
+    "presets": [{"name": "Default"}]
+  }
+  {% endschema %}
+</section>

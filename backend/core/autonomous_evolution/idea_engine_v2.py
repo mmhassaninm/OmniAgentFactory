@@ -1,0 +1,169 @@
+"""
+Idea Engine v2 — Real Web Research + AI Idea Generation
+Searches the web and uses LLM to generate novel development ideas
+"""
+import json
+import logging
+import random
+from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
+
+# Ideas about AI/evolution/agents that inspire NexusOS development
+SEARCH_QUERIES = [
+    "AI agent self-improvement techniques 2025",
+    "autonomous AI evolution loop best practices",
+    "multi-agent collaboration patterns LLM",
+    "self-evolving code generation systems",
+    "agent framework improvements 2025",
+    "continuous AI system optimization",
+]
+
+IDEA_GENERATION_PROMPT = """
+أنت محلل تقني متخصص في AI agents وأنظمة التطور الذاتي.
+You are a technical analyst specializing in self-evolving AI systems.
+
+# Project Context
+NexusOS is an autonomous AI agent factory with:
+- FastAPI backend + React frontend
+- MongoDB persistence
+- LangGraph agent orchestration
+- Self-evolution loop (continuous improvement)
+- Shopify theme generator (7-agent swarm)
+- Multi-provider LLM router (Claude, Groq, OpenRouter, etc.)
+
+# Web Research Results
+{web_results}
+
+# Already Implemented Ideas (don't repeat these)
+{implemented_ideas}
+
+# Your Task
+Generate 2-3 novel development ideas that:
+1. Are completely different from implemented ideas
+2. Leverage findings from web research
+3. Fit the NexusOS architecture
+4. Deliver measurable value (performance, reliability, features, automation)
+
+Output ONLY valid JSON (no markdown, no explanation):
+{{
+  "ideas": [
+    {{
+      "title": "Short Title",
+      "description": "2-3 sentence detailed description",
+      "source": "Web source or inspiration (URL or title)",
+      "impact": "high|medium|low",
+      "feasibility": "high|medium|low",
+      "category": "evolution|tools|performance|reliability|integration|ui",
+      "estimated_files": ["file1.py", "file2.py"],
+      "estimated_hours": 4
+    }}
+  ]
+}}
+"""
+
+
+class IdeaEngineV2:
+    """Generates development ideas from web research and AI analysis."""
+
+    def __init__(self, model_router, registry_manager):
+        self.model_router = model_router
+        self.registry = registry_manager
+
+    async def research_and_generate(self) -> List[Dict[str, Any]]:
+        """Main entry point: research web + generate ideas."""
+        try:
+            logger.info("🔍 IdeaEngineV2: Starting web research and idea generation...")
+
+            # Step 1: Search the web
+            web_results = await self._web_research()
+
+            # Step 2: Get implemented ideas to avoid duplication
+            implemented = await self.registry.get_implemented_ideas(limit=20)
+
+            # Step 3: Generate ideas using LLM
+            ideas = await self._generate_via_llm(web_results, implemented)
+
+            # Step 4: Filter duplicates
+            filtered = await self.registry.filter_duplicate_ideas(ideas)
+
+            logger.info(f"✨ Generated {len(filtered)} unique ideas (from {len(ideas)} total)")
+            return filtered
+
+        except Exception as e:
+            logger.error(f"Idea generation failed: {e}")
+            return []
+
+    async def _web_research(self) -> List[Dict[str, str]]:
+        """Search the web using DuckDuckGo for relevant topics."""
+        results = []
+        try:
+            from duckduckgo_search import DDGS
+
+            # Pick 1-2 random searches
+            queries = random.sample(SEARCH_QUERIES, 2)
+
+            for query in queries:
+                logger.info(f"  Searching: {query}")
+                try:
+                    with DDGS() as ddgs:
+                        search_results = list(ddgs.text(query, max_results=3))
+                        for r in search_results:
+                            results.append({
+                                "title": r.get("title", ""),
+                                "snippet": r.get("body", "")[:200],
+                                "url": r.get("href", ""),
+                                "query": query
+                            })
+                except Exception as e:
+                    logger.warning(f"  Search failed for '{query}': {e}")
+
+            logger.info(f"  Found {len(results)} web results")
+            return results
+
+        except Exception as e:
+            logger.warning(f"Web research failed: {e}")
+            return []
+
+    async def _generate_via_llm(self, web_results: List[dict],
+                               implemented: List[dict]) -> List[Dict[str, Any]]:
+        """Use LLM to generate ideas based on web research."""
+        try:
+            # Format web results
+            web_text = "\n".join([
+                f"- {r['title']}: {r['snippet']}"
+                for r in web_results[:5]
+            ])
+
+            # Format implemented ideas
+            impl_text = "\n".join([
+                f"- {i.get('title')}: {i.get('description', '')[:100]}"
+                for i in implemented[:10]
+            ])
+
+            prompt = IDEA_GENERATION_PROMPT.format(
+                web_results=web_text or "(No web results)",
+                implemented_ideas=impl_text or "(None yet)"
+            )
+
+            # Call LLM
+            logger.info("  Calling LLM for idea generation...")
+            response = await self.model_router.call_model(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=1000
+            )
+
+            # Parse JSON
+            try:
+                data = json.loads(response)
+                ideas = data.get("ideas", [])
+                logger.info(f"  LLM generated {len(ideas)} ideas")
+                return ideas
+            except json.JSONDecodeError:
+                logger.warning(f"LLM returned invalid JSON: {response[:100]}")
+                return []
+
+        except Exception as e:
+            logger.error(f"LLM idea generation failed: {e}")
+            return []

@@ -1,0 +1,22 @@
+{% schema %}
+{
+  "name": "Product Card",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Product"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="product-card" role="link" aria-label="Product Card">
+  <a href="{{ settings.product.url }}"><img src="{{ settings.product.image | image_url: width: 400 | image_tag }}" alt="{{ settings.product.image.alt }}" /></a>
+  <h2>{{ settings.title }}</h2>
+</div>

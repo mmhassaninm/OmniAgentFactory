@@ -1,0 +1,22 @@
+{% schema %}
+{
+  "name": "Product Card",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Product"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="product-card">
+  <img src="{{ block.settings.product.image | image_url: width: 400 | image_tag }}" alt="{{ block.settings.product.title | escape }}">
+  <h3>{{ block.settings.title | escape }}</h3>
+</div>

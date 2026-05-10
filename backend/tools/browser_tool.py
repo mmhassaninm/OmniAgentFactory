@@ -3,18 +3,25 @@ Browser tool powered by Playwright.
 Existing methods (search_web, get_page_content, take_screenshot) preserved.
 Money Agent methods added: search_for_clients, find_contact_email, fill_contact_form.
 Headful (visible) mode enabled when AGENT_MODE=human_in_loop so the human can monitor.
+Platform detection: Windows host runs headful, Linux container (Docker) runs headless unless human_in_loop.
 """
 import os
 import logging
 import re
+import platform
 from urllib.parse import quote_plus
 
 from playwright.async_api import async_playwright
+from duckduckgo_search import DDGS
 from utils.error_log import log_error
 
 logger = logging.getLogger(__name__)
 
-_HEADLESS = os.environ.get("AGENT_MODE", "human_in_loop") != "human_in_loop"
+# Platform-aware headless detection
+_IS_WINDOWS = platform.system() == "Windows"
+_AGENT_MODE = os.environ.get("AGENT_MODE", "human_in_loop")
+# On Windows host: always show browser. In Docker: headless=True unless human_in_loop
+_HEADLESS = not _IS_WINDOWS if _AGENT_MODE != "human_in_loop" else False
 
 
 class BrowserTool:
@@ -91,44 +98,39 @@ class BrowserTool:
 
     async def search_for_clients(self, niche: str = "content writing", limit: int = 10) -> list[dict]:
         """
-        DuckDuckGo search for businesses that might need the service.
-        Returns list of {title, url, snippet} dicts.
+        Use DuckDuckGo API (via duckduckgo-search library) to find potential clients.
+        Avoids brittle Playwright selectors which break when DDG changes HTML.
+        Returns list of {title, url, snippet, source} dicts.
         """
         queries = [
             f"{niche} needed for small business",
-            f"hire freelance {niche} writer",
-            f"looking for {niche} creator site:reddit.com",
+            f"hire freelance {niche}",
+            f"looking for {niche} creator",
         ]
         results: list[dict] = []
         try:
-            page = await self._browser.new_page()
+            ddgs = DDGS()
             for query in queries:
                 if len(results) >= limit:
                     break
                 try:
-                    await page.goto(
-                        f"https://duckduckgo.com/?q={quote_plus(query)}&t=h_&ia=web",
-                        timeout=12000,
-                    )
-                    await page.wait_for_timeout(1500)
-                    items = await page.query_selector_all(".result")
-                    for item in items[:5]:
-                        try:
-                            title_el  = await item.query_selector(".result__title")
-                            url_el    = await item.query_selector(".result__url")
-                            body_el   = await item.query_selector(".result__snippet")
-                            title   = (await title_el.inner_text()).strip()  if title_el  else ""
-                            url     = (await url_el.inner_text()).strip()    if url_el    else ""
-                            snippet = (await body_el.inner_text()).strip()   if body_el   else ""
-                            if title:
-                                results.append({"title": title, "url": url, "snippet": snippet, "query": query})
-                        except Exception:
-                            pass
+                    # DDGS.text() returns generator of results
+                    search_results = ddgs.text(query, max_results=min(10, limit - len(results)))
+                    for result in search_results:
+                        if len(results) >= limit:
+                            break
+                        results.append({
+                            "title": result.get("title", ""),
+                            "url": result.get("href", ""),
+                            "snippet": result.get("body", ""),
+                            "source": "duckduckgo",
+                            "query": query
+                        })
                 except Exception as e:
-                    logger.debug("[BrowserTool] search query failed: %s", e)
-            await page.close()
+                    logger.debug("[BrowserTool.search_for_clients] DDG query failed for '%s': %s", query, e)
         except Exception as e:
             log_error("BrowserTool.search_for_clients", e)
+            logger.warning("DDG search failed, falling back to empty results")
         return results[:limit]
 
     async def find_contact_email(self, url: str) -> str | None:

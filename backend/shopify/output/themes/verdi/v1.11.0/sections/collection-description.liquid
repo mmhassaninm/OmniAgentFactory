@@ -1,0 +1,26 @@
+<section class="collection-description" aria-label="Collection description">
+  <h2>{{ 'collection.description' | t }}</h2>
+  {% schema %}
+  {
+    "name":"collection-description",
+    "settings":[
+      {
+      "type":"rich_text",
+      "id":"description",
+      "label":"{{ 'collection.description' | t }}"
+      }
+    ],
+    "presets":[
+      {
+      "name":"Collection Description"
+      }
+    ],
+    "blocks":[],
+    "responsive_notes":"Hide description on mobile"
+  }
+  {% endschema %}
+  <div class="description-content">
+    {{ section.settings.description | escape }}
+  </div>
+</section>
+

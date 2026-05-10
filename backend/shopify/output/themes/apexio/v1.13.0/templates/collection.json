@@ -1,0 +1,23 @@
+{
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "disabled": false
+    },
+    "header": {
+      "type": "header"
+    },
+    "collection-hero": {
+      "type": "collection-hero"
+    },
+    "footer": {
+      "type": "footer"
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header",
+    "collection-hero",
+    "footer"
+  ]
+}

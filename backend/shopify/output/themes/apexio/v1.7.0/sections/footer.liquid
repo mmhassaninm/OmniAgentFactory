@@ -1,0 +1,31 @@
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "text", "id": "copyright", "label": "Copyright", "default": "Copyright 2023 Apexio" },
+    { "type": "link_list", "id": "social_links", "label": "Social links" }
+  ],
+  "presets": [{ "name": "Footer" }]
+}
+{% endschema %}
+
+<footer class="footer" style="background-color: {{ settings.bg_color | color: '#f9f9f9' }};">
+  <div class="container">
+    <p>{{ settings.copyright }}</p>
+    <ul>
+      {{ block.settings.social_links | link_list: separator: ', ' }}
+    </ul>
+  </div>
+</footer>
+
+<style>
+  @media (max-width: 767px) {
+    .footer {
+      height: 40vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+</style>

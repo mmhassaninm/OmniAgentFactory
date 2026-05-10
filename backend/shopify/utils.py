@@ -13,24 +13,22 @@ logger = logging.getLogger(__name__)
 
 def robust_parse_json(text: str) -> Any:
     """
-    Robustly extract and parse a JSON object or array from a string returned by an LLM.
-    Handles:
-    - Markdown code fences (```json ... ```)
-    - Leading/trailing conversational text
-    - Non-strict control characters (like literal newlines and tabs)
-    - Trailing commas in objects/arrays
+    Robustly extract and parse a JSON object or array from LLM output.
+    Handles: markdown fences, leading text, trailing commas,
+    truncated JSON (attempts recovery), unescaped control chars.
     """
+    import json, re, logging
+    logger = logging.getLogger(__name__)
     text = text.strip()
 
-    # 1. Strip markdown code blocks if present
+    # Step 1: strip markdown fences
     m = re.search(r'```(?:json)?\s*([\s\S]+?)\s*```', text)
     if m:
         text = m.group(1).strip()
 
-    # 2. Locate first JSON structural character and extract the inner substring
+    # Step 2: locate JSON start
     first_curly = text.find('{')
     first_bracket = text.find('[')
-
     start_idx = -1
     end_char = ''
     if first_curly != -1 and (first_bracket == -1 or first_curly < first_bracket):
@@ -39,20 +37,47 @@ def robust_parse_json(text: str) -> Any:
     elif first_bracket != -1:
         start_idx = first_bracket
         end_char = ']'
-
     if start_idx != -1:
         end_idx = text.rfind(end_char)
         if end_idx != -1 and end_idx > start_idx:
             text = text[start_idx:end_idx + 1]
 
-    # 3. Try standard parse first with strict=False
+    # Step 3: try standard parse
     try:
         return json.loads(text, strict=False)
-    except Exception as e1:
-        # 4. Strip trailing commas before closing braces/brackets
-        cleaned_text = re.sub(r',\s*([\]}])', r'\1', text)
-        try:
-            return json.loads(cleaned_text, strict=False)
-        except Exception as e2:
-            logger.error("JSON parsing failed. Raw text length: %d. Snippet: %r", len(text), text[:500])
-            raise e2
+    except Exception:
+        pass
+
+    # Step 4: strip trailing commas
+    cleaned = re.sub(r',\s*([\]}])', r'\1', text)
+    try:
+        return json.loads(cleaned, strict=False)
+    except Exception:
+        pass
+
+    # Step 5: truncation recovery — find the last complete "key": "value" pair
+    # and close the JSON object cleanly
+    try:
+        # Find all complete string-value pairs using regex
+        # Pattern: "key": "value" where value has no unescaped quote
+        pairs = {}
+        pattern = r'"([^"\\]*)"\s*:\s*"((?:[^"\\]|\\.)*)"\s*[,}]'
+        for match in re.finditer(pattern, text, re.DOTALL):
+            key = match.group(1)
+            value = match.group(2)
+            pairs[key] = value
+        if pairs:
+            logger.warning(
+                "JSON truncation recovery: extracted %d complete pairs from malformed output",
+                len(pairs)
+            )
+            return pairs
+    except Exception:
+        pass
+
+    # Step 6: last resort — log and raise
+    logger.error(
+        "JSON parsing failed after all recovery attempts. "
+        "Text length: %d. Snippet: %r", len(text), text[:300]
+    )
+    raise ValueError(f"Could not parse JSON from LLM output (length={len(text)})")

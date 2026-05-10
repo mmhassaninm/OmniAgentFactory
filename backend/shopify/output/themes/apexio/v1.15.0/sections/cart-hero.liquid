@@ -1,0 +1,14 @@
+<section class="cart-hero">\
+  <div class="container mx-auto py-16 text-center text-lg text-gray-700">\
+    <img class="w-full h-64 object-cover object-center mb-4" src="{{ section.settings.image | image_url: width: 800 | escape }}" alt="Cart Hero">\
+    <h2 class="font-bold text-4xl mb-4">{{ settings.heading | escape }}</h2>\
+  </div>\
+</section>{% schema %}\
+{\
+  "name": "Cart Hero",\
+  "settings": [\
+    { "type": "image_picker", "id": "image", "label": "Background image" },\
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Cart Summary" }\
+  ],\
+  "presets": [ { "name": "Cart Hero" } ]\
+}{% endschema %}

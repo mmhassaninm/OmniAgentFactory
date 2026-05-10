@@ -1,0 +1,30 @@
+<section class="blog-hero" aria-label="Blog hero">
+  <img src="{{ section.settings.image | image_url: width: 1200 | image_tag }}" alt="{{ section.settings.heading | escape }}">
+  <h1>{{ section.settings.heading | escape }}</h1>
+  <p>{{ section.settings.subheading | escape }}</p>
+  {% schema %}
+  {
+    "name": "blog-hero",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "image",
+        "label": "Background image"
+      },
+      {
+        "type": "text",
+        "id": "heading",
+        "label": "Heading",
+        "default": "Blog title"
+      },
+      {
+        "type": "text",
+        "id": "subheading",
+        "label": "Subheading",
+        "default": "Blog subtitle"
+      }
+    ],
+    "presets": [{"name": "Hero Banner"}]
+  }
+  {% endschema %}
+</section>

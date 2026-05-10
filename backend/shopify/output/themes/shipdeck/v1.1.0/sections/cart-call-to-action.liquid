@@ -1,0 +1,32 @@
+
+{% schema %}
+{
+  "name": "Cart call to action",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Checkout"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Complete your order"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": []
+}
+{% endschema %}
+
+<div class="cart-call-to-action">
+  <h2>{{ section.settings.heading | escape }}</h2>
+  <p>{{ section.settings.subheading | escape }}</p>
+  <button type="button" class="btn">Checkout</button>
+</div>

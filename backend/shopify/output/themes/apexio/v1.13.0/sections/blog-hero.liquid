@@ -1,0 +1,20 @@
+{"% schema %}
+{
+  "name": "Blog Hero",
+  "settings": [
+    { "type": "image_picker", "id": "image", "label": "Blog image" },
+    { "type": "text", "id": "title", "label": "Blog title" },
+    { "type": "text", "id": "description", "label": "Blog description" }
+  ],
+  "presets": [{ "name": "Blog Hero" }]
+}
+{% endschema %}
+<section class="hero">
+  <div class="hero-image">
+    <img src="{{ settings.image | image_url: width: 1200 | escape }}" alt="{{ settings.title | escape }}" role="img" aria-label="{{ settings.title | escape }}">
+  </div>
+  <div class="hero-content">
+    <h1>{{ settings.title | escape }}</h1>
+    <p>{{ settings.description | escape }}</p>
+  </div>
+</section>

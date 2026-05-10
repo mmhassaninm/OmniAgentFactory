@@ -1,0 +1,28 @@
+{% schema %}
+{
+  "name": "Cart Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Your Cart"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart Hero"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="container pt-6 pb-6 text-center">
+  <div class="background-image" style="background-image: url('{{ section.settings.image | image_url: width: 1200 }}'); background-position: center; background-size: cover; background-repeat: no-repeat;"></div>
+  <h1>{{ section.settings.heading }}</h1>
+</div>

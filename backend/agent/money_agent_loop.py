@@ -2,15 +2,15 @@
 Money Agent — single focused income loop.
 Strategy: Human-in-the-loop. Agent finds, drafts, prepares. Human approves & sends.
 Primary strategy: AI Content Service (cold email to small businesses).
+Uses LiteLLM cascader for pitch generation — no single-provider dependency.
 """
 import asyncio
 import logging
 import uuid
 from datetime import datetime
 
-import anthropic
-
 from core.config import get_settings
+from core.model_router import call_model
 
 logger = logging.getLogger(__name__)
 
@@ -67,17 +67,8 @@ class MoneyAgentLoop:
         self.strategy = INCOME_STRATEGIES[strategy_key]
         self.strategy_key = strategy_key
         self._settings = get_settings()
-        self._anthropic: anthropic.AsyncAnthropic | None = None
         self._notifier = None   # lazy-loaded TelegramCommander
         self._running = False
-
-    def _get_anthropic(self) -> anthropic.AsyncAnthropic:
-        if self._anthropic is None:
-            api_key = self._settings.anthropic_key
-            if not api_key:
-                raise RuntimeError("ANTHROPIC_KEY not configured — cannot generate pitches")
-            self._anthropic = anthropic.AsyncAnthropic(api_key=api_key)
-        return self._anthropic
 
     async def _get_notifier(self):
         if self._notifier is None and self._settings.telegram_bot_token and self._settings.telegram_chat_id:
@@ -174,11 +165,8 @@ class MoneyAgentLoop:
     # ── Pitch writer ─────────────────────────────────────────────────────────
 
     async def _prepare_pitch(self, opportunity: dict) -> dict:
-        """Generate a personalized cold email pitch using Claude."""
+        """Generate a personalized cold email pitch using LiteLLM cascader."""
         item_id = str(uuid.uuid4())[:8]
-        client = self._get_anthropic()
-
-        paypal_link = self._settings.paypal_me_link or "paypal.me/mmhassanin"
         niche = self.strategy["niche"]
 
         prompt = f"""You are a freelance {niche} professional writing a short cold email pitch.
@@ -197,12 +185,17 @@ Write a concise, human-sounding cold email (max 120 words) that:
 
 Output only the email body, no subject line, no placeholder brackets."""
 
-        msg = await client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        pitch_body = msg.content[0].text.strip()
+        # Use LiteLLM cascader — works with any available provider (Claude, Groq, OpenRouter, etc.)
+        try:
+            pitch_body = await call_model(
+                messages=[{"role": "user", "content": prompt}],
+                task_type="pitch_generation",
+                max_tokens=300
+            )
+            pitch_body = pitch_body.strip()
+        except Exception as e:
+            logger.warning("[MoneyAgent] Pitch generation failed (cascader exhausted?): %s", e)
+            pitch_body = f"[Pitch generation failed: {str(e)[:100]}]"
 
         subject = f"Quick question about your {niche} content"
         item = {

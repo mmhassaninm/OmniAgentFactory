@@ -1,0 +1,38 @@
+<section id="announcement-bar" data-section-id="announcement-bar">
+  <div class="container">
+    <div class="announcement-bar__content">
+      <p class="announcement-bar__message" id="announcement-bar-message" aria-live="polite">{{ settings.message | escape }}</p>
+      {% if settings.show_close_button %}
+        <button class="announcement-bar__close-button" aria-label="Close announcement bar" onclick="this.parentNode.remove();" type="button" aria-controls="announcement-bar-message">×</button>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Announcement Bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "message",
+      "label": "Message",
+      "default": "Sale! 10% off all orders"
+    },
+    {
+      "type": "boolean",
+      "id": "show_close_button",
+      "label": "Show close button",
+      "default": true
+    }
+  ],
+  "presets": [{"name": "Announcement Bar"}],
+  "section_types": [
+    "announcement-bar"
+  ],
+  "default_settings": {
+    "message": "Sale! 10% off all orders",
+    "show_close_button": true
+  }
+}
+{% endschema %}

@@ -268,21 +268,130 @@ function ThemeCard({
   )
 }
 
-function VersionTimeline({ versions }: { versions: ThemeVersion[] }) {
+function VersionTimeline({ versions, themeName }: {
+  versions: ThemeVersion[]
+  themeName: string
+}) {
+  const [selectedVersion, setSelectedVersion] = useState<ThemeVersion | null>(null)
+
   if (!versions.length) return null
+
+  // Generate a meaningful one-line summary from changelog text
+  function getVersionSummary(v: ThemeVersion): string {
+    if (!v.changelog) return 'Theme update'
+    const lines = v.changelog.split('\n').map(l => l.trim()).filter(Boolean)
+    // Skip title line (starts with #), return first meaningful content line
+    const contentLine = lines.find(l => !l.startsWith('#') && l.length > 5)
+    if (contentLine) return contentLine.replace(/^[-*]\s*/, '').slice(0, 80)
+    return lines[0]?.replace(/^#+\s*/, '') || 'Theme update'
+  }
+
+  function getVersionBadgeColor(qa_score: number): string {
+    if (qa_score >= 85) return 'text-emerald-400'
+    if (qa_score >= 70) return 'text-yellow-400'
+    return 'text-red-400'
+  }
+
   return (
-    <div className="space-y-2">
-      {versions.map((v) => (
-        <div key={v.id} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
-          <span className="text-xs font-mono text-indigo-300 w-16 shrink-0">{v.version}</span>
-          <div className="flex-1">
-            <span className="text-xs text-white/50">{v.changelog?.split('\n')[0]?.replace(/^#+ /, '') || 'Theme update'}</span>
+    <>
+      <div className="space-y-1">
+        {versions.map((v) => (
+          <button
+            key={v.id}
+            onClick={() => setSelectedVersion(v)}
+            className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg
+                       border border-transparent hover:border-indigo-500/30
+                       hover:bg-indigo-500/5 transition-all text-left group"
+          >
+            <span className="text-xs font-mono text-indigo-300 w-14 shrink-0">
+              {v.version}
+            </span>
+            <span className="flex-1 text-xs text-white/50 group-hover:text-white/70
+                             transition-colors truncate">
+              {getVersionSummary(v)}
+            </span>
+            <span className={`text-xs shrink-0 font-mono ${getVersionBadgeColor(v.qa_score)}`}>
+              QA: {Math.round(v.qa_score)}
+            </span>
+            <span className="text-xs text-white/20 shrink-0">
+              {new Date(v.created_at).toLocaleDateString()}
+            </span>
+            <span className="text-white/20 group-hover:text-indigo-400
+                             transition-colors text-xs shrink-0">›</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Version Detail Popup */}
+      {selectedVersion && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setSelectedVersion(null)}
+        >
+          <div
+            className="bg-[#0d1117] border border-white/10 rounded-2xl p-6
+                       max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Popup header */}
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h3 className="text-white font-bold text-base">{themeName}</h3>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-xs bg-indigo-500/20 text-indigo-300
+                                   px-2 py-0.5 rounded-full border border-indigo-500/20">
+                    {selectedVersion.version}
+                  </span>
+                  <span className={`text-xs font-mono font-bold
+                                   ${getVersionBadgeColor(selectedVersion.qa_score)}`}>
+                    QA Score: {Math.round(selectedVersion.qa_score)}/100
+                  </span>
+                  <span className="text-xs text-white/30">
+                    {new Date(selectedVersion.created_at).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedVersion(null)}
+                className="text-white/30 hover:text-white/70 transition-colors text-xl leading-none ml-4"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* QA Score visual bar */}
+            <div className="mb-5">
+              <div className="flex justify-between text-xs text-white/40 mb-1.5">
+                <span>Quality Score</span>
+                <span>{Math.round(selectedVersion.qa_score)}/100</span>
+              </div>
+              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    selectedVersion.qa_score >= 85 ? 'bg-emerald-500' :
+                    selectedVersion.qa_score >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(100, selectedVersion.qa_score)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Changelog content */}
+            <div>
+              <h4 className="text-xs font-semibold text-white/40 uppercase
+                             tracking-wider mb-3">Release Notes</h4>
+              <div className="bg-white/3 border border-white/6 rounded-xl p-4">
+                <pre className="text-xs text-white/70 whitespace-pre-wrap
+                                font-mono leading-relaxed">
+                  {selectedVersion.changelog || 'No release notes available for this version.'}
+                </pre>
+              </div>
+            </div>
           </div>
-          <span className="text-xs text-white/20 shrink-0">QA: {Math.round(v.qa_score)}</span>
-          <span className="text-xs text-white/20 shrink-0">{new Date(v.created_at).toLocaleDateString()}</span>
         </div>
-      ))}
-    </div>
+      )}
+    </>
   )
 }
 
@@ -460,7 +569,10 @@ export default function ShopifyFactory() {
           <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">
             Version History — {themes.find((t) => t.id === selectedTheme)?.name}
           </h3>
-          <VersionTimeline versions={versions} />
+          <VersionTimeline
+            versions={versions}
+            themeName={themes.find((t) => t.id === selectedTheme)?.name ?? ''}
+          />
         </div>
       )}
     </div>

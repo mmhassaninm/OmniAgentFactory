@@ -1,0 +1,27 @@
+<section class="testimonial-carousel" aria-label="Customer testimonials" data-section-id="testimonial-carousel">
+  <h2>{{ 'testimonial.carousel.title' | t }}</h2>
+  <div class="testimonial-grid">
+    {% for testimonial in section.settings.testimonials %}
+      <div class="testimonial-item">
+        <blockquote>{{ testimonial }}</blockquote>
+      </div>
+    {% endfor %}
+  </div>
+  {% schema%
+    {
+      "name":"testimonial-carousel",
+      "settings":[
+        {
+          "type":"testimonial_list",
+          "id":"testimonials",
+          "label":"Customer testimonials"
+        }
+      ],
+      "presets":[
+        {
+          "name":"Default"
+        }
+      ],
+      "blocks":[]
+    }
+  {% endschema %}

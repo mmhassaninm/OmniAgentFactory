@@ -1,0 +1,35 @@
+{%- comment -%}
+# Hero Collection Section
+{%- endcomment -%}
+<section class="hero-collection">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12 text-center">
+        <img src="{{ section.settings.image | image_url: width: 1200 }}" alt="{{ section.settings.title }}">
+        <h1>{{ section.settings.title }}</h1>
+      </div>
+    </div>
+  </div>
+</section>
+{% schema %}
+{
+  "name": "Hero Collection",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Collection image"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Collection title"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Collection"
+    }
+  ]
+}
+{% endschema %}

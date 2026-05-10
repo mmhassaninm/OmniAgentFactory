@@ -1,0 +1,47 @@
+{% schema %}
+{
+  'name': 'footer',
+  'settings': [
+    {
+      'type': 'text',
+      'id': 'heading',
+      'label': 'Heading',
+      'default': 'About Us'
+    },
+    {
+      'type': 'text',
+      'id': 'subheading',
+      'label': 'Subheading',
+      'default': 'Learn more about our company'
+    },
+    {
+      'type': 'link_list',
+      'id': 'links',
+      'label': 'Footer links',
+      'default': 'footer-menu'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Default Footer'
+    }
+  ]
+}
+{% endschema %}
+
+<!-- Footer Section -->
+<footer class="bg-light py-4 text-center" role="contentinfo">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <h2>{{ section.settings.heading }}</h2>
+        <p>{{ section.settings.subheading }}</p>
+      </div>
+      <div class="col-md-8">
+        <ul>
+          {{ section.settings.links | link_list: max_link_width: 300 | escape }}
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>

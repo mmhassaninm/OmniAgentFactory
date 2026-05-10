@@ -1,0 +1,33 @@
+<section class="blog-hero" aria-label="Blog Hero">
+  <div class="background-image" style="background-image: url('{{ section.settings.image | image_url: width: 1200 }}');"></div>
+  <h1>{{ section.settings.heading | escape }}</h1>
+  <p>{{ section.settings.description | escape }}</p>
+{% schema %}
+{
+  "name": "Blog Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Blog"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description",
+      "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet nulla auctor, vestibulum magna sed, convallis ex."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog Hero"
+    }
+  ]
+}
+{% endschema %}

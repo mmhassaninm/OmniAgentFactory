@@ -1,6 +1,7 @@
 {
   "sections": {
-    "main": { "type": "main-404" }
+    "header": { "type": "header" },
+    "footer": { "type": "footer" }
   },
-  "order": ["main"]
+  "order": ["header", "footer"]
 }

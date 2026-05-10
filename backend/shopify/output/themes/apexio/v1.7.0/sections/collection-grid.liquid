@@ -1,0 +1,38 @@
+{% schema %}
+{
+  "name": "Collection Grid",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection"
+    },
+    {
+      "type": "range",
+      "id": "grid_columns",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "unit": "",
+      "label": "Grid columns",
+      "default": 3
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Grid"
+    }
+]
+}
+{% endschema %}
+
+<div class="collection-grid">
+  <div class="collection-grid__products" style="grid-template-columns: repeat({{ section.settings.grid_columns }}, 1fr);">
+    {% for product in collection.products %}
+      <div class="collection-grid__product">
+        <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.title | escape }}">
+        <div class="collection-grid__product-name">{{ product.title | escape }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>

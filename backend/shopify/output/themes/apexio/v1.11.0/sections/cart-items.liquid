@@ -1,0 +1,31 @@
+<section class="cart-items"
+  aria-label="{{ 'cart.items' | t }}">
+  <h2>{{ settings.heading | escape }}</h2>
+  <ul>
+    {% for item in cart.items %}
+      <li>
+        {{ item.quantity }} x {{ item.name }}
+        {{ item.price | money }}
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% schema %}
+{
+  "name": "Cart items",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Cart items",
+      "default": ""
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart items"
+    }
+  ]
+}
+{% endschema %}

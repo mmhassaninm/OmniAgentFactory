@@ -1,0 +1,1 @@
+{"type":"object","properties":{"heading":{"title":"Heading","type":"string"},"subheading":{"title":"Subheading","type":"string"},"cta_label":{"title":"Button label","type":"string"},"cta_url":{"title":"Button URL","type":"string"}}}

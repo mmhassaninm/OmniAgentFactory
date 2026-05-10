@@ -46,3 +46,8 @@ python-telegram-bot>=20.0       # richer Telegram bot utilities (optional, httpx
 google-api-python-client        # Gmail / Google APIs
 google-auth-httplib2
 google-auth-oauthlib
+
+# ── Desktop Control (Windows Host) ──────
+pyautogui>=0.9.54               # mouse/keyboard automation
+pynput>=1.7.6                   # alternative for keyboard control
+pywin32>=306                    # Windows-specific utilities

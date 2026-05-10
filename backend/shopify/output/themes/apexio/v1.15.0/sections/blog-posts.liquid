@@ -1,0 +1,35 @@
+{% schema %}{
+  "name": "Blog Posts",
+  "settings": [
+    {
+      "type": "blog_list",
+      "id": "posts",
+      "label": "Blog posts",
+      "default": ""
+    }
+  ],
+  "blocks": [
+    {
+      "type": "blog-post",
+      "name": "blog-post",
+      "settings": [
+        {
+          "type": "blog_post",
+          "id": "post",
+          "label": "Blog post"
+        }
+      ]
+    }
+  ],
+  "presets": [{"name": "Blog Posts"}]
+}{% endschema %}
+
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px;">
+  {% for post in section.settings.posts %}
+    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+      <h2 style="font-family: Montserrat; font-size: 24px; color: #3498db;">{{ post.title }}</h2>
+      <p style="font-family: Lato; font-size: 18px; color: #666; margin-bottom: 20px;">{{ post.description }}</p>
+      <a style="font-family: Montserrat; font-size: 18px; color: #3498db; text-decoration: none;" href="{{ post.url }}">Read more</a>
+    </div>
+  {% endfor %}
+</div>

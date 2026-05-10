@@ -1,0 +1,43 @@
+{% schema %}
+{
+  "name": "Product Grid",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Featured collection"
+    },
+    {
+      "type": "range",
+      "id": "grid_columns",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "unit": "",
+      "label": "Grid columns",
+      "default": 3
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Grid"
+    }
+  ]
+}
+{% endschema %}
+
+<section class="product-grid" role="region" aria-label="Product Grid">
+  <div class="container">
+    <div class="product-grid-items" aria-label="Product Grid Items" role="list" style="grid-template-columns: repeat({{ section.settings.grid_columns }}, 1fr);">
+      {% for product in collection.all_products %}
+        {% if product.featured_collection == section.settings.collection %}
+          <div class="product-item" role="listitem">
+            <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+            <p>{{ product.title }}</p>
+            <p>{{ product.price | money }}</p>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>

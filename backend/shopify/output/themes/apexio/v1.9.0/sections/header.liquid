@@ -1,0 +1,50 @@
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Header"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="header" style="--primary-color: #3498db; --bg-color: #f9f9f9;">
+  <div class="logo" style="width: {{ settings.logo_width }}px;">
+    <a href="{{ shop.url }}">
+      <img src="{{ settings.logo | image_url: width: 1200 | image_tag }}" alt="{{ shop.name }}">
+    </a>
+  </div>
+  <nav>
+    <ul>
+      {% for link in settings.menu %}
+        <li><a href="{{ link.url }}"{% if link.label != blank %}>{{ link.label }}</a>{% endif %}</li>
+      {% endfor %}
+    </ul>
+  </nav>
+  <button class="search" aria-label="Search"></button>
+  <button class="cart" aria-label="Cart"></button>
+</div>

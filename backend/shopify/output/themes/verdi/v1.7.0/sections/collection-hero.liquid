@@ -1,0 +1,31 @@
+<section class="collection-hero">
+  <div class="container">
+    <img src="{{ section.settings.image | image_url: width: 1200 }}" alt="Collection Image" loading="lazy" class="hero-image" aria-label="Hero Banner Image">
+    {% if section.settings.description %}
+      <div class="hero-description">
+        {{ section.settings.description | escape | markdownify }}
+      </div>
+    {% endif %}
+  </div>
+</section>{% schema %}
+{
+  "name": "Collection Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Collection image"
+    },
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Collection description",
+      "default": ""
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Banner"
+    }
+  ]
+}{% endschema %}

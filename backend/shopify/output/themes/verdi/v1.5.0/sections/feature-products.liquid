@@ -1,0 +1,16 @@
+<section class="feature-products" style="--primary-color:#34C759;--bg-color:#F2F2F2;"> 
+  <div class="container"> 
+    <div class="feature-products__inner"> 
+      <div class="feature-products__products"> 
+        {% for product in section.settings.products.products %} 
+          <div class="feature-products__product"> 
+            <div class="feature-products__product-image" style="background-image:url('{{ product.image | image_url: width: 400 }}');"> 
+            </div> 
+            <h3>{{ product.title }}</h3> 
+            <p>{{ product.description | strip_html }}</p> 
+          </div> 
+        {% endfor %} 
+      </div> 
+    </div> 
+  </div> 
+</section>{% schema %}{% assign schema = 'sections/feature-products.schema.json' %}{% include schema %}{% endschema %}

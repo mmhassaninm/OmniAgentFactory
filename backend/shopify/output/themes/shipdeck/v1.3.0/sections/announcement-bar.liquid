@@ -1,0 +1,45 @@
+{% schema %}
+{
+  'name': 'announcement-bar',
+  'settings': [
+    {
+      'type': 'text',
+      'id': 'message',
+      'label': 'Message',
+      'default': 'Limited time offer! Get 10% off your first order'
+    },
+    {
+      'type': 'url',
+      'id': 'url',
+      'label': 'Button URL'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Default Announcement Bar'
+    }
+  ]
+}
+{% endschema %}
+
+<section role='contentinfo' aria-label='Announcement Bar'>{% if section.settings.message %}
+  <div class='announcement-bar'>{% if section.settings.message %}
+    <p>{{ section.settings.message }}</p>
+  {% endif %}
+    <a href='{{ section.settings.url }}' class='btn'>Learn More</a>
+  </div>
+{% endif %}
+</section>
+
+<style>
+  .announcement-bar {
+    background-color: #3498db;
+    color: #f9f9f9;
+    padding: 10px;
+  }
+  @media (max-width: 768px) {
+    .announcement-bar {
+      display: none;
+    }
+  }
+</style>

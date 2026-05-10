@@ -1,0 +1,17 @@
+.cta-container {
+  background-color: #3498db;
+  color: #f9f9f9;
+}
+.ccta-button {
+  background-color: #3498db;
+  color: #f9f9f9;
+}
+@media (max-width: 768px) {
+  .cta-container {
+    display: flex;
+    justify-content: center;
+  }
+  .cta-button {
+    width: 100%;
+  }
+}

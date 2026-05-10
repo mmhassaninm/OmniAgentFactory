@@ -1,0 +1,23 @@
+{% schema %}
+  name: 'cart_header'
+  label: 'Cart Header'
+  settings:
+    - type: 'text'
+      id: 'title'
+      label: 'Title'
+      default: 'Your Cart'
+  section: 'cart-header'
+  responsive_notes: 'Hide cart summary on mobile, use only item count'
+  {% endschema %}
+
+  <style>
+    /* Minimal theme styles */
+    .cart-header {
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+
+  <div class='cart-header'>
+    <h1>{{ settings.title }}</h1>
+  </div>

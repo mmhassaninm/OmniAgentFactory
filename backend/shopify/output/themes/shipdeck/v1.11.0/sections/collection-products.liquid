@@ -1,0 +1,44 @@
+{% schema %}
+  name: 'collection_products'
+  label: 'Collection Products'
+  settings:
+    - type: 'number'
+      id: 'product_count'
+      label: 'Number of Products'
+      default: 12
+      min: 1
+      max: 12
+      step: 1
+  blocks:
+    - type: 'product'
+      name: 'Product'
+      settings:
+        - type: 'product_picker'
+          id: 'product_id'
+          label: 'Product ID'
+  section: 'collection-products'
+  responsive_notes: 'Reduce product grid to 2 columns on mobile'
+  {% endschema %}
+
+  <style>
+    /* Minimal theme styles */
+    .collection-products {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .product {
+      margin: 20px;
+      width: calc(100% / 3);
+    }
+  </style>
+
+  <div class='collection-products'>
+    {% for product in collection.products limit: settings.product_count %}
+      <div class='product'>
+        <img src '{{ product.image | image_url: width: 400 }}' alt '{{ product.title }}'>
+        <h2>{{ product.title }}</h2>
+        <p>{{ product.price | money }}</p>
+      </div>
+    {% endfor %}
+  </div>

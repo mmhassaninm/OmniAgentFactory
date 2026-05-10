@@ -1,0 +1,35 @@
+<section class="blog-grid" role="region" aria-label="{{ 'blog.articles' | t }}">
+  <div class="blog-grid__content">
+    <ul class="blog-grid__list">
+      {% for article in section.settings.articles %}
+        <li class="blog-grid__item">
+          <a href="{{ article.url }}" class="blog-grid__link" aria-label="{{ article.title | t }}">
+            <div class="blog-grid__thumbnail" style="background-image: url('{{ article.image | image_url: width: 400 | image_tag }}');"></div>
+            <h3 class="blog-grid__title" style="font-family: Lato, sans-serif; color: #34C759;">{{ article.title | escape }}</h3>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Blog Grid",
+  "settings": [
+    {
+      "type": "blog_list",
+      "id": "articles",
+      "label": "Blog articles"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog Grid"
+    }
+  ],
+  "blocks": [
+  ],
+  "responsive_notes": "Switch to 2-column grid on desktop, 1-column grid on mobile"
+}
+{% endschema %}

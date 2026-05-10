@@ -1,0 +1,22 @@
+<!-- Product reviews and ratings with eco-friendly customer testimonials -->
+{% schema %}
+{
+  "name": "Reviews",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading",
+      "default": "What Our Customers Say"}
+    ]
+  ]
+}
+{% endschema %}
+<div class="reviews">
+  <h2>{{ section.settings.title | escape }}</h2>
+  <ul>
+    {% for review in product.reviews %}
+      <li>{{ review.name }}: {{ review.body }}</li>
+    {% endfor %}
+  </ul>
+</div>

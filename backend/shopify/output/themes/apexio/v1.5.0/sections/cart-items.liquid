@@ -1,0 +1,36 @@
+<!-- Cart items -->
+<section class="cart-items" style="--primary-color:#3498db;--background-color:#f9f9f9">
+  <h2>{{ 'cart.items' | t }}</h2>
+  <ul>
+    {% for item in cart_items %}
+      <li>
+        <div class="item-image">
+          <img src="{{ item.image | image_url: width: 400 }}" alt="{{ item.title }}">
+        </div>
+        <div class="item-info">
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.price | money }}</p>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% schema %}
+{
+  "name": "Cart items",
+  "settings": [
+    {
+      "type": "array",
+      "id": "cart_items",
+      "label": "Cart items",
+      "default": []
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart items"
+    }
+  ]
+}
+{% endschema %}

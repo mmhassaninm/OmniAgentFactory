@@ -1,7 +1,7 @@
 {
   "sections": {
-    "main": { "type": "main-product" },
-    "related-products": { "type": "related-products" }
+    "header": { "type": "header" },
+    "footer": { "type": "footer" }
   },
-  "order": ["main", "related-products"]
+  "order": ["header", "footer"]
 }

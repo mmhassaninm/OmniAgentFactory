@@ -25,6 +25,7 @@ import ModelHub from './pages/ModelHub'
 import DevLoopDashboard from './pages/DevLoopDashboard'
 import MoneyAgent from './pages/MoneyAgent'
 import ShopifyFactory from './pages/ShopifyFactory'
+import EvolutionRegistry from './pages/EvolutionRegistry'
 import { LanguageProvider } from './i18n/LanguageContext'
 import { PreLoader } from './components/PreLoader'
 
@@ -49,6 +50,8 @@ export default function App() {
                 <Route path="/money" element={<MoneyAgent />} />
 
                 <Route path="/shopify" element={<ShopifyFactory />} />
+                
+                <Route path="/evolution" element={<EvolutionRegistry />} />
                 
                 {/* Support both new /agents/:id and legacy /agent/:agentId routes */}
                 <Route path="/agents/:agentId" element={<AgentDetail />} />

@@ -1,0 +1,27 @@
+<section class="page-content" aria-label="Page content and features">
+  <div class="container">
+    <div class="row g-3">
+      <div class="col-12">
+        <h2>{{ section.settings.content }}</h2>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Page content",
+  "settings": [
+    {
+      "type": "text",
+      "id": "content",
+      "label": "Page content"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Page Content"
+    }
+  ]
+}
+{% endschema %}

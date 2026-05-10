@@ -1,0 +1,85 @@
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Header"
+    }
+  ]
+}
+{% endschema %}
+<div class="header-container">
+  <div class="logo-wrap">
+    <a href="{{ shop.url }}">
+      <img src="{{ section.settings.logo | image_url: width: 80 }}" alt="Logo" style="width: {{ section.settings.logo_width }}px;">
+    </a>
+  </div>
+  {{ section.settings.menu | link_list: 'ul' }}
+  <div class="search-cart-wrap">
+    <form action="{{ routes.search_url }}">
+      <input type="search" placeholder="Search...">
+    </form>
+    <a href="{{ routes.cart_url }}">
+      <i class="fas fa-shopping-cart"></i>
+    </a>
+  </div>
+</div>
+
+<style>
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #ddd;
+  }
+  .logo-wrap {
+    display: flex;
+    align-items: center;
+  }
+  .logo-wrap img {
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .search-cart-wrap {
+    display: flex;
+    align-items: center;
+  }
+  .search-cart-wrap form {
+    margin-right: 10px;
+  }
+  .search-cart-wrap input[type="search"] {
+    padding: 5px;
+    font-size: 16px;
+  }
+  .search-cart-wrap i {
+    font-size: 20px;
+    margin-right: 10px;
+  }
+</style>

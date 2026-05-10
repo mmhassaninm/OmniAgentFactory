@@ -1,0 +1,58 @@
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo",
+      "default": "apexio-logo.png"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Header"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="header">
+  <a class="logo" href="{{ shop.url | escape }}">
+    <img src="{{ section.settings.logo | image_url: width: 1200 }}" alt="{{ shop.name | escape }}" width="{{ section.settings.logo_width | divided_by: 10 }}"/>
+  </a>
+  <nav>
+    {{ link_list_tag('menu', 'link_list', section.settings.menu) }}
+    {{ block_link_list_tag('menu', 'link_list', section.settings.menu) }}
+  </nav>
+  <div class="search-cart">
+    <a href="{{ routes.search_url }}" class="search">
+      <svg viewBox="0 0 24 24" class="icon">
+        <path d="M0 0h24v24H0V0z" fill="none"/>
+        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12 9 10.59l4.41-4.41z"/>
+      </svg>
+    </a>
+    <a href="{{ routes.cart_url }}" class="cart">
+      <svg viewBox="0 0 24 24" class="icon">
+        <path d="M0 0h24v24H0V0z" fill="none"/>
+        <path d="M10 20h4v-4h3v4h4v-4h3v4zm1-7h-3v2h3v-2h-4zm-2-7H6V7h2v2H6v4h2v-4zm8 4h-2v2h2v-2V7zm0 4h-2v2h2v-2h-2v-4h2v-2h2v4zm0-4h-2v2h2v-2H8v4h2v-4h2v-2h-2v-4h2v-2h-2v-4h2v-2h2z"/>
+      </svg>
+    </a>
+  </div>
+</div>

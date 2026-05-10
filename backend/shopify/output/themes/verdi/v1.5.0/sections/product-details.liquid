@@ -1,0 +1,17 @@
+<!-- Product details with eco-friendly features and benefits -->
+{% schema %}
+{
+  "name": "Product Details",
+  "settings": [
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description",
+      "default": "{product.description}"}
+    ]
+  ]
+}
+{% endschema %}
+<div class="product-details">
+  <h2>{{ section.settings.description | escape }}</h2>
+</div>

@@ -1,0 +1,58 @@
+{% schema %}
+{
+  "name": "Product Grid",
+  "settings": [
+    {
+      "type": "collection_list",
+      "id": "collections",
+      "label": "Featured collections"
+    },
+    {
+      "type": "range",
+      "id": "grid_columns",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "unit": "columns",
+      "label": "Grid columns",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Grid"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_card",
+      "name": "Product Card",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
+
+<main class="product-grid" role="region" aria-label="Product Grid">
+  <div class="container">
+    <div class="product-grid__inner" style="grid-template-columns: repeat({{ section.settings.grid_columns }}, 1fr);">
+      {% for product in section.blocks.product_card.settings.product.collection.products %}
+        <div class="product-card">
+          <a href="{{ product.url }}"><img src="{{ product.image | image_url: width: 400 | image_tag }}" alt="{{ product.image.alt }}" /></a>
+          <h2>{{ product.title }}</h2>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</main>

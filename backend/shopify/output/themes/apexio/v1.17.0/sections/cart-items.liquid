@@ -1,0 +1,55 @@
+{% schema %}
+{
+  "name": "Cart items",
+  "settings": [
+    {
+      "type": "cart_list",
+      "id": "cart",
+      "label": "Cart items"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart items"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="block-grid grid--cols-2 grid--gap-md" role="list" aria-label="Cart items">
+  {% for item in cart.items %}
+    <div class="block-grid__item">
+      <div class="block-grid__image">
+        <img src="{{ item.image | image_url: width: 1200 | image_tag }}" alt="{{ item.name }}" role="presentation" />
+      </div>
+      <div class="block-grid__content" role="presentation">
+        <h2 class="block-grid__title h2">{{ item.name }}</h2>
+        <p class="block-grid__description text--xs">{{ item.price | money }}</p>
+        <p class="block-grid__quantity text--xs">Quantity: {{ item.quantity }}</p>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+{% if settings.cart == blank %}
+  <div class="block-grid grid--cols-2 grid--gap-md" role="list" aria-label="Cart items" style="display: none;">
+    {% for item in cart.items %}
+      <div class="block-grid__item">
+        <div class="block-grid__image">
+          <img src="{{ item.image | image_url: width: 1200 | image_tag }}" alt="{{ item.name }}" role="presentation" />
+        </div>
+        <div class="block-grid__content" role="presentation">
+          <h2 class="block-grid__title h2">{{ item.name }}</h2>
+          <p class="block-grid__description text--xs">{{ item.price | money }}</p>
+          <p class="block-grid__quantity text--xs">Quantity: {{ item.quantity }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="presentation" class="icon icon--xs" aria-hidden="true">
+  <path d="M3 9l9 9 9-9" stroke="currentColor"/>
+</svg>
+
+<!-- Responsive notes: Hide cart list on mobile -->

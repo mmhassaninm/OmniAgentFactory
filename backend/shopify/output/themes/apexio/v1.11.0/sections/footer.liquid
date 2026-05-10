@@ -1,0 +1,39 @@
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "contact_info",
+      "label": "Contact info",
+      "default": "info@apexio.com"
+    },
+    {
+      "type": "link_list",
+      "id": "social_links",
+      "label": "Social links",
+      "default": "facebook,twitter,instagram"
+    }
+  ],
+  "presets": [{"name": "Footer"}]
+}
+{% endschema %}
+<footer role="contentinfo" class="footer" style="background-color: {{ settings.bg_color }}; color: {{ settings.text_color }}">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <p>{{ settings.contact_info }}</p>
+      </div>
+      <div class="col-md-4">
+        <ul class="list-unstyled">
+          {% for link in settings.social_links %}
+            <li class="list-inline-item"><a href="{{ link.url }}" class="btn btn-link" target="_blank" rel="noopener noreferrer"><i class="fab fa-{{ link.label }}"></i></a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-md-4">
+        <p>&copy; {{ 'current_year' | date: '%Y' }} {{ shop.name }}</p>
+      </div>
+    </div>
+  </div>
+</footer>

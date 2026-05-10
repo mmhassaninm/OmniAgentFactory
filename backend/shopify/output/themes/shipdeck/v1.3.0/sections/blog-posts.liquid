@@ -1,0 +1,54 @@
+<section class="blog-posts" aria-label="Blog posts">
+  <h2>{{ section.settings.title | escape }}</h2>
+  <ul>
+    {% for post in collection.items %}
+      <li>
+        <h3>{{ post.title | escape }}</h3>
+        <p>{{ post.summary | escape }}</p>
+      </li>
+    {% endfor %}
+  </ul>
+  {% schema %}
+  {
+    "name": "blog-posts",
+    "settings": [
+      {
+        "type": "text",
+        "id": "title",
+        "label": "Title",
+        "default": "Blog posts"
+      },
+      {
+        "type": "select",
+        "id": "sort_by",
+        "label": "Sort by",
+        "default": "date",
+        "options": [
+          "date",
+          "title",
+          "author"
+        ]
+      }
+    ],
+    "blocks": [
+      {
+        "type": "blog-post",
+        "name": "Blog post",
+        "settings": [
+          {
+            "type": "text",
+            "id": "title",
+            "label": "Title"
+          },
+          {
+            "type": "text",
+            "id": "summary",
+            "label": "Summary"
+          }
+        ]
+      }
+    ],
+    "presets": [{"name": "Default"}]
+  }
+  {% endschema %}
+</section>

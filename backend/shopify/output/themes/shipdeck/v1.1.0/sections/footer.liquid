@@ -1,0 +1,62 @@
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Footer text"
+    },
+    {
+      "type": "link_list",
+      "id": "links",
+      "label": "Footer links"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Footer"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "social_links",
+      "name": "social_links",
+      "settings": [
+        {
+          "type": "social_link",
+          "id": "facebook",
+          "label": "Facebook"
+        },
+        {
+          "type": "social_link",
+          "id": "twitter",
+          "label": "Twitter"
+        },
+        {
+          "type": "social_link",
+          "id": "instagram",
+          "label": "Instagram"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
+
+<footer class="footer" style="background-color: {{ settings.bg | color }}">
+  <div class="container">
+    <p>{{ section.settings.text }}</p>
+    <ul>
+      {% for link in section.settings.links %}
+        <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+      {% endfor %}
+    </ul>
+    <div class="social-links">
+      {% for social_link in section.blocks.social_links.settings %}
+        <a href="{{ social_link.url }}" class="social-link {{ social_link.id }}"><i class="fa fa-{{ social_link.id }}"></i></a>
+      {% endfor %}
+    </div>
+  </div>
+  <p>Responsive notes: Hide social links on mobile</p>
+</footer>

@@ -1,0 +1,40 @@
+<!-- Featured Products Section -->
+<section class="featured-products" role="region" aria-label="{{ 'featured_products.title' | t }}">
+  <div class="container featured-products__container">
+    <div class="featured-products__grid">
+      {% for product in section.settings.products.products %}
+        <a class="product featured-products__product" href="{{ product.url | escape }}" aria-label="{{ product.title | escape }}">
+          <img class="product__image featured-products__image" src="{{ product.image | image_url: width: 400 | alt: product.title | escape }}" alt="{{ product.title | escape }}" loading="lazy">
+          <p class="product__price featured-products__price">{{ product.price | money }}</p>
+          <h2 class="product__title featured-products__title" aria-hidden="true">{{ product.title | escape }}</h2>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "featured-products",
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Selected products"
+    },
+    {
+      "type": "number",
+      "id": "cols",
+      "min": 1,
+      "max": 4,
+      "label": "Columns",
+      "default": 3
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured Products"
+    }
+  ]
+}
+{% endschema %}

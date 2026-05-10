@@ -1,0 +1,70 @@
+<section class="featured-products" style="--primary-color:#34C759;--background-color:#F2F2F2;" role="region" aria-label="Featured products"><h2>Top Picks</h2><h3>Our best-selling eco-friendly products</h3><div class="products-grid"><div class="product-card"><img class="product-image" src="{{ block.settings.product | image_url: width: 400 | image_tag }}" alt=""/><h4>{{ block.settings.product.title }}</h4><p>{{ block.settings.product.price | money }}</p><button aria-label="Buy">Buy now</button></div></div><script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const productCards = document.querySelectorAll(".product-card");
+    productCards.forEach((card) => {
+      const productImage = card.querySelector(".product-image");
+      const productTitle = card.querySelector("h4");
+      const productPrice = card.querySelector("p");
+      const buyButton = card.querySelector("button");
+      productImage.setAttribute("src", "{{ block.settings.product | image_url: width: 400 | image_tag }}");
+      productTitle.textContent = "{{ block.settings.product.title }}";
+      productPrice.textContent = "{{ block.settings.product.price | money }}";
+      buyButton.setAttribute("href", "{{ block.settings.product.url }}");
+    });
+  });
+</script>
+
+{% schema -%
+{
+  "name":"Featured Products",
+  "settings":[
+    {
+      "type":"product_list",
+      "id":"products",
+      "label":"Products to feature",
+      "default":"best-sellers"
+    }
+  ],
+  "presets":[
+    {
+      "name":"Hero Banner"
+    }
+  ],
+  "blocks":[
+    {
+      "type":"product-card",
+      "name":"product-card",
+      "settings":[
+        {
+          "type":"product_picker",
+          "id":"product",
+          "label":"Product"
+        }
+      ]
+    }
+  ],
+  "responsive_notes":"Grid 3 columns on desktop, 2 on tablet, 1 on mobile"
+}
+{% endschema %}
+
+<style>
+.featured-products {
+  padding: 4rem;
+}
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+.product-card {
+  background-color: #fff;
+  padding: 2rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+}
+.product-image {
+  width: 100%;
+  height: 10rem;
+  object-fit: cover;
+}
+</style>

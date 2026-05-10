@@ -1,0 +1,40 @@
+{% schema %}{
+  "name": "Product Header",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Product Title"
+    },
+    {
+      "type": "price",
+      "id": "price",
+      "label": "Price",
+      "default": "49.99"
+    },
+    {
+      "type": "range",
+      "id": "rating",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "unit": "",
+      "label": "Rating",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Header"
+    }
+]
+}{% endschema %}
+
+<div class="product-header">
+  <h1>{{ title | escape }}</h1>
+  <p class="price">{{ price | money }}</p>
+  <div class="rating">
+    {{ rating | range: 5:1 }}
+  </div>
+</div>

@@ -1,0 +1,37 @@
+{% schema %}
+{
+  "name": "Featured Products",
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Featured products",
+      "default": ""
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured Products"
+    }
+]
+}
+{% endschema %}
+
+<div class="feature-products">
+  <div class="container">
+    {% if section.settings.products != blank %}
+      <div class="product-grid">
+        {% for product in section.settings.products %}
+          <div class="product-grid-item">
+            <div class="product-image">
+              <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.title | escape }}">
+            </div>
+            <h2>{{ product.title | escape }}</h2>
+            <p>{{ product.price | money }}</p>
+            <button>Add to Cart</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>

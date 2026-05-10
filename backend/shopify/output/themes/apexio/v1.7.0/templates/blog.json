@@ -1,0 +1,27 @@
+{
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "disabled": false
+    },
+    "header": {
+      "type": "header"
+    },
+    "blog-hero": {
+      "type": "blog-hero"
+    },
+    "blog-grid": {
+      "type": "blog-grid"
+    },
+    "footer": {
+      "type": "footer"
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header",
+    "blog-hero",
+    "blog-grid",
+    "footer"
+  ]
+}

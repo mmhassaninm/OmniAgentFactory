@@ -1,0 +1,33 @@
+<section class="page-content">
+  <div class="container">
+    <h1>{{ section.settings.heading }}</h1>
+    <p>{{ section.settings.subheading }}</p>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Page Content",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Page Content"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": ""
+    }
+  ],
+  "presets": [
+    {
+      "name": "Page Content"
+    }
+  ],
+  "blocks": [],
+  "responsive_notes": "Increase font size on mobile"
+}
+{% endschema %}

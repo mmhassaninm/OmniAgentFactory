@@ -1,0 +1,56 @@
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [{"name": "Header"}]
+}
+{% endschema %}
+<header role="banner" class="header" style="background-color: {{ settings.bg_color }}; color: {{ settings.text_color }}">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-3">
+        <a href="{{ shop.url }}" class="logo" style="width: {{ settings.logo_width }}px">
+          <img src="{{ settings.logo | image_url: width: 1200 }}" alt="{{ shop.name }}">
+        </a>
+      </div>
+      <div class="col-md-6 d-md-flex justify-content-center">
+        <ul class="nav menu" aria-label="Main navigation menu">
+          {% for link in settings.menu %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ link.url }}"{% if link.label == 'Search' %} aria-haspopup="true"{% endif %}>{% if link.label == 'Search' %}<span class="fas fa-search"></span>{% else %}{{ link.label }}{% endif %}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <div class="float-right d-none d-md-block">
+          <button class="btn btn-link" type="button" data-toggle="collapse" aria-haspopup="true" aria-expanded="false" data-target="#navbarSupportedContent">
+            <span class="fas fa-bars"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>

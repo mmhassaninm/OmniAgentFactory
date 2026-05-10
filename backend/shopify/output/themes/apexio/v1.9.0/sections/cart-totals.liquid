@@ -1,0 +1,39 @@
+{% schema %}
+{
+  "name": "Cart Totals",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Total title"
+    },
+    {
+      "type": "text",
+      "id": "subtotal",
+      "label": "Subtotal"
+    },
+    {
+      "type": "text",
+      "id": "tax",
+      "label": "Tax"
+    },
+    {
+      "type": "text",
+      "id": "total",
+      "label": "Total"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": []
+}{% endschema %}
+
+<div class="cart-totals">
+  <h2>{{ settings.title }}</h2>
+  <p>Subtotal: {{ cart.subtotal | money }}</p>
+  <p>Tax: {{ cart.tax | money }}</p>
+  <p>Total: {{ cart.total | money }}</p>
+</div>

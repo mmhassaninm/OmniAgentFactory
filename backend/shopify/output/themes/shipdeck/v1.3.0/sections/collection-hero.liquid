@@ -1,0 +1,35 @@
+{% schema %}
+{
+  "name": "Collection Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Collection title"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Collection subtitle"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero Banner"
+    }
+  ]
+}
+{% endschema %}
+
+<section class="collection-hero">
+  <div class="background-image" style="background-image: url('{{ image | image_url: width: 1200 }}');"></div>
+  <h1>{{ heading }}</h1>
+  <p>{{ subheading }}</p>
+</section>

@@ -1,0 +1,39 @@
+{% comment %} Cart hero with image, title, and summary {% endcomment %}
+<section class="cart-hero" aria-label="Cart hero">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-12 text-center mb-4">
+        <img src="{{ section.settings.image | image_url: width: 1200 }}" alt="{{ section.settings.image | escape }}" class="img-fluid mb-3">
+        <h1>{{ section.settings.title | escape }}</h1>
+        <p>{{ section.settings.summary | escape }}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Cart Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Cart image"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Cart title"
+    },
+    {
+      "type": "text",
+      "id": "summary",
+      "label": "Cart summary"
+    }
+  ],
+  "presets": [
+    {"name": "Cart Hero"}
+  ],
+  "block_types": {}
+}
+{% endschema %}

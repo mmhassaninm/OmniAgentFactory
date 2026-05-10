@@ -1,0 +1,32 @@
+
+{% schema %}
+{
+  "name": "Product Call to Action",
+  "settings": [
+    {
+      "type": "url",
+      "id": "add_to_cart_url",
+      "label": "Add to cart URL"
+    },
+    {
+      "type": "url",
+      "id": "buy_now_url",
+      "label": "Buy now URL"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 text-center">
+      <a href="{{ settings.add_to_cart_url }}" class="btn btn-primary">Add to Cart</a>
+      <a href="{{ settings.buy_now_url }}" class="btn btn-primary">Buy Now</a>
+    </div>
+  </div>
+</div>

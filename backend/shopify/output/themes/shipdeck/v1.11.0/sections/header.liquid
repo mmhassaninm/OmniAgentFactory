@@ -1,0 +1,70 @@
+{% schema %}
+  {
+    "name": "Header",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "logo",
+        "label": "Logo"
+      },
+      {
+        "type": "range",
+        "id": "logo_width",
+        "min": 80,
+        "max": 300,
+        "step": 10,
+        "unit": "px",
+        "label": "Logo width",
+        "default": 150
+      },
+      {
+        "type": "link_list",
+        "id": "menu",
+        "label": "Navigation menu",
+        "default": "main-menu"
+      }
+    ],
+    "presets": [
+      {
+        "name": "Default Header"
+      }
+    ]
+  }
+  {% endschema %}
+  <header class="bg-gray-100 py-4">
+    <div class="container">
+      <div class="flex items-center justify-between">
+        <a class="font-bold text-2xl font-montserrat" href="/">Shipdeck</a>
+        <div>
+          <button class="lg:hidden bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline" aria-label="Open menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <nav class="lg:flex lg:self-end lg:mr-4 lg:items-center lg:justify-end">
+            <ul class="flex flex-col lg:flex-row lg:items-center lg:space-x-6">
+              {% for link in page.header.menu %}
+              <li>
+                <a class="text-gray-800 hover:text-gray-600 transition duration-300 ease-in-out" href="{{ link.url | escape }}">{{ link.label | escape }}</a>
+              </li>
+              {% endfor %}
+            </ul>
+          </nav>
+        </div>
+        <div class="lg:ml-4 lg:mr-4">
+          <button class="lg:hidden bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline" aria-label="Open search">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </button>
+          <button class="lg:hidden bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline" aria-label="Open cart">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M3 19h18M5 5h14M5 13h14M14 5h-10M4 18h16"/></svg>
+          </button>
+          <a class="lg:flex lg:items-center lg:ml-4 lg:text-gray-800 hover:text-gray-600 transition duration-300 ease-in-out" href="/cart">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M3 19h18M5 5h14M5 13h14M14 5h-10M4 18h16"/></svg>
+            <span class="lg:text-lg">{{ cart.item_count }}</span>
+          </a>
+        </div>
+        <button class="lg:hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" aria-label="Open logo menu">
+          <img src="{{ page.header.logo | image_url: width: 1200 | image_tag }}" alt="Shipdeck" class="w-12 h-12 object-cover lg:hidden">
+        </button>
+        <img src="{{ page.header.logo | image_url: width: {{ page.header.logo_width }} | image_tag }}" alt="Shipdeck" class="w-{{ page.header.logo_width }} h-{{ page.header.logo_width * 0.75 }} object-cover hidden lg:block">
+      </div>
+    </div>
+  </header>

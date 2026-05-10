@@ -1,0 +1,75 @@
+{%- comment -%}
+# Collection Grid Section
+{%- endcomment -%}
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="collection-grid">
+        {% for product in collection.products %}
+          <div class="col-md-{{ section.settings.grid_columns }} product-card">
+            <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.title }}">
+            <h2>{{ product.title }}</h2>
+            <p>{{ product.price | money }}</p>
+            <a href="{{ product.url }}" class="btn btn-primary">{{ 'products.product.view_now' | t }}</a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% schema %}
+{
+  "name": "Collection Grid",
+  "settings": [
+    {
+      "type": "range",
+      "id": "grid_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "unit": "",
+      "label": "Grid columns",
+      "default": 4
+    },
+    {
+      "type": "text",
+      "id": "price_range_label",
+      "label": "Price display",
+      "default": "from ${{price}}"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product_card",
+      "name": "Product Card",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Product image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Product title"
+        },
+        {
+          "type": "text",
+          "id": "price",
+          "label": "Product price"
+        },
+        {
+          "type": "link",
+          "id": "link",
+          "label": "Product link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Grid"
+    }
+  ]
+}
+{% endschema %}

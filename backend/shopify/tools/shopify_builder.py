@@ -85,6 +85,16 @@ class ShopifyBuilder:
             dest.write_text(content, encoding="utf-8")
         logger.info("Wrote %d code files from Liquid Developer", len(liquid_code))
 
+        # 2a. Dynamically build template JSONs from generated sections
+        dynamic_templates = self._build_template_jsons(liquid_code)
+        for tpl_rel_path, tpl_data in dynamic_templates.items():
+            tpl_file = theme_dir / tpl_rel_path
+            tpl_file.parent.mkdir(parents=True, exist_ok=True)
+            tpl_file.write_text(
+                _json.dumps(tpl_data, indent=2), encoding='utf-8'
+            )
+        logger.info("Built %d template JSONs from generated sections", len(dynamic_templates))
+
         # 2b. Fix orphaned section references in template JSONs (Bug 1B)
         generated_sections = {
             p.replace("sections/", "").replace(".liquid", "")
@@ -194,6 +204,63 @@ class ShopifyBuilder:
         except Exception:
             logger.warning("Failed to clean orphaned section refs; returning original template JSON")
         return template_json_str
+
+    def _build_template_jsons(self, liquid_code: dict) -> dict[str, dict]:
+        """
+        Build template JSONs dynamically based on generated section files.
+        Uses naming conventions to map sections to page templates.
+        Returns {template_path: json_dict}. All templates include header and footer.
+        """
+        generated = {
+            Path(p).stem
+            for p in liquid_code.keys()
+            if p.startswith('sections/') and p.endswith('.liquid')
+        }
+        always_present = {'announcement-bar', 'header', 'footer'}
+        all_sections = generated | always_present
+
+        def make_template(section_list: list) -> dict:
+            sections_dict: dict = {}
+            order: list = []
+            if 'announcement-bar' in all_sections:
+                sections_dict['announcement-bar'] = {'type': 'announcement-bar', 'disabled': False}
+                order.append('announcement-bar')
+            sections_dict['header'] = {'type': 'header'}
+            order.append('header')
+            for sec in section_list:
+                if sec in all_sections and sec not in ('header', 'footer', 'announcement-bar'):
+                    sections_dict[sec] = {'type': sec}
+                    order.append(sec)
+            sections_dict['footer'] = {'type': 'footer'}
+            order.append('footer')
+            return {'sections': sections_dict, 'order': order}
+
+        PAGE_KEYWORDS = {
+            'index.json':              ['hero-banner', 'featured-collection', 'features-list',
+                                        'testimonials', 'newsletter', 'blog-posts'],
+            'product.json':            ['product-hero', 'product-description', 'product-reviews',
+                                        'related-products', 'product-recommendations'],
+            'collection.json':         ['collection-hero', 'collection-grid',
+                                        'collection-filter', 'filter-list'],
+            'list-collections.json':   ['collections-hero', 'collections-grid', 'all-collections'],
+            'blog.json':               ['blog-hero', 'blog-posts', 'blog-filter', 'blog-grid'],
+            'article.json':            ['article-hero', 'article-content',
+                                        'article-comments', 'article-related'],
+            'page.json':               ['page-hero', 'page-content',
+                                        'page-calls-to-action', 'about-hero'],
+            'cart.json':               ['cart-hero', 'cart-items',
+                                        'cart-total', 'cart-recommendations'],
+            'search.json':             ['search-hero', 'search-results', 'search-grid'],
+            '404.json':                ['error-hero', 'error-content', 'not-found'],
+            'customers/login.json':    ['login-form', 'account-login'],
+            'customers/register.json': ['register-form', 'account-register'],
+        }
+
+        result = {}
+        for template_name, candidate_sections in PAGE_KEYWORDS.items():
+            matched = [s for s in candidate_sections if s in all_sections]
+            result[f'templates/{template_name}'] = make_template(matched)
+        return result
 
     def _apply_creative_brief(self, theme_dir: Path, brief: dict):
         """Inject color palette and font settings into settings_data.json."""

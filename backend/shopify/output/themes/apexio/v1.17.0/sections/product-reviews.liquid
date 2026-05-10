@@ -1,0 +1,23 @@
+{% schema %}{"name": "Product Reviews", "settings": [{"type": "review_list", "id": "reviews", "label": "Reviews"}], "blocks": [], "responsive_notes": "Hide reviews on mobile"}{% endschema %}
+
+{% assign reviews = section.settings.reviews | escape %}
+{% if reviews != blank %}
+<div class="product-reviews">
+  <h2>{{ 'product.general.reviews' | t }}</h2>
+  {% for review in reviews %}
+  <div class="review">
+    <p><strong>{{ review.author }}</strong></p>
+    <p>{{ review.content | escape }}</p>
+    <div class="rating" aria-label="Rating: {{ review.rating }} out of 5 stars">
+      {% for i in (1..5) %}
+        {% if i <= review.rating %}
+          <span>&star;</span>
+        {% else %}
+          <span>&starf;</span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

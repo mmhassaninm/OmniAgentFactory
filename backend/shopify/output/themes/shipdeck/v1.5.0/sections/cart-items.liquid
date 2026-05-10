@@ -1,0 +1,25 @@
+{% schema %}
+{
+  'name': 'cart-items',
+  'settings': [
+    {
+      'type': 'product_list',
+      'id': 'products',
+      'label': 'Selected products'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Cart Items'
+    }
+  ]
+}
+{% endschema %}
+<div class="grid grid--3 large--grid--4">
+  {% for product in section.settings.products %}
+    <div class="grid__cell">
+      <h3>{{ product.title }}</h3>
+      <p>{{ product.price | money }}</p>
+    </div>
+  {% endfor %}
+</div>

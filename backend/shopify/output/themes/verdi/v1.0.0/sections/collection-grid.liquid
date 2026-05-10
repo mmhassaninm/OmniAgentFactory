@@ -1,0 +1,63 @@
+<section class="ecofriendly-collection-grid">
+  <div class="grid-container">
+    <div class="grid-content">
+      <h2>{{ block.settings.title | escape }}</h2>
+      <section class="grid">
+        {% for product in section.settings.products %}
+          <div class="grid-item">
+            <a href="{{ product.url }}">
+              <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.image.alt }}" loading="lazy"/>
+              <div class="product-info">
+                <h3>{{ product.title | escape }}</h3>
+                <p>{{ product.price | money }}</p>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+      </section>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Collection Grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Collection Title",
+      "default": "Eco-Friendly Products"
+    },
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Collection products",
+      "preview": {
+        "selector": "div.grid-item",
+        "template": "{% for product in section.settings.products %}
+          <div class="grid-item">
+            <img src="{{ product.image | image_url: width: 1200 }}" alt="{{ product.image.alt }}"/>
+          </div>
+        {% endfor %}"
+      }
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blockTypes": [
+    {
+      "name": "product-card",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

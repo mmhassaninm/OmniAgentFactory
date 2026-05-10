@@ -1,0 +1,31 @@
+<section class="blog-hero" style="background-image: url('{{ section.settings.image | image_url: width: 1200 }}');">
+  <div class="hero-content">
+    <h1>{{ section.settings.heading }}</h1>
+    <p>{{ section.settings.subheading }}</p>
+    <a href="/blog" class="cta-button">Read More</a>
+  </div>
+</section>{% schema %}
+{
+  "name": "Blog Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Apexio - Blog"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Read our latest articles"
+    }
+  ],
+  "presets": [{"name": "Blog Hero"}]
+}
+{% endschema %}

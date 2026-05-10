@@ -1,0 +1,45 @@
+{% schema %}
+{
+  "name": "Page Content",
+  "settings": [
+    { "type": "text", "id": "content", "label": "Content" }
+  ],
+  "presets": [{ "name": "Page Content" }]
+}
+{% endschema %}
+
+<div class="page-content">
+  {{ section.settings.content | escape }}
+  {% if section.blocks.size > 0 %}
+    {% for block in section.blocks %}
+      {% if block.type == 'image' %}
+        <div class="image-block">
+          <img src="{{ block.settings.image | image_url: width: 800 | alt: block.settings.image }}" alt="{{ block.settings.image }}">
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "Page Content",
+  "settings": [
+    { "type": "text", "id": "content", "label": "Content" }
+  ],
+  "blocks": [
+    {
+      "type": "image",
+      "name": "Image",
+      "settings": [
+        {
+          "type": "image",
+          "id": "image",
+          "label": "Image"
+        }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Page Content" }]
+}
+{% endschema %}

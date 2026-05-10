@@ -1,0 +1,48 @@
+<section class="footer" aria-label="Footer">
+  <div class="container">
+    <div class="row align-items-center py-5">
+      <div class="col-12 col-md-6 text-start">
+        {{ section.settings.copyright | escape }}
+        <br>
+        <p>Verdi {{ '2023' | date: '%Y' }}</p>
+      </div>
+      <div class="col-12 col-md-6 text-end">
+        <ul>
+          {% for link in section.settings.social_links.links %}
+            <li>
+              <a href="{{ link.url }}" target="_blank" title="{{ link.title }}" rel="noopener noreferrer" aria-label="{{ link.title }}">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24" class="icon social-icon {{ link.title | downcase | replace: ' ', '-' }}"><path d="{{ link.icon }}"></path></svg>
+                {{ link.title | escape }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "copyright",
+      "label": "Copyright",
+      "default": "Copyright 2023 Verdi"
+    },
+    {
+      "type": "link_list",
+      "id": "social_links",
+      "label": "Social links"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "mobile_responsive": true
+}
+{% endschema %}

@@ -1,0 +1,29 @@
+{% schema %}
+{
+  "name": "Cart Items",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Cart Items"
+    }
+  ],
+  "presets": [{ "name": "Cart Items" }]
+}
+{% endschema %}
+
+<ul>
+  {% for item in cart.items %}
+    <li>
+      {{ item.title }}
+      {{ item.quantity }} x {{ item.price | money }}
+    </li>
+  {% endfor %}
+</ul>
+
+<h2>{{ settings.heading | escape }}</h2>
+
+{% if cart.items != empty %}
+  <button type="button" aria-label="Cart items"><a href="{{ routes.cart }}">{{ cart.items_count }} item{{ cart.items_count | pluralize }}</a></button>
+{% endif %}

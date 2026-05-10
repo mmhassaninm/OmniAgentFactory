@@ -1,0 +1,28 @@
+<section class="collection-hero" style="--primary-color: #3498db; --bg-color: #f9f9f9;"><img class="background-image" src="{{ section.settings.image | image_url: width: 1200 | alt: collection.title }}" alt="{{ collection.title }}"><h1>{{ section.settings.heading | escape }}</h1><p>{{ section.settings.filter_label | escape }}</p></section>{% schema %}{% assigns settings = section.settings %}{% schema %}
+{
+  "name": "Collection Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Collection name",
+      "default": "{collection.title}"
+    },
+    {
+      "type": "text",
+      "id": "filter_label",
+      "label": "Filter label",
+      "default": "Filter by price"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection Hero"
+    }
+  ]
+}{% endschema %}

@@ -1,0 +1,11 @@
+<section class="hero-banner" aria-label="{{ ' hero-banner' | t }}">
+  <div class="banner-container">
+    <img src="{{ section.settings.image | image_url: width: 1200 | alt: section.settings.image | escape }}" alt="{{ section.settings.image | alt | escape }}" loading="lazy">
+    <div class="banner-content">
+      <h1>{{ section.settings.heading | escape }}</h1>
+      <p>{{ section.settings.subheading | escape }}</p>
+      <a href="{{ section.settings.cta_url | escape }}" class="btn">{{ section.settings.cta_label | escape }}</a>
+    </div>
+  </div>
+{% schema %}
+{% endschema %}

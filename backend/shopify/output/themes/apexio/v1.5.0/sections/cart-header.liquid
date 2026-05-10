@@ -1,0 +1,25 @@
+{% schema %}
+{
+  "name": "Cart Header",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Cart"
+    },
+    {
+      "type": "price",
+      "id": "subtotal",
+      "label": "Subtotal",
+      "default": "49.99"
+    }
+  ],
+  "presets": [{"name": "Default Cart Header"}]
+}
+{% endschema %}
+
+<div class="cart-header">
+  <h2>{{ settings.title }}</h2>
+  <p>Subtotal: {{ settings.subtotal | money }}</p>
+</div>

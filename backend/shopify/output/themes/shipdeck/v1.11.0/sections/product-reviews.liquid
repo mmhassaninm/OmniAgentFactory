@@ -1,0 +1,47 @@
+{% schema %}
+  name: 'product_reviews'
+  label: 'Product Reviews'
+  settings:
+    - type: 'number'
+      id: 'review_count'
+      label: 'Number of Reviews'
+      default: 5
+      min: 1
+      max: 5
+      step: 1
+  blocks:
+    - type: 'review'
+      name: 'Review'
+      settings:
+        - type: 'rating_picker'
+          id: 'rating'
+          label: 'Rating'
+  section: 'product-reviews'
+  responsive_notes: 'Hide review ratings on mobile, show only text'
+  {% endschema %}
+
+  <style>
+    /* Minimal theme styles */
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: #f9f9f9;
+      color: #3498db;
+    }
+  </style>
+
+  <div class='product-reviews'>
+    <h2>{{ 'product_reviews.title' | t }}</h2>
+    {% for review in product.reviews limit: settings.review_count %}
+      <div class='review'>
+        <span class='rating' aria-label='{{ 'product_reviews.rating' | t }} {{ review.rating }}'>
+          {% for i in (1..review.rating) %}
+            <i class='fas fa-star'></i>
+          {% endfor %}
+          {% for i in (1..5-review.rating) %}
+            <i class='far fa-star'></i>
+          {% endfor %}
+        </span>
+        <p>{{ review.body }}</p>
+      </div>
+    {% endfor %}
+  </div>

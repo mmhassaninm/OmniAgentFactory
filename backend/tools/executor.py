@@ -9,7 +9,47 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-TOOL_TIMEOUT_SECS = 10
+# Dynamic timeouts per tool type — browser operations need more time
+TOOL_TIMEOUTS = {
+    "web_search": 20,
+    "fetch_url": 15,
+    "get_page_content": 20,
+    "take_screenshot": 30,
+    "search_for_clients": 45,
+    "find_contact_email": 15,
+    "fill_contact_form": 25,
+    "run_python": 8,
+    "calculator": 5,
+    "get_datetime": 3,
+    "code_interpreter": 10,
+    "run_in_sandbox": 12,
+    "execute_on_host": 15,
+    "list_files": 5,
+    "read_file": 5,
+    "run_command": 10,
+    "write_draft": 5,
+    "web_scraper": 20,
+    "llamacloud_parser": 25,
+    "github_tool": 10,
+    "search_tool": 10,
+    "calendar_tool": 5,
+    "email_tool": 10,
+    "discord_tool": 10,
+    "notion_tool": 10,
+    "obsidian_tool": 10,
+    # Desktop control (Windows)
+    "desktop_mouse_move": 3,
+    "desktop_mouse_click": 3,
+    "desktop_type_text": 8,
+    "desktop_press_key": 2,
+    "desktop_screenshot": 5,
+    "desktop_mouse_position": 1,
+    "desktop_open_url": 5,
+}
+
+def get_tool_timeout(tool_name: str) -> int:
+    """Get timeout for a specific tool, with fallback to default."""
+    return TOOL_TIMEOUTS.get(tool_name, 10)
 _pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="omni_tool")
 _LOG_FILE = Path(__file__).parent.parent / "logs" / "tools_log.jsonl"
 
@@ -32,6 +72,31 @@ class ToolResult:
 
 
 def _dispatch(tool_name: str, arguments: dict) -> str:
+    # ── Desktop Control (Windows only) ──────────────────────────────────────────
+    if tool_name.startswith("desktop_"):
+        from tools.desktop_control_tool import get_desktop_control_tool
+        desktop = get_desktop_control_tool()
+
+        # Parse desktop_* tool names: desktop_mouse_move, desktop_type_text, etc.
+        action = tool_name.replace("desktop_", "")
+
+        if action == "mouse_move":
+            return str(desktop.mouse_move(int(arguments.get("x", 0)), int(arguments.get("y", 0))))
+        if action == "mouse_click":
+            return str(desktop.mouse_click(int(arguments.get("x", 0)), int(arguments.get("y", 0))))
+        if action == "type_text":
+            return str(desktop.type_text(arguments.get("text", "")))
+        if action == "press_key":
+            return str(desktop.press_key(arguments.get("key", "")))
+        if action == "screenshot":
+            return str(desktop.take_screenshot(arguments.get("save_path", "screenshot.png")))
+        if action == "mouse_position":
+            return str(desktop.get_mouse_position())
+        if action == "open_url":
+            return str(desktop.open_url_in_browser(arguments.get("url", "")))
+
+        return f"[Unknown desktop action: {action}]"
+
     # ── New production tools ────────────────────────────────────────────────────
     if tool_name == "web_search":
         from tools.tools.web_search import web_search
@@ -120,9 +185,10 @@ def _log(tool_name: str, arguments: dict, result: ToolResult) -> None:
 
 def execute_tool(tool_name: str, arguments: dict) -> ToolResult:
     t0 = time.monotonic()
+    timeout_secs = get_tool_timeout(tool_name)
     try:
         future = _pool.submit(_dispatch, tool_name, arguments)
-        output = future.result(timeout=TOOL_TIMEOUT_SECS)
+        output = future.result(timeout=timeout_secs)
         ms = int((time.monotonic() - t0) * 1000)
         # Direction 4: apply result intelligence post-processing
         try:
@@ -133,11 +199,11 @@ def execute_tool(tool_name: str, arguments: dict) -> ToolResult:
         result = ToolResult(output=output, execution_time_ms=ms)
     except FuturesTimeout:
         ms = int((time.monotonic() - t0) * 1000)
-        result = ToolResult(output="", error=f"Timed out after {TOOL_TIMEOUT_SECS}s", execution_time_ms=ms)
+        result = ToolResult(output="", error=f"Timed out after {timeout_secs}s", execution_time_ms=ms)
     except Exception as exc:
         ms = int((time.monotonic() - t0) * 1000)
         result = ToolResult(output="", error=str(exc), execution_time_ms=ms)
 
     _log(tool_name, arguments, result)
-    logger.info("[tool] %s → %dms ok=%s", tool_name, result.execution_time_ms, result.ok)
+    logger.info("[tool] %s (timeout=%ds) → %dms ok=%s", tool_name, timeout_secs, result.execution_time_ms, result.ok)
     return result

@@ -1,0 +1,34 @@
+
+{% schema %}
+{
+  "name": "Cart Hero",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title"
+    },
+    {
+      "type": "price",
+      "id": "total",
+      "label": "Total"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="cart-hero">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <h1>{{ settings.title }}</h1>
+        <p>Total: {{ settings.total | money }}</p>
+      </div>
+    </div>
+  </div>
+</div>

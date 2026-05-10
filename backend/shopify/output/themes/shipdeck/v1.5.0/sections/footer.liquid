@@ -1,0 +1,50 @@
+<!-- Footer -->
+<footer role="contentinfo">
+  <div class="container">
+    <div class="row">
+      <div class="col-12 text-center">
+        <p>
+          {{ copyright | escape }}
+          &copy; {{ 'current_year' | date: '%Y' }} Shipdeck
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="social-links">
+    <ul>
+      {% for link in social_links %}
+        <li>
+          <a href="{{ link.url }}" title="{{ link.title | escape }}" aria-label="{{ link.title | escape }}">
+            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon icon--social {{ link.network | downcase }}" aria-hidden="true">
+              <!-- Add your social media icon SVGs here -->
+            </svg>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "footer",
+  "settings": [
+    {
+      "type": "text",
+      "id": "copyright",
+      "label": "Copyright",
+      "default": "2023 Shipdeck"
+    },
+    {
+      "type": "link_list",
+      "id": "social_links",
+      "label": "Social links"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}

@@ -268,6 +268,149 @@ class ShopifySwarmEngine:
         except Exception as e:
             logger.error("Failed to save cycle lessons: %s", e)
 
+    async def _calculate_theme_score(self, context: SharedContext) -> float:
+        """
+        Score the generated theme from 0.0 to 100.0 based on:
+        - qa_score from context.qa_report (40 points max)
+        - number of section files in liquid_code (30 points max — 1pt per section, max 30)
+        - build_warnings count: -3 per warning (max -15)
+        - qa_errors count: -5 per error (max -20)
+        Returns float between 0.0 and 100.0.
+        Wrap in try/except, return 0.0 on error.
+        """
+        try:
+            qa_score_raw = 0.0
+            if getattr(context, "qa_report", None):
+                qa_score_raw = float(context.qa_report.get("score", 0.0))
+            if qa_score_raw <= 1.0:
+                qa_score_raw *= 100.0
+            qa_points = min(40.0, max(0.0, qa_score_raw) * 0.4)
+
+            liquid_code = getattr(context, "liquid_code", {}) or {}
+            section_count = sum(
+                1 for path in liquid_code.keys()
+                if isinstance(path, str) and path.startswith("sections/")
+            )
+            section_points = float(min(30, section_count))
+
+            build_warnings_count = len(getattr(context, "build_warnings", []) or [])
+            qa_errors_count = len(getattr(context, "qa_errors", []) or [])
+            warnings_penalty = min(15.0, float(build_warnings_count * 3))
+            errors_penalty = min(20.0, float(qa_errors_count * 5))
+
+            score = qa_points + section_points - warnings_penalty - errors_penalty
+            return max(0.0, min(100.0, float(score)))
+        except Exception as e:
+            logger.error("Failed to calculate theme score: %s", e)
+            return 0.0
+
+    async def _save_theme_score(self, context: SharedContext, db) -> None:
+        """
+        Save/update theme score in db.shopify_theme_scores collection:
+        {
+            "theme_name": context.theme_name,
+            "niche": context.niche,
+            "version": context.version,
+            "score": float,
+            "section_count": int,
+            "qa_errors_count": int,
+            "build_warnings_count": int,
+            "created_at": datetime.utcnow()
+        }
+        Wrap in try/except — never crash.
+        """
+        try:
+            if db is None or not getattr(context, "theme_name", ""):
+                return
+            liquid_code = getattr(context, "liquid_code", {}) or {}
+            section_count = sum(
+                1 for path in liquid_code.keys()
+                if isinstance(path, str) and path.startswith("sections/")
+            )
+            qa_errors_count = len(getattr(context, "qa_errors", []) or [])
+            build_warnings_count = len(getattr(context, "build_warnings", []) or [])
+            score = await self._calculate_theme_score(context)
+
+            await db.shopify_theme_scores.update_one(
+                {
+                    "theme_name": context.theme_name,
+                    "niche": context.niche,
+                    "version": context.version,
+                },
+                {
+                    "$set": {
+                        "score": float(score),
+                        "section_count": int(section_count),
+                        "qa_errors_count": int(qa_errors_count),
+                        "build_warnings_count": int(build_warnings_count),
+                        "created_at": datetime.utcnow(),
+                    }
+                },
+                upsert=True,
+            )
+        except Exception as e:
+            logger.error("Failed to save theme score: %s", e)
+
+    async def _load_intelligence(self, db) -> str:
+        """
+        Returns a formatted intelligence block combining:
+
+        PART 1 — Best Themes (top 3 highest-score themes from db.shopify_theme_scores)
+        PART 2 — Niche Intelligence (niches with avg score > 70 and section guidance)
+
+        Return combined formatted string or "" on any error.
+        Wrap everything in try/except.
+        """
+        try:
+            if db is None:
+                return ""
+
+            lines: list[str] = []
+
+            top_themes = await db.shopify_theme_scores.find(
+                {}, sort=[("score", -1)], limit=3
+            ).to_list(length=3)
+            if top_themes:
+                lines.append("TOP PERFORMING THEMES (learn from these):")
+                for theme in top_themes:
+                    lines.append(
+                        f" - {theme.get('theme_name', 'Unknown')} "
+                        f"(niche: {theme.get('niche', 'unknown')}, "
+                        f"score: {float(theme.get('score', 0)):.1f}, "
+                        f"sections: {int(theme.get('section_count', 0))}) — study this structure"
+                    )
+
+            pipeline = [
+                {
+                    "$group": {
+                        "_id": "$niche",
+                        "avg_score": {"$avg": "$score"},
+                        "avg_sections": {"$avg": "$section_count"},
+                    }
+                },
+                {"$match": {"avg_score": {"$gt": 70}}},
+                {"$sort": {"avg_score": -1}},
+            ]
+            niche_rows = await db.shopify_theme_scores.aggregate(pipeline).to_list(length=20)
+            if niche_rows:
+                if lines:
+                    lines.append("")
+                lines.append("NICHE INTELLIGENCE:")
+                for row in niche_rows:
+                    lines.append(
+                        f" - niche {row.get('_id', 'unknown')}: "
+                        f"avg score {float(row.get('avg_score', 0)):.1f} — "
+                        f"recommended section count: {int(round(float(row.get('avg_sections', 0))))}"
+                    )
+
+            if not lines:
+                return ""
+
+            return "\n\n━━━ PHASE 2 INTELLIGENCE ━━━\n" + "\n".join(lines) + "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        except Exception as e:
+            logger.error("Failed to load intelligence: %s", e)
+            return ""
+
     async def run_production_cycle(self, db=None):
         context = SharedContext()
         context.theme_id = str(uuid.uuid4())
@@ -276,13 +419,23 @@ class ShopifySwarmEngine:
         logger.info("=== PRODUCTION CYCLE %d STARTED ===", self.cycle_count + 1)
         await self._broadcast("swarm", "cycle_start", f"Production cycle #{self.cycle_count + 1} started")
 
+        # Load evolution lessons AND phase 2 intelligence
         lessons_block = ""
+        intelligence_block = ""
         if db is not None:
             lessons_block = await self._load_evolution_lessons(db)
+            intelligence_block = await self._load_intelligence(db)
+
         context.evolution_lessons = lessons_block
+        if intelligence_block:
+            context.evolution_lessons += intelligence_block
+
         if lessons_block:
             await self._broadcast("swarm", "info",
                 f"🧠 Evolution memory loaded: {len(lessons_block.splitlines())} active rules")
+        if intelligence_block:
+            await self._broadcast("swarm", "info",
+                "📊 Phase 2 intelligence loaded: best themes + niche data")
 
         for agent_name in self.PRODUCTION_CYCLE:
             if not self.running:
@@ -341,6 +494,11 @@ class ShopifySwarmEngine:
         if db is not None and context.theme_name:
             theme_doc = {"name": context.theme_name, "niche": context.niche}
             await self._save_cycle_lessons(context, theme_doc, db)
+            # Phase 2: calculate and save theme score
+            score = await self._calculate_theme_score(context)
+            await self._save_theme_score(context, db)
+            await self._broadcast("swarm", "info",
+                f"📈 Theme score: {score:.1f}/100 saved to intelligence database")
 
         self.cycle_count += 1
         self.theme_count += 1

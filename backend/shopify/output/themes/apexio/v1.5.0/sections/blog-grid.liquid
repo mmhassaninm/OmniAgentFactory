@@ -1,0 +1,65 @@
+{% schema %}
+{
+  "name": "Blog Grid",
+  "settings": [
+    {
+      "type": "array",
+      "id": "post_ids",
+      "label": "Blog posts",
+      "default": []
+    },
+    {
+      "type": "range",
+      "id": "grid_columns",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "unit": "",
+      "label": "Grid columns",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "grid_gutter",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "label": "Grid gutter",
+      "default": 10
+    }
+  ],
+  "presets": [{"name": "Blog Grid"}]
+}
+{% endschema %}
+
+<div class="grid-container">
+  <div class="grid-x align-middle">
+    {% for post_id in settings.post_ids %}
+      <div class="cell medium-{{ settings.grid_columns }}">
+        {% include 'blog-post.liquid' with post_id: post_id %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+  .grid-container {
+    background-color: #f9f9f9;
+    padding: 20px;
+  }
+  .grid-x {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .grid-x.align-middle {
+    align-items: center;
+  }
+  .cell {
+    padding: 20px;
+  }
+  .cell.medium-{{ settings.grid_columns }} {
+    width: calc((100% - {{ settings.grid_gutter }} * {{ settings.grid_columns }}) / {{ settings.grid_columns }});
+  }
+</style>

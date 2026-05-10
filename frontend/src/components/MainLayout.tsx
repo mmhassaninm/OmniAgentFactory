@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Shield, Cpu, Key, Settings, Activity, Workflow, DollarSign, ShoppingBag } from 'lucide-react'
+import { Shield, Cpu, Key, Settings, Activity, Workflow, DollarSign, ShoppingBag, Brain } from 'lucide-react'
 import { useFactoryStatus } from '../hooks/useAgent'
 
 export default function MainLayout() {
@@ -82,6 +82,20 @@ export default function MainLayout() {
             >
               <ShoppingBag size={16} />
               <span>Shopify Factory</span>
+            </NavLink>
+
+            <NavLink
+              to="/evolution"
+              className={({ isActive }) =>
+                `py-2.5 px-4 rounded-lg mx-2 flex items-center gap-3 text-sm transition-all duration-150 ${
+                  isActive
+                    ? 'bg-purple-500/15 text-purple-300 border-l-2 border-purple-400 font-semibold'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                }`
+              }
+            >
+              <Brain size={16} />
+              <span>Evolution</span>
             </NavLink>
 
             <NavLink

@@ -1,0 +1,21 @@
+<div class="blog-header">
+  <h1>{{ settings.title }}</h1>
+</div>
+{% schema %}
+{
+  "name": "blog-header",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Blog"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}

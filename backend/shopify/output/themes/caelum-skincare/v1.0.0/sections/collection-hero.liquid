@@ -1,0 +1,12 @@
+<section class="collection-hero" style="background-color: #F2F2F2;"><img class="collection-hero__image" src="{{ section.settings.image | image_url: width: 1200 | alt: 'Collection background image' }}" alt="{{ section.settings.image | alt }}"/>\
+<h2 class="collection-hero__heading">{{ section.settings.heading | escape }}</h2>\
+<p class="collection-hero__description">{{ section.settings.description | escape }}</p>\
+</section>{% schema %}{\
+  "name": "Collection Hero",\
+  "settings": [\
+    { "type": "image_picker", "id": "image", "label": "Background image" },\
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Collection Name" },\
+    { "type": "text", "id": "description", "label": "Description", "default": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed sit amet nulla auctor, vestibulum magna sed, convallis ex." }\
+  ],\
+  "presets": [ { "name": "Collection Hero" } ]\
+}{% endschema %}

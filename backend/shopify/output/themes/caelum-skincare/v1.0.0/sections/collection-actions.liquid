@@ -1,0 +1,22 @@
+<section class="collection-actions"><h2>{{ section.settings.heading | escape }}</h2>{% schema %}{% comment %} Collection Actions {% endcomment %}{% assign settings = section.settings %}{% if settings.heading != blank %}{% endif %}{% endschema %}{% if settings.heading != blank %}
+      <div class="filter-sort">
+        <h3>{{ section.settings.heading | escape }}</h3>
+        <div class="filter">
+          {% if section.blocks.filter.settings != blank %}
+            <h4>{{ section.blocks.filter.settings.label | escape }}</h4>
+            <ul>{% for option in section.blocks.filter.settings.options %}
+              <li>{{ option }}</li>
+            {% endfor %}</ul>
+          {% endif %}
+        </div>
+        <div class="sort">
+          {% if section.blocks.sort.settings != blank %}
+            <h4>{{ section.blocks.sort.settings.label | escape }}</h4>
+            <ul>{% for option in section.blocks.sort.settings.options %}
+              <li>{{ option }}</li>
+            {% endfor %}</ul>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </section>

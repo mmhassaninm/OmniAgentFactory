@@ -1,6 +1,7 @@
 {
   "sections": {
-    "main": { "type": "main-list-collections" }
+    "header": { "type": "header" },
+    "footer": { "type": "footer" }
   },
-  "order": ["main"]
+  "order": ["header", "footer"]
 }

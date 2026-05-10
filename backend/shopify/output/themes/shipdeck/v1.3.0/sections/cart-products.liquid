@@ -1,0 +1,65 @@
+{% schema %}
+{
+  "name": "Cart Products",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Cart products"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "cart-product",
+      "name": "Cart item",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Product image"
+        },
+        {
+          "type": "text",
+          "id": "quantity",
+          "label": "Quantity"
+        },
+        {
+          "type": "text",
+          "id": "price",
+          "label": "Price"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="cart-products">
+  <h2>{{ title }}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in cart.items %}
+      <tr>
+        <td>
+          <img src="{{ product.image | image_url: width: 400 }}" alt="{{ product.image.alt }}">
+        </td>
+        <td>{{ product.quantity }}</td>
+        <td>{{ product.price | money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

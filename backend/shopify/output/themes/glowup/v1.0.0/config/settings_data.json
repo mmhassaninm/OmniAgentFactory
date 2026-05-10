@@ -1,0 +1,13 @@
+{
+  "current": {
+    "color_primary": "#3E6E93",
+    "color_secondary": "#F7F7F7",
+    "color_accent": "#FFC107",
+    "color_background": "#F2F2F2",
+    "color_text": "#333333",
+    "heading_scale": 120,
+    "page_width": 1280,
+    "border_radius": 4
+  },
+  "presets": {}
+}

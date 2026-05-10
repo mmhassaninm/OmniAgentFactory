@@ -1,0 +1,68 @@
+{
+  "general": {
+    "meta": {
+      "page": "Page {{ page_num }}"
+    },
+    "password_page": {
+      "opening_soon": "Opening soon"
+    }
+  },
+  "products": {
+    "product": {
+      "add_to_cart": "Add to cart",
+      "sold_out": "Sold out",
+      "unavailable": "Unavailable",
+      "from_price_html": "From {{ price }}",
+      "on_sale": "Sale",
+      "quantity": {
+        "label": "Quantity",
+        "increase": "Increase quantity for {{ product }}",
+        "decrease": "Decrease quantity for {{ product }}"
+      }
+    }
+  },
+  "collections": {
+    "general": {
+      "no_matches": "No products found"
+    }
+  },
+  "cart": {
+    "general": {
+      "title": "Your cart",
+      "empty": "Your cart is empty",
+      "checkout": "Check out",
+      "continue_shopping": "Continue shopping",
+      "remove": "Remove"
+    }
+  },
+  "blogs": {
+    "article": {
+      "by_author": "By {{ author }}",
+      "posted_in": "Posted in",
+      "read_more": "Read more",
+      "back_to_blog": "Back to {{ title }}"
+    }
+  },
+  "sections": {
+    "header": {
+      "menu": "Menu",
+      "search": "Search"
+    },
+    "footer": {
+      "overview": "Overview"
+    },
+    "announcement_bar": {
+      "announcement": "Announcement"
+    }
+  },
+  "accessibility": {
+    "skip_to_content": "Skip to content",
+    "close": "Close",
+    "open_menu": "Open menu"
+  },
+  "layout": {
+    "cart": {
+      "title": "Cart"
+    }
+  }
+}

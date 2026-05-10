@@ -1,0 +1,46 @@
+<div class="blog-posts">
+  <h2>Blog Posts</h2>
+  <div class="post-list">{% for block in blocks %}
+    {% if block.settings.post_id %}
+      <div class="post">
+        <h3>{{ block.settings.post_id }}</h3>
+      </div>
+    {% endif %}
+  {% endfor %}
+  </div>
+  <p>Number of posts: {{ settings.post_count }}</p>
+</div>
+{% schema %}
+{
+  "name": "blog-posts",
+  "settings": [
+    {
+      "type": "number",
+      "id": "post_count",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "label": "Number of posts",
+      "default": 6
+    }
+  ],
+  "blocks": [
+    {
+      "type": "blog_post",
+      "name": "Blog Post",
+      "settings": [
+        {
+          "type": "post_picker",
+          "id": "post_id",
+          "label": "Post ID"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}

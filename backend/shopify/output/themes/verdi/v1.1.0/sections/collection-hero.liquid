@@ -1,0 +1,109 @@
+{% schema %}
+{
+  "name": "Collection Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Collection Name"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Collection description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": [
+  ],
+  "responsive_notes": "Stack vertically on mobile, reduce hero height to 60vh"
+}
+{% endschema %}
+
+<div class="collection-hero" role="region" aria-label="{{ 'collection.hero' | t }}">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="background-image" style="background-image: url('{{ section.settings.image | image_url: width: 1200 | escape }}');">
+          <div class="overlay">
+            <h1>{{ section.settings.heading | escape }}</h1>
+            <h2>{{ section.settings.subheading | escape }}</h2>
+            <a href="#" class="btn" role="button" aria-label="{{ 'collection.cta' | t }}">{{ 'collection.cta' | t }}</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .collection-hero {
+    padding: 2rem 0;
+    background-color: #F2F2F2;
+  }
+  .collection-hero .background-image {
+    height: 40vh;
+    background-size: cover;
+    background-position: center;
+  }
+  .collection-hero .overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #34C759;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  .collection-hero .overlay h1 {
+    font-family: Montserrat;
+    font-size: 2.5rem;
+    font-weight: bold;
+  }
+  .collection-hero .overlay h2 {
+    font-family: Lato;
+    font-size: 1.5rem;
+    font-weight: normal;
+  }
+  .collection-hero .overlay a {
+    background-color: #34C759;
+    color: #F2F2F2;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+  }
+  .collection-hero .overlay a:hover {
+    background-color: #2ecc71;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const lazyImages = document.querySelectorAll(".lazy-image");
+    const observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          const image = entry.target;
+          image.src = image.dataset.src;
+          image.classList.remove("lazy-image");
+          observer.unobserve(image);
+        }
+      });
+    }, {
+      rootMargin: "50px",
+    });
+    lazyImages.forEach(function (image) {
+      observer.observe(image);
+    });
+  });
+</script>

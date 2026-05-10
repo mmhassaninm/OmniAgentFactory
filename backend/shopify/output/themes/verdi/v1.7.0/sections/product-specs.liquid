@@ -1,0 +1,49 @@
+{% schema %}
+{
+  "name": "product-specs",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Key Features"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product Specifications"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "spec-card",
+      "name": "spec-card",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title"
+        },
+        {
+          "type": "text",
+          "id": "description",
+          "label": "Description"
+        }
+      ]
+    }
+  ],
+  "responsive_notes": "Grid 2 columns on desktop, 1 on mobile"
+}
+{% endschema %}
+
+<div class="product-specs">
+  <h2>{{ section.settings.title | escape }}</h2>
+  <div class="spec-grid">
+    {% for spec in section.blocks.spec-card %}
+      <div class="spec-card">
+        <h3>{{ spec.settings.title | escape }}</h3>
+        <p>{{ spec.settings.description | escape }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>

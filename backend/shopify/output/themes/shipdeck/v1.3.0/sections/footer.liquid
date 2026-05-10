@@ -1,0 +1,40 @@
+{% schema %}
+{
+  'name': 'footer',
+  'settings': [
+    {
+      'type': 'text',
+      'id': 'copyright',
+      'label': 'Copyright',
+      'default': '2023 Shipdeck'
+    },
+    {
+      'type': 'link_list',
+      'id': 'social_links',
+      'label': 'Social links',
+      'default': 'social-links'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Default Footer'
+    }
+  ]
+}
+{% endschema %}
+
+<footer role='contentinfo' aria-label='Footer'>{% if section.settings.copyright %}
+  <p>{{ section.settings.copyright }}</p>
+{% endif %}
+  <ul>{% for link in section.settings.social_links %}
+    <li><a href='#'>{{ link }}</a></li>
+  {% endfor %}</ul>
+</footer>
+
+<style>
+  footer {
+    background-color: #f9f9f9;
+    padding: 20px;
+    text-align: center;
+  }
+</style>

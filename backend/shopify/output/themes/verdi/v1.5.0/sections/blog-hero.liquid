@@ -1,0 +1,56 @@
+{% schema %}
+{
+  "name":"blog-hero",
+  "settings":[
+    {
+      "type":"image_picker",
+      "id":"image",
+      "label":"Background image"
+    },
+    {
+      "type":"text",
+      "id":"heading",
+      "label":"Heading",
+      "default":"Eco-Friendly Living Tips and News"
+    },
+    {
+      "type":"text",
+      "id":"subheading",
+      "label":"Subheading",
+      "default":"Stay updated on sustainable living and eco-friendly products"
+    }
+  ],
+  "presets":[
+    {
+      "name":"Hero Banner"
+    }
+  ]
+}
+{% endschema %}
+<section class="blog-hero" style="background-image: url('{{ section.settings.image | image_url: width: 1200 | image_tag }}');">
+  <div class="container">
+    <h1>{{ section.settings.heading | escape }}</h1>
+    <p>{{ section.settings.subheading | escape }}</p>
+  </div>
+</section>
+
+<style>
+  .blog-hero {
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .container {
+    max-width: 800px;
+  }
+
+  @media (max-width: 768px) {
+    .blog-hero {
+      height: 60vh;
+    }
+  }
+</style>

@@ -99,6 +99,46 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Prompt Evolver init failed: %s", e)
 
+    # ── AUTONOMOUS EVOLUTION v3.0 (Nuclear Self-Evolution) ────────────────
+    try:
+        import os
+        if os.getenv("ENABLE_AUTONOMOUS_EVOLUTION", "true").lower() == "true" and db is not None:
+            from core.autonomous_evolution.registry_manager import RegistryManager
+            from core.autonomous_evolution.idea_engine_v2 import IdeaEngineV2
+            from core.autonomous_evolution.problem_scanner import ProblemScanner
+            from core.autonomous_evolution.agent_council import AgentCouncil
+            from core.autonomous_evolution.loop_orchestrator import LoopOrchestrator
+            from core.autonomous_evolution.implementation_runner import ImplementationRunner
+            from core.model_router import get_model_router
+
+            # Initialize components
+            registry_mgr = RegistryManager(db)
+            router = get_model_router()
+            idea_engine = IdeaEngineV2(router, registry_mgr)
+            problem_scanner = ProblemScanner(router, registry_mgr)
+            agent_council = AgentCouncil(router)
+            impl_runner = ImplementationRunner()
+
+            # Create and start orchestrator
+            orchestrator = LoopOrchestrator(
+                idea_engine=idea_engine,
+                problem_scanner=problem_scanner,
+                agent_council=agent_council,
+                registry_manager=registry_mgr,
+                implementation_runner=impl_runner
+            )
+
+            # Start in background
+            asyncio.create_task(orchestrator.run_forever())
+            app.state.evolution_orchestrator = orchestrator
+            logger.info("🧠 AUTONOMOUS EVOLUTION LOOP v3.0 — ACTIVE")
+            logger.info("   Components: IdeaEngineV2 + ProblemScanner + AgentCouncil + LoopOrchestrator")
+            logger.info("   Memory: EVOLUTION_IDEAS_REGISTRY.md + PROBLEMS_REGISTRY.md")
+        else:
+            logger.info("ℹ️ Autonomous Evolution disabled (set ENABLE_AUTONOMOUS_EVOLUTION=true to enable)")
+    except Exception as e:
+        logger.warning("Autonomous Evolution v3.0 failed to start: %s", e)
+
     # ── Legacy Systems ──────────────────────────────────────────────────
     # Initialize multi-provider registry from DB settings
     try:
@@ -303,6 +343,14 @@ try:
     logger.info("✓ Shopify Factory router loaded")
 except Exception as e:
     logger.warning("Shopify Factory router failed to load: %s", e)
+
+# ── Autonomous Evolution Registry API ─────────────────────────────────────────
+try:
+    from api.evolution_registry import router as evolution_router
+    app.include_router(evolution_router)
+    logger.info("✓ Evolution Registry API registered")
+except Exception as e:
+    logger.warning("Evolution Registry API failed to load: %s", e)
 
 
 

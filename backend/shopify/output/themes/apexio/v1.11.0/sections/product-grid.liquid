@@ -1,0 +1,25 @@
+<section class="product-grid" role="region" aria-label="Product Grid">
+  <div class="container">
+    <h2>{{ 'products.heading' | t }}</h2>
+    <div class="grid">
+      {% for product in section.settings.products %}
+        {% include 'product-grid-item.liquid' %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product Grid",
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Featured products",
+      "default": "new_arrivals"
+    }
+  ],
+  "presets": [{"name": "Product Grid"}]
+}
+{% endschema %}

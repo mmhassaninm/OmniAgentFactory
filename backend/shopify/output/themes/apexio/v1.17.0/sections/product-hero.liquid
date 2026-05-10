@@ -1,0 +1,23 @@
+<section class="hero-section">
+  <div class="container">
+    <img src="{{ section.settings.image | image_url: '1200x' }}" alt="Product Image" loading="lazy" aria-label="Product Hero Image">
+    <h1>{{ section.settings.price | money }}</h1>
+  </div>
+</section>{% schema %}
+{
+  "name": "Product Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Product image"
+    },
+    {
+      "type": "money",
+      "id": "price",
+      "label": "Price"
+    }
+  ],
+  "presets": [{"name": "Default Hero"}]
+}
+{% endschema %}

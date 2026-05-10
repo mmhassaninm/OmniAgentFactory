@@ -1,0 +1,25 @@
+{% schema %}
+{
+  "name": "Blog Post Grid",
+  "settings": [
+    { "type": "range", "id": "grid_columns", "min": 1, "max": 6, "step": 1, "unit": "", "label": "Grid columns", "default": 4 },
+    { "type": "text", "id": "title", "label": "Post title" }
+  ],
+  "presets": [{ "name": "Blog Post Grid" }]
+}
+{% endschema %}
+
+<div class="blog-post-grid" aria-label="Blog Post Grid">
+  <div class="container">
+    <div class="grid" style="grid-template-columns: repeat({{ section.settings.grid_columns }}, 1fr);">
+      {% for post in collection.all_products %}
+        <div class="blog-post">
+          <div class="image" style="background-image: url('{{ post.image | image_url: width: 400 }}');"></div>
+          <h2>{{ post.title }}</h2>
+          <p>{{ post.created_at | date: '%B %d, %Y' }}</p>
+          <a href="{{ post.url }}">Read more</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

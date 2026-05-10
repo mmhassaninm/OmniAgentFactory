@@ -1,0 +1,37 @@
+<!-- Product Info Section -->
+<section role="region" aria-label="Product Info" class="product-info">
+  <div class="container">
+    <h2>{{ product.title }}</h2>
+    <p>{{ product.description }}</p>
+    <h3>Price: {{ product.price | money }}</h3>
+    {% if product.reviews != blank %}
+      <h3>Reviews: {{ product.reviews }}</h3>
+    {% endif %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "product-info",
+  "settings": [
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Description"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "rating",
+      "name": "rating",
+      "settings": [
+        {
+          "type": "rating_picker",
+          "id": "rating",
+          "label": "Rating"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

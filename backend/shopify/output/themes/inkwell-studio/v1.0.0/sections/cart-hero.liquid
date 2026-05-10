@@ -1,0 +1,40 @@
+{% schema %}
+{
+  "name": "cart-hero",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Cart summary"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Items in cart: 2"
+    },
+    {
+      "type": "url",
+      "id": "cta_url",
+      "label": "Button URL"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "block_types": [],
+  "sections": [],
+  "context": [],
+  "settings": []
+}
+{% endschema %}
+<div class="cart-hero">
+  <h2>{{ section.settings.heading | escape }}</h2>
+  <p>{{ section.settings.subheading | escape }}</p>
+  <a href="{{ section.settings.cta_url | escape }}" class="btn">View Cart</a>
+</div>
+
+<!-- responsive-notes: Centered on mobile -->

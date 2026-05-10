@@ -1,0 +1,29 @@
+{% schema %}
+{
+  "name": "Product Reviews",
+  "settings": [
+    {
+      "type": "testimonial_list",
+      "id": "reviews",
+      "label": "Reviews",
+      "default": "new-reviews"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ]
+}
+{% endschema %}
+<div class="product-reviews">
+  <h2>{{ section.settings.reviews }}</h2>
+  <div id="reviews-container">
+    {% for review in product.reviews %}
+      <div>
+        <p>{{ review.content }}</p>
+        <p>- {{ review.author }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>

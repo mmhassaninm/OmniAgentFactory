@@ -1,0 +1,48 @@
+{% schema %}
+{
+  "name": "Page Grid",
+  "settings": [
+    {
+      "type": "rich_text",
+      "id": "content",
+      "label": "Page content"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": [],
+  "responsive_notes": "Hide grid on mobile"
+}
+{% endschema %}
+<div class="grid-container">
+  <div class="grid-item">
+    {{ content | escape }}
+  </div>
+</div>
+
+<style>
+  .grid-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #F2F2F2;
+  }
+  .grid-item {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+</style>
+
+<script>
+  var gridItems = document.querySelectorAll('.grid-item');
+  gridItems.forEach(function(gridItem) {
+    gridItem.addEventListener('click', function() {
+      alert('Grid item clicked!');
+    });
+  });
+</script>

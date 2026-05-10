@@ -1,0 +1,4 @@
+<section class="cart-hero" style="background-image: url('{{ section.settings.image | image_url: width: 1200 | image_tag }}'); background-size: cover; background-position: center; background-color: #f2f2f2;"><h2>{{ section.settings.heading | escape }}</h2><h3>{{ section.settings.total | escape }}</h3>{% schema %}{% comment %} Cart Hero {% endcomment %}{% assign settings = section.settings %}{% if settings.heading != blank %}{% endif %}{% endschema %}{% if settings.heading != blank %}
+    <div class="hero-image"><img src="{{ section.settings.image | image_url: width: 1200 | image_tag }}" alt="{{ section.settings.image.alt | escape }}" style="max-width: 100%;"></div>
+  {% endif %}
+</section>

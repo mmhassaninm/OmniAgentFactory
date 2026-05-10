@@ -1,0 +1,33 @@
+<section class="cart-subtotal">
+  <div class="subtotal">{{ subtotal | money }}</div>
+  <div class="tax">{{ tax | money }}</div>
+  <div class="total">{{ total | money }}</div>
+</section>
+{% schema %}
+{
+  "name": "Cart subtotal",
+  "settings": [
+    {
+      "type": "price",
+      "id": "subtotal",
+      "label": "Subtotal"
+    },
+    {
+      "type": "price",
+      "id": "tax",
+      "label": "Tax"
+    },
+    {
+      "type": "price",
+      "id": "total",
+      "label": "Total"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart Subtotal"
+    }
+  ],
+  "blocks": []
+}
+{% endschema %}

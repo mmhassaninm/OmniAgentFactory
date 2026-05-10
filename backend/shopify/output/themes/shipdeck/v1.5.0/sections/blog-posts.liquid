@@ -1,0 +1,35 @@
+{% schema %}
+  {
+    "name": "Blog Posts",
+    "settings": [
+      {
+        "type": "blog_list",
+        "id": "posts",
+        "label": "Selected posts"
+      },
+      {
+        "type": "number",
+        "id": "cols",
+        "min": 1,
+        "max": 4,
+        "label": "Columns",
+        "default": 3
+      }
+    ],
+    "presets": [
+      {
+        "name": "Default"
+      }
+    ]
+  }
+  {% endschema %}
+  <div class="blog-posts">
+    <div class="grid" style="--columns: {{ cols | escape }}">
+      {% for post in posts %}
+        <div class="grid-item">
+          <h3>{{ post.title | escape }}</h3>
+          <p>{{ post.description | escape }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>

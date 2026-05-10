@@ -1,0 +1,19 @@
+<section class="collection-call-to-action">\
+  <div class="container mx-auto py-16 text-center text-lg text-gray-700">\
+    <h2 class="font-bold text-4xl mb-4">{{ settings.heading | escape }}</h2>\
+    <p class="text-2xl mb-4">\
+      {{ settings.price | money | escape }}\
+    </p>\
+    <a href="/collections/all" class="text-lg font-bold text-white bg-blue-600 hover:bg-blue-800 py-4 px-8 rounded">\
+      Shop Now\
+    </a>\
+  </div>\
+</section>{% schema %}\
+{\
+  "name": "Collection Call-to-Action",\
+  "settings": [\
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Shop Now" },\
+    { "type": "text", "id": "price", "label": "Price", "default": "$0.00" }\
+  ],\
+  "presets": [ { "name": "Call-to-Action" } ]\
+}{% endschema %}

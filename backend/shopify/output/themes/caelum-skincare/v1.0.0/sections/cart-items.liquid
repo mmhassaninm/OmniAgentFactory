@@ -1,0 +1,49 @@
+<div class="cart-items-container">
+  <h2 class="cart-items-title">{{ t 'Cart Items' }}</h2>
+  <div class="cart-items-list">
+    {% for item in section.settings.products | cart_items %}
+      <div class="cart-item">
+        <div class="cart-item-image">
+          <img src="{{ item.image | image_url: width: 1200 | img_tag: alt: item.title }}" alt="{{ item.title }} image">
+        </div>
+        <div class="cart-item-details">
+          <h3 class="cart-item-title">{{ item.title }}</h3>
+          <p class="cart-item-price">{{ item.price | money }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Cart Items",
+  "settings": [
+    {
+      "type": "product_picker",
+      "id": "products",
+      "label": "Products",
+      "default": "cart"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Cart Items"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "cart-item",
+      "name": "Cart Item",
+      "settings": [
+        {
+          "type": "product_picker",
+          "id": "product",
+          "label": "Product"
+        }
+      ]
+    }
+  ],
+  "responsive_notes": "List becomes a grid on mobile"
+}
+{% endschema %}

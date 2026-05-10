@@ -1,0 +1,44 @@
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 300,
+      "step": 10,
+      "unit": "px",
+      "label": "Logo width",
+      "default": 150
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ],
+  "presets": [{"name": "Header"}]
+}
+{% endschema %}
+
+<nav class="header" aria-label="Main navigation">
+  <div class="logo">
+    <img src="{{ logo | image_url: width: 1200 }}" alt="Logo" aria-hidden="true">
+  </div>
+  <ul class="menu" id="{{ menu | escape }}">
+    {{ menu | escape | json }}
+  </ul>
+  <div class="search">
+    <input type="search" placeholder="Search...">
+  </div>
+  <div class="cart">
+    <span aria-label="Cart icon"><i class="fas fa-shopping-cart"></i></span>
+  </div>
+</nav>

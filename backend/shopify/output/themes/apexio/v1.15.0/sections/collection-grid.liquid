@@ -1,0 +1,37 @@
+<section class="grid">
+  {% for product in section.settings.products %}
+    <div class="grid__item" data-product-id="{{ product.id }}">
+      {{ include 'product-grid-item', product: product }}
+    </div>
+  {% endfor %}
+</section>{% schema %}
+{
+  "name": "Collection Grid",
+  "settings": [
+    {
+      "type": "product_list",
+      "id": "products",
+      "label": "Collection products",
+      "default": ""
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product-grid-item",
+      "name": "product-grid-item",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Grid of Products"
+    }
+  ]
+}
+{% endschema %}

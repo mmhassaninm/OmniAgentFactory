@@ -1,0 +1,21 @@
+{% schema %}
+{
+  "name": "Product Reviews",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "reviews",
+      "label": "Reviews collection"
+    }
+  ],
+  "presets": [{"name": "Product Reviews"}]
+}
+{% endschema %}
+<div class="product-reviews-container">
+  {% for review in collection[section.settings.reviews].products %}
+    <div class="review">
+      <p>{{ review.title }}</p>
+      <p>{{ review.description }}</p>
+    </div>
+  {% endfor %}
+</div>

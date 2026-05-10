@@ -1,0 +1,38 @@
+{% schema %}
+{
+  "name": "Product Description",
+  "settings": [
+    {
+      "type": "text",
+      "id": "description",
+      "label": "Product description"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": [
+  ],
+  "sections": [
+  ],
+  "default_settings": {}
+}
+{% endschema %}
+
+<div class="product-description">
+  <h2>{{ settings.description | escape }}</h2>
+  <img src="{% if section.settings.images %}{{ section.settings.images | image_url: width: 400 | image_tag }}{% endif %}">
+</div>
+
+{% responsive_notes %}
+Description text increases font size on mobile
+
+{% if section.settings.images %}
+  <style>
+    .product-description img {
+      max-width: {{ settings.images.width }}px;
+    }
+  </style>
+{% endif %}

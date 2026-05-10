@@ -1,0 +1,30 @@
+<section class="collection-hero" style="--primary-color:#3498db;--bg-color:#f9f9f9">
+  <figure>
+    <img src="{{ section.settings.image | image_url: width: 1200 }}" alt="{{ section.settings.heading }}" aria-label="{{ section.settings.heading }}" style="max-width:100%;"
+      loading="lazy">
+  </figure>
+  <h2>{{ section.settings.heading | escape }}</h2>
+</section>
+{% schema %}
+{
+  "name":"collection-hero",
+  "settings":[
+    {
+      "type":"image_picker",
+      "id":"image",
+      "label":"Collection image"
+    },
+    {
+      "type":"text",
+      "id":"heading",
+      "label":"Heading",
+      "default":"Collection name"
+    }
+  ],
+  "presets":[
+    {
+      "name":"Collection Hero"
+    }
+  ]
+}
+{% endschema %}

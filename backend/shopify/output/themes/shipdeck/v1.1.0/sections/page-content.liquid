@@ -1,0 +1,41 @@
+{% schema %}
+{
+  "name": "Page Content",
+  "settings": [
+    {
+      "type": "text",
+      "id": "content",
+      "label": "Content"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Content Block"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "image",
+      "name": "image",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
+
+<div class="page-content" style="background-color: {{ settings.bg | color }}">
+  <div class="container">
+    <h2>{{ settings.title }}</h2>
+    <p>{{ section.settings.content }}</p>
+    {% if section.blocks.image %}
+      <img src="{{ section.blocks.image.settings.image | image_url: width: 400 | image_tag }}" alt="{{ section.blocks.image.settings.image | escape }}">
+    {% endif %}
+    <p>Responsive notes: Hide images on mobile</p>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "disabled": false
+    }
+  },
+  "order": [
+    "announcement-bar"
+  ]
+}

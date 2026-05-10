@@ -1,0 +1,45 @@
+<section class="collection-filter" data-section-id="{{ section.id }}">
+  <h2>{{ section.settings.title }}</h2>
+  <ul role="list" aria-label="Filter Options">
+    {% for block in section.blocks %}
+      <li>
+        <label for="filter-option-{{ block.id }}">{{ block.settings.label }}</label>
+        <input type="text" id="filter-option-{{ block.id }}" value="{{ block.settings.value | escape }}" aria-label="Filter Option Value">
+      </li>
+    {% endfor %}
+  </ul>
+</section>{% schema %}
+{
+  "name": "Collection Filter",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Filter title",
+      "default": "Filter by"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "filter-option",
+      "name": "filter-option",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label"
+        },
+        {
+          "type": "text",
+          "id": "value",
+          "label": "Value"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Filter Options"
+    }
+  ]
+}{% endschema %}

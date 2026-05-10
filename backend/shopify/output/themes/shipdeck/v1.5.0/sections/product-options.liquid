@@ -1,0 +1,35 @@
+{% schema %}
+{
+  'name': 'product-options',
+  'settings': [
+    {
+      'type': 'product',
+      'id': 'product',
+      'label': 'Product',
+      'default': 'current-product'
+    },
+    {
+      'type': 'radio',
+      'id': 'variant',
+      'label': 'Variant',
+      'default': 'current-product.default_variant'
+    }
+  ],
+  'presets': [
+    {
+      'name': 'Product Options'
+    }
+  ]
+}
+{% endschema %}
+<div class="grid--full-width">
+  <div class="grid__cell sm--grid__cell--3 large--grid__cell--4">
+    <label for="{{ section.settings.variant_id }}">
+      {{ 'Select a variant' | t }}
+    </label>
+    {{ 'variant' | radio_button: section.settings.variant_id: section.settings.variant_id }}
+    <button type="submit" class="btn--primary">
+      {{ 'Add to cart' | t }}
+    </button>
+  </div>
+</div>

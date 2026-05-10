@@ -1,0 +1,60 @@
+{% schema %}
+{
+  "name": "Cart Item List",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Item title"
+    },
+    {
+      "type": "text",
+      "id": "price",
+      "label": "Item price"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "cart_item",
+      "name": "Cart Item",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Item image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Item title"
+        },
+        {
+          "type": "text",
+          "id": "price",
+          "label": "Item price"
+        },
+        {
+          "type": "link",
+          "id": "link",
+          "label": "Item link"
+        }
+      ]
+    }
+  ]
+}{% endschema %}
+
+<div class="cart-item-list">
+  {% for item in cart.items %}
+    <div class="cart-item">
+      <img src="{{ item.image | image_url: width: 100 | image_tag }}" alt="{{ item.title }}" aria-label="{{ item.title }}">
+      <h3>{{ item.title }}</h3>
+      <p>{{ item.price | money }}</p>
+      <a href="{{ item.link }}">View Details</a>
+    </div>
+  {% endfor %}
+</div>

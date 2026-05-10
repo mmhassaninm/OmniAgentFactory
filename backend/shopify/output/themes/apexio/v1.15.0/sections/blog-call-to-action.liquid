@@ -1,0 +1,46 @@
+{% schema %}
+{
+  "name": "Blog Call-to-Action",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Read More"
+    },
+    {
+      "type": "text",
+      "id": "price",
+      "label": "Price",
+      "default": "$0.00"
+    }
+  ],
+  "presets": [{ "name": "Blog Call-to-Action" }]
+}
+{% endschema %}
+
+<div class="c-blog-call-to-action">
+  <h2>{{ heading | escape }}</h2>
+  <p>{% assign price = price | replace: '\', '' %}{% assign price = price | replace: '''', '' %}{% assign price = price | replace: '$', '' %}</p>
+  <p class="price">${{ price | money }}</p>
+  <button class="btn">{{ 'general.button' | t }}</button>
+</div>
+
+<style>
+  .c-blog-call-to-action {
+    background-color: #3498db;
+    color: #f9f9f9;
+    padding: 1em;
+  }
+  .c-blog-call-to-action .price {
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+  .c-blog-call-to-action button {
+    background-color: #f9f9f9;
+    color: #3498db;
+    border: none;
+    padding: 0.5em 1em;
+    font-size: 1em;
+  }
+</style>

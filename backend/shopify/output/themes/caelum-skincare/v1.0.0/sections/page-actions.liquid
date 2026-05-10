@@ -1,0 +1,25 @@
+{% schema %}
+{
+  "name": "Call-to-Action",
+  "presets": [
+    {
+      "name": "CTA Button"
+    }
+  ],
+  "description": "Call-to-action button"
+}
+{% endschema %}
+
+<section class="page-actions">
+  <button class="cta-btn" aria-label="{{ section.name | escape }}">{{ section.name | escape }}</button>
+  <style>
+    .cta-btn {
+      background-color: {{ settings.buttonBackground | color: '#F2F2F2' }};
+      color: {{ settings.buttonText | color: '#455A64' }};
+      border: none;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+  </style>
+</section>

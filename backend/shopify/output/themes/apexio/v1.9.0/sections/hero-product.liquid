@@ -1,0 +1,22 @@
+{% schema %}
+{
+  "name": "Product Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Product image"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Product title"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="hero-product">
+  <img src="{{ settings.image | image_url: width: 1200 | escape }}" alt="{{ settings.title | escape }}" class="hero-image">
+  <h1>{{ settings.title | escape }}</h1>
+</div>

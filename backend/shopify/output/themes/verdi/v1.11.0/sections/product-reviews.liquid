@@ -1,0 +1,36 @@
+{% schema %}
+{
+  "name": "Product reviews",
+  "settings": [
+    {
+      "type": "review_list",
+      "id": "reviews",
+      "label": "Product reviews"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Default"
+    }
+  ],
+  "blocks": [
+  ],
+  "responsive_notes": "Hide reviews on mobile"
+}
+{% endschema %}
+<section class="reviews-container">
+  <h2>{{ 'products.reviews' | t }}</h2>
+  <div class="reviews-content"
+    aria-label="Product reviews">
+    {% for review in section.settings.reviews %}
+      <div class="review">
+        <div class="rating">
+          {{ review.rating }}/{{ review.max_rating }}
+        </div>
+        <div class="comment">
+          {{ review.comment }}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>

@@ -1,0 +1,14 @@
+{% schema %}
+{
+  "name": "Blog Pagination",
+  "settings": [],
+  "presets": [{ "name": "Blog Pagination" }]
+}
+{% endschema %}
+{% if collection.all_pages %}
+  <div class="pagination">
+    {{ collection.previous_page | page_link }}
+    {{ current_page }}
+    {{ collection.next_page | page_link }}
+  </div>
+{% endif %}
