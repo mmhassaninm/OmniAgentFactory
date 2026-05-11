@@ -1,38 +1,48 @@
 """
-Loop Orchestrator — Central Coordinator of the Autonomous Evolution System
+Loop Orchestrator -- Central Coordinator of the Autonomous Evolution System
 Runs an infinite loop alternating between:
 - ODD cycles: Idea generation and evaluation
 - EVEN cycles: Problem scanning and solving
 - Every 6 cycles: Registry review and statistics
+- Every 24 cycles (~48 min): Daily report generation
 """
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
+
+# Cycle interval in seconds
+CYCLE_INTERVAL_SECONDS = 120
+# Generate daily report every N cycles
+DAILY_REPORT_EVERY_N_CYCLES = 24
 
 
 class LoopOrchestrator:
     """Coordinates all autonomous evolution components in an infinite loop."""
 
     def __init__(self, idea_engine=None, problem_scanner=None, agent_council=None,
-                 registry_manager=None, implementation_runner=None):
+                 registry_manager=None, implementation_runner=None, model_router=None):
         self.idea_engine = idea_engine
         self.problem_scanner = problem_scanner
         self.agent_council = agent_council
         self.registry = registry_manager
+        self.model_router = model_router
+
+        # Inject model_router into implementation_runner
+        if implementation_runner is not None and model_router is not None:
+            implementation_runner.model_router = model_router
         self.runner = implementation_runner
 
         self.cycle_count = 0
         self.running = False
         self.paused = False
+        self._last_report_date = ""
 
     async def run_forever(self):
         """Run the infinite autonomous evolution loop."""
         self.running = True
-        logger.info("🚀 ========================================")
-        logger.info("🚀 AUTONOMOUS EVOLUTION LOOP v3.0 STARTED")
-        logger.info("🚀 ========================================")
+        logger.info("AUTONOMOUS EVOLUTION LOOP v3.0 STARTED")
 
         while self.running:
             if self.paused:
@@ -40,9 +50,7 @@ class LoopOrchestrator:
                 continue
 
             self.cycle_count += 1
-            logger.info(f"\n{'='*60}")
-            logger.info(f"🔄 CYCLE {self.cycle_count} — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            logger.info(f"{'='*60}")
+            logger.info("CYCLE %d -- %s", self.cycle_count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
             try:
                 # Alternate: odd cycles = ideas, even cycles = problems
@@ -55,56 +63,66 @@ class LoopOrchestrator:
                 if self.cycle_count % 6 == 0:
                     await self._registry_review()
 
+                # Generate daily report periodically
+                if self.cycle_count % DAILY_REPORT_EVERY_N_CYCLES == 0:
+                    await self._generate_daily_report()
+
             except asyncio.CancelledError:
-                logger.info("⏹️ Loop cancelled gracefully")
+                logger.info("Loop cancelled gracefully")
                 break
             except Exception as e:
-                logger.error(f"⚠️ Cycle error (recovering): {e}")
-                await asyncio.sleep(30)
+                # Distinguish temporary vs permanent failures
+                error_str = str(e).lower()
+                is_temp = any(x in error_str for x in ["connection", "timeout", "unavailable", "busy"])
+                wait_time = 30 if is_temp else 60
+                logger.error(
+                    "Cycle error (%s) — waiting %ds: %s",
+                    "temporary" if is_temp else "permanent",
+                    wait_time,
+                    e
+                )
+                await asyncio.sleep(wait_time)
                 continue
 
-            # Wait before next cycle
-            wait_time = 120  # 2 minutes between cycles (configurable)
-            logger.info(f"💤 Next cycle in {wait_time}s...")
-            await asyncio.sleep(wait_time)
+            logger.info("Next cycle in %ds...", CYCLE_INTERVAL_SECONDS)
+            await asyncio.sleep(CYCLE_INTERVAL_SECONDS)
 
     async def _ideas_cycle(self):
         """ODD cycles: Generate and evaluate new ideas."""
-        logger.info("💡 IDEAS CYCLE — Searching for development ideas...")
+        logger.info("━━━ CYCLE %d: IDEAS GENERATION PHASE ━━━", self.cycle_count)
+        logger.debug("Components: IdeaEngine=%s, Council=%s, Registry=%s, Runner=%s",
+                    "OK" if self.idea_engine else "MISSING",
+                    "OK" if self.agent_council else "MISSING",
+                    "OK" if self.registry else "MISSING",
+                    "OK" if self.runner else "MISSING")
 
         if not self.idea_engine or not self.agent_council or not self.registry:
-            logger.warning("⏭️ Ideas engine not configured, skipping")
+            logger.warning("⚠️ Ideas cycle: missing required components, skipping")
             return
 
         try:
-            # Step 1: Generate ideas
             ideas = await self.idea_engine.research_and_generate()
             if not ideas:
-                logger.info("ℹ️ No new ideas generated this cycle")
+                logger.info("No new ideas generated this cycle")
                 return
 
-            logger.info(f"✨ Generated {len(ideas)} potential ideas")
+            logger.info("Generated %d potential ideas", len(ideas))
 
-            # Step 2: Evaluate each idea
             for idea in ideas:
-                logger.info(f"📋 Evaluating: {idea.get('title')}")
-
+                logger.info("Evaluating: %s", idea.get("title"))
                 try:
-                    # Get council verdict
                     council_result = await self.agent_council.deliberate(idea)
                     final = council_result.get("final", {})
                     decision = final.get("final_decision", "reject")
                     score = final.get("final_score", 0)
 
-                    logger.info(f"⚖️ Council verdict: {decision} (score: {score}/10)")
+                    logger.info("Council verdict: %s (score: %s/10)", decision, score)
 
-                    # Step 3: Register idea
                     idea["council_verdict"] = final
                     idea_id = await self.registry.register_idea(idea)
 
-                    # Step 4: Execute if approved
                     if decision == "approve" and score >= 6:
-                        logger.info(f"🚀 Executing idea: {idea_id}")
+                        logger.info("Executing idea: %s", idea_id)
                         try:
                             if self.runner:
                                 result = await self.runner.execute_idea(idea_id, idea)
@@ -113,58 +131,52 @@ class LoopOrchestrator:
                                     files_changed=result.get("files_changed", []),
                                     outcome=result.get("summary", "Implemented successfully")
                                 )
-                                logger.info(f"✅ Idea {idea_id} implemented successfully")
+                                logger.info("Idea %s implemented successfully", idea_id)
                             else:
-                                logger.warning(f"Implementation runner not configured, skipping execution")
+                                logger.warning("Implementation runner not configured, skipping")
                         except Exception as e:
-                            await self.registry.mark_idea_rejected(idea_id, f"Implementation failed: {e}")
-                            logger.error(f"❌ Idea {idea_id} implementation failed: {e}")
+                            await self.registry.mark_idea_rejected(idea_id, "Implementation failed: " + str(e))
+                            logger.error("Idea %s implementation failed: %s", idea_id, e)
                     else:
                         await self.registry.mark_idea_rejected(
                             idea_id,
-                            f"Council rejected: {final.get('rationale', 'Low score')}"
+                            "Council rejected: " + final.get("rationale", "Low score")
                         )
 
                 except Exception as e:
-                    logger.error(f"Error processing idea: {e}")
+                    logger.error("Error processing idea: %s", e)
 
         except Exception as e:
-            logger.error(f"Ideas cycle failed: {e}")
+            logger.error("Ideas cycle failed: %s", e)
 
     async def _problems_cycle(self):
         """EVEN cycles: Scan for problems and solve them."""
-        logger.info("🔍 PROBLEMS CYCLE — Scanning for issues...")
+        logger.info("PROBLEMS CYCLE -- Scanning for issues...")
 
         if not self.problem_scanner or not self.agent_council or not self.registry:
-            logger.warning("⏭️ Problem scanner not configured, skipping")
+            logger.warning("Problem scanner not configured, skipping")
             return
 
         try:
-            # Step 1: Scan for problems
             problems = await self.problem_scanner.scan_and_identify()
             if not problems:
-                logger.info("ℹ️ No new problems detected this cycle")
+                logger.info("No new problems detected this cycle")
                 return
 
-            logger.info(f"🔴 Found {len(problems)} potential problems")
+            logger.info("Found %d potential problems", len(problems))
 
-            # Step 2: Evaluate each problem
             for problem in problems:
-                logger.info(f"🔧 Analyzing: {problem.get('title')}")
-
+                logger.info("Analyzing: %s", problem.get("title"))
                 try:
-                    # Get council verdict
                     council_result = await self.agent_council.deliberate(problem)
                     final = council_result.get("final", {})
                     decision = final.get("final_decision", "modify")
 
-                    # Step 3: Register problem
                     problem["council_verdict"] = final
                     prob_id = await self.registry.register_problem(problem)
 
-                    # Step 4: Solve if approved
                     if decision in ["approve", "modify"]:
-                        logger.info(f"🔨 Solving problem: {prob_id}")
+                        logger.info("Solving problem: %s", prob_id)
                         try:
                             if self.runner:
                                 result = await self.runner.execute_solution(prob_id, problem)
@@ -174,50 +186,66 @@ class LoopOrchestrator:
                                     files=result.get("files_changed", []),
                                     verified=result.get("tested", False)
                                 )
-                                logger.info(f"✅ Problem {prob_id} solved")
+                                logger.info("Problem %s solved", prob_id)
                             else:
-                                logger.warning(f"Implementation runner not configured, skipping solution")
+                                logger.warning("Implementation runner not configured, skipping solution")
                         except Exception as e:
-                            logger.error(f"❌ Problem {prob_id} solution failed: {e}")
+                            logger.error("Problem %s solution failed: %s", prob_id, e)
                     else:
-                        logger.info(f"⏭️ Problem {prob_id} deferred (council decision: {decision})")
+                        logger.info("Problem %s deferred (council: %s)", prob_id, decision)
 
                 except Exception as e:
-                    logger.error(f"Error processing problem: {e}")
+                    logger.error("Error processing problem: %s", e)
 
         except Exception as e:
-            logger.error(f"Problems cycle failed: {e}")
+            logger.error("Problems cycle failed: %s", e)
 
     async def _registry_review(self):
         """Review and report on registry statistics."""
-        logger.info("📊 REGISTRY REVIEW — Auditing records...")
-
+        logger.info("REGISTRY REVIEW -- Auditing records...")
         if not self.registry:
             return
-
         try:
             stats = await self.registry.get_stats()
-            logger.info(f"📈 STATISTICS:")
-            logger.info(f"   Ideas: {stats.get('total_ideas')} total, "
-                       f"{stats.get('implemented_ideas')} implemented "
-                       f"({stats.get('idea_success_rate', 0):.1f}%)")
-            logger.info(f"   Problems: {stats.get('total_problems')} total, "
-                       f"{stats.get('solved_problems')} solved "
-                       f"({stats.get('problem_resolution_rate', 0):.1f}%)")
+            logger.info(
+                "STATS: Ideas=%d total, %d implemented (%.1f%%) | Problems=%d total, %d solved (%.1f%%)",
+                stats.get("total_ideas", 0),
+                stats.get("implemented_ideas", 0),
+                stats.get("idea_success_rate", 0),
+                stats.get("total_problems", 0),
+                stats.get("solved_problems", 0),
+                stats.get("problem_resolution_rate", 0),
+            )
         except Exception as e:
-            logger.error(f"Registry review failed: {e}")
+            logger.error("Registry review failed: %s", e)
+
+    async def _generate_daily_report(self):
+        """Generate daily report once per calendar day."""
+        try:
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            if today == self._last_report_date:
+                logger.debug("Daily report already generated today -- skipping")
+                return
+            logger.info("Generating daily report...")
+            from core.autonomous_evolution.daily_reporter import generate_daily_report
+            report_path = await generate_daily_report(registry_manager=self.registry)
+            if report_path:
+                self._last_report_date = today
+                logger.info("Daily report written: %s", report_path)
+        except Exception as e:
+            logger.error("Daily report failed: %s", e)
 
     def pause(self):
         """Pause the loop (remains running but skips cycles)."""
         self.paused = True
-        logger.info("⏸️ Loop paused")
+        logger.info("Loop paused")
 
     def resume(self):
         """Resume the paused loop."""
         self.paused = False
-        logger.info("▶️ Loop resumed")
+        logger.info("Loop resumed")
 
     def stop(self):
         """Stop the loop gracefully."""
         self.running = False
-        logger.info("⏹️ Loop stopping...")
+        logger.info("Loop stopping...")

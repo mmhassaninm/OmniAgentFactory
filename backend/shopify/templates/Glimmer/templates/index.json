@@ -1,0 +1,1537 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "slideshow-1": {
+      "type": "slideshow",
+      "blocks": {
+        "slide-2": {
+          "type": "slide",
+          "settings": {
+            "image": "shopify://shop_images/A_high-resolution__professional_202603311237.jpg",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "media_link": "",
+            "text_position": "flex-start_flex-start",
+            "text_position_mobile": "center_center",
+            "accent": "CHOMI × Beauty of Joseon",
+            "title": "Timeless Radiance. Modern Skincare.",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-3",
+            "subheading": "",
+            "subheading_tag": "h3",
+            "subheading_font_class": "fs-heading-6-base",
+            "text": "<p>Unlock the secret to Korean glass skin.<br/>Gentle, Hanbang-infused<br/>formulas curated to restore<br/>your natural, radiant glow.<br/></p><p></p>",
+            "text_font_class": "fs-body-200",
+            "link_1": "#",
+            "link_text_1": "Shop The Collection",
+            "button_style_1": "btn--secondary",
+            "link_2": "",
+            "link_text_2": "Read more",
+            "button_style_2": "btn--primary",
+            "text_color": "#0e2c29",
+            "button_background_color": "#0e2c29",
+            "button_text_color": "#daf4b1",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "",
+            "overlay_opacity": 7
+          }
+        },
+        "slide-1": {
+          "type": "slide",
+          "settings": {
+            "image": "shopify://shop_images/A_detailed__medium_202603312343.jpg",
+            "focal_point": "center",
+            "mobile_focal_point": "top",
+            "media_link": "",
+            "text_position": "flex-start_flex-start",
+            "text_position_mobile": "center_center",
+            "accent": "K-BEAUTY AT CHOMI",
+            "title": "Discover Your Glass Skin",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-1",
+            "subheading": "",
+            "subheading_tag": "h3",
+            "subheading_font_class": "fs-heading-6-base",
+            "text": "<p><br/> Infuse your skin with deep hydration and achieve that flawless, radiant look. Discover our premium serums for a lasting, natural glow.<br/><br/></p>",
+            "text_font_class": "fs-body-200",
+            "link_1": "#",
+            "link_text_1": "Shop now",
+            "button_style_1": "btn--secondary",
+            "link_2": "",
+            "link_text_2": "",
+            "button_style_2": "btn--primary",
+            "text_color": "#071d1b",
+            "button_background_color": "#0e2c29",
+            "button_text_color": "#daf4b1",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "",
+            "overlay_opacity": 0
+          }
+        },
+        "slide-3": {
+          "type": "slide",
+          "settings": {
+            "image": "shopify://shop_images/High-end__commercial_cosmetic_202604010010.jpg",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "media_link": "",
+            "text_position": "flex-start_flex-start",
+            "text_position_mobile": "center_center",
+            "accent": "THE VIRAL K-BEAUTY SECRET",
+            "title": "Double Cleanse, Zero Pores",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-1",
+            "subheading": "",
+            "subheading_tag": "h3",
+            "subheading_font_class": "fs-heading-5-base",
+            "text": "<p>Melt away SPF and stubborn makeup with our Heartleaf Cleansing Oil, then deeply purify with the BHA Foam. Achieve that flawless, clear complexion today.<br/></p>",
+            "text_font_class": "fs-body-200",
+            "link_1": "",
+            "link_text_1": "Shop now",
+            "button_style_1": "btn--primary",
+            "link_2": "#",
+            "link_text_2": "Shop The Duo",
+            "button_style_2": "btn--secondary",
+            "text_color": "#113035",
+            "button_background_color": "#113035",
+            "button_text_color": "#daf4b1",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "",
+            "overlay_opacity": 0
+          }
+        }
+      },
+      "block_order": [
+        "slide-2",
+        "slide-1",
+        "slide-3"
+      ],
+      "settings": {
+        "image_aspect": "custom",
+        "desktop_height": 100,
+        "mobile_height": 75,
+        "enable_autoplay": true,
+        "duration_autoplay": 6,
+        "navigation_alignment": "center",
+        "navigation_color_foreground": "#102c26",
+        "navigation_color_background": "#ffffff",
+        "navigation_background_opacity": 100,
+        "enable_animation": true,
+        "section_padding": "none"
+      }
+    },
+    "rich-text-1": {
+      "type": "rich-text",
+      "blocks": {
+        "spacer-1": {
+          "type": "spacer",
+          "settings": {
+            "space": 16
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "title": "Welcome to CHOMI.",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-2-base"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>K-Beauty, curated by CHOMI. Authentic products, fast delivery.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        },
+        "spacer-2": {
+          "type": "spacer",
+          "settings": {
+            "space": 4
+          }
+        }
+      },
+      "block_order": [
+        "spacer-1",
+        "heading",
+        "text",
+        "spacer-2"
+      ],
+      "settings": {
+        "alignment": "center_center",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom",
+        "content_width": "custom",
+        "custom_content_width": 600
+      }
+    },
+    "grid-1": {
+      "type": "grid",
+      "blocks": {
+        "item-1": {
+          "type": "item",
+          "settings": {
+            "width": "50",
+            "height": 780,
+            "mobile_height": 520,
+            "image": "shopify://shop_images/A_close-up__high-end_202604010041.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "Popular",
+            "title": "Skincare Essentials",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "<p>Cleanse, calm, and hydrate with Korea's cult favorites.</p>",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-6-base",
+            "text": "",
+            "text_font_class": "fs-body-200",
+            "link": "shopify://collections/skincare",
+            "link_text": "Shop now",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#000000",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 41
+          }
+        },
+        "item-2": {
+          "type": "item",
+          "settings": {
+            "width": "50",
+            "height": 780,
+            "mobile_height": 520,
+            "image": "shopify://shop_images/A_close-up__high-end_202604010044.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "New",
+            "title": "Makeup Staples",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "<p>Lightweight bases and lasting tints for a natural finish.</p>",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-6-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "link": "shopify://collections/makeup",
+            "link_text": "Shop now",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#000000",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 60
+          }
+        }
+      },
+      "block_order": [
+        "item-1",
+        "item-2"
+      ],
+      "settings": {
+        "heading": "",
+        "heading_tag": "h2",
+        "subheading": "",
+        "content_alignment": "left",
+        "enable_animation": true,
+        "full_width": false,
+        "spacing": 24,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-bottom-only"
+      }
+    },
+    "collection-list-slider": {
+      "type": "collection-list-slider",
+      "settings": {
+        "heading": "Shop by type",
+        "heading_tag": "h2",
+        "subheading": "",
+        "link": "",
+        "link_text": "",
+        "button_style": "btn--callout",
+        "columns": "4",
+        "mobile_columns": "2",
+        "collection_list": [
+          "makeup",
+          "skincare-set",
+          "eye-cream",
+          "face-cream",
+          "face-mask",
+          "face-moisturizers",
+          "face-serum",
+          "cleanser",
+          "body-cream",
+          "skincare",
+          "sunscreen",
+          "toner"
+        ],
+        "collection_listing_aspect_ratio": "square",
+        "label_style": "overlay",
+        "overlay_title_background_style": "solid",
+        "overlay_text_color": "#daf4b1",
+        "overlay_title_background": "#01160f",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "rich-text-2": {
+      "type": "rich-text",
+      "blocks": {
+        "spacer": {
+          "type": "spacer",
+          "settings": {
+            "space": 12
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "title": "Shop by Skin Type",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-3-base"
+          }
+        }
+      },
+      "block_order": [
+        "spacer",
+        "heading"
+      ],
+      "settings": {
+        "alignment": "left_left",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom",
+        "content_width": "full",
+        "custom_content_width": 700
+      }
+    },
+    "grid-2": {
+      "type": "grid",
+      "blocks": {
+        "item-1": {
+          "type": "item",
+          "settings": {
+            "width": "33",
+            "height": 500,
+            "mobile_height": 300,
+            "image": "shopify://shop_images/Extreme_close-up_portrait_202604081946.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "",
+            "title": "Oily Skin",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-5-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "link": "shopify://collections/oily-skin",
+            "link_text": "Browse products",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#102c26",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 10
+          }
+        },
+        "item-2": {
+          "type": "item",
+          "settings": {
+            "width": "33",
+            "height": 300,
+            "mobile_height": 300,
+            "image": "shopify://shop_images/Extreme_close-up_portrait_202604081948_1.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "",
+            "title": "Dry Skin",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-5-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "link": "shopify://collections/dry-skin",
+            "link_text": "Browse products",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#113035",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 10
+          }
+        },
+        "item-3": {
+          "type": "item",
+          "settings": {
+            "width": "33",
+            "height": 300,
+            "mobile_height": 300,
+            "image": "shopify://shop_images/Extreme_close-up_portrait_202604081951.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "",
+            "title": "Combination Skin",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-5-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "link": "shopify://collections/combination-skin",
+            "link_text": "Browse products",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#113035",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 10
+          }
+        },
+        "item-4": {
+          "type": "item",
+          "settings": {
+            "width": "33",
+            "height": 500,
+            "mobile_height": 300,
+            "image": "shopify://shop_images/Extreme_close-up_portrait_202604081957.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "",
+            "title": "Sensitive Skin",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-5-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "link": "shopify://collections/sensitive-skin",
+            "link_text": "Browse products",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#000000",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 10
+          }
+        },
+        "item-5": {
+          "type": "item",
+          "settings": {
+            "width": "33",
+            "height": 500,
+            "mobile_height": 300,
+            "image": "shopify://shop_images/Extreme_close-up_portrait_202604081959.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "",
+            "title": "Normal Skin",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-5-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "link": "shopify://collections/all-skin-types-care",
+            "link_text": "Browse products",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#113035",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 10
+          }
+        },
+        "item-6": {
+          "type": "item",
+          "settings": {
+            "width": "33",
+            "height": 300,
+            "mobile_height": 300,
+            "image": "shopify://shop_images/Extreme_close-up_portrait_202604082004.jpg",
+            "media_fit": "cover",
+            "focal_point": "center",
+            "mobile_focal_point": "center",
+            "text_position": "center_flex-end",
+            "accent": "",
+            "title": "All Skin Types",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-2-base",
+            "subheading": "",
+            "subheading_tag": "h4",
+            "subheading_font_class": "fs-heading-5-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "link": "shopify://collections/all-skin-types-care",
+            "link_text": "Browse products",
+            "button_style": "btn--primary",
+            "background_color": "",
+            "text_color": "#ffffff",
+            "button_background_color": "#daf4b1",
+            "button_text_color": "#113035",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "linear-gradient(180deg, rgba(0, 0, 0, 0.24) 38%, rgba(0, 0, 0, 1) 100%)",
+            "overlay_opacity": 10
+          }
+        }
+      },
+      "block_order": [
+        "item-1",
+        "item-2",
+        "item-3",
+        "item-4",
+        "item-5",
+        "item-6"
+      ],
+      "settings": {
+        "heading": "",
+        "heading_tag": "h2",
+        "subheading": "",
+        "content_alignment": "left",
+        "enable_animation": true,
+        "full_width": false,
+        "spacing": 24,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-bottom-only"
+      }
+    },
+    "scrolling_content": {
+      "type": "scrolling-content",
+      "blocks": {
+        "image-1": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/A_highly_detailed__202604011107.jpg",
+            "image_size": 200,
+            "image_size_mobile": 200,
+            "link": ""
+          }
+        },
+        "text-1": {
+          "type": "text",
+          "settings": {
+            "text": "Acne Treatment",
+            "link": "#"
+          }
+        },
+        "image-2": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/A_sophisticated__high-end_202604011115.jpg",
+            "image_size": 200,
+            "image_size_mobile": 200,
+            "link": ""
+          }
+        },
+        "text-2": {
+          "type": "text",
+          "settings": {
+            "text": "Retinol Products",
+            "link": "#"
+          }
+        },
+        "image_MWWcer": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/A_close-up_beauty_202604011121.jpg",
+            "image_size": 200,
+            "image_size_mobile": 200,
+            "link": ""
+          }
+        },
+        "text_3aArrk": {
+          "type": "text",
+          "settings": {
+            "text": "Glassy Skin",
+            "link": "#"
+          }
+        }
+      },
+      "block_order": [
+        "image-1",
+        "text-1",
+        "image-2",
+        "text-2",
+        "image_MWWcer",
+        "text_3aArrk"
+      ],
+      "settings": {
+        "font_choice": "ff-heading",
+        "text_font_class": "fs-heading-2-base",
+        "duration": 10,
+        "direction": "normal",
+        "gap": 50,
+        "padding_top": 5,
+        "padding_bottom": 5,
+        "borders": "none",
+        "background_color": "#ffffff",
+        "text_color": "#111111",
+        "border_color": "#aaaaaa",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "sales-banner": {
+      "type": "sales-banner",
+      "settings": {
+        "min_height": 440,
+        "min_height_mobile": 500,
+        "sale_type": "Save up to",
+        "sale_amount": "60",
+        "sale_unit": "percent",
+        "terms_and_conditions": "*Ends March 15, 2027, 11:59 PST. T&C's Apply",
+        "terms_vertical_offset": 0,
+        "sale_font_size": 182,
+        "sale_font_size_mobile": 150,
+        "currency_symbol_position": "before",
+        "heading": "Surprise Summer Sale",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-2-base",
+        "text": "<p>Get radiant looking skin this summer for a great price!</p>",
+        "link": "shopify://collections/premium-k-beauty-sale",
+        "link_text": "Save now",
+        "button_style": "btn--primary",
+        "link_2": "",
+        "link_text_2": "",
+        "button_style_2": "btn--primary",
+        "focal_point": "center",
+        "mobile_focal_point": "bottom",
+        "background_color": "#574f43",
+        "text_color": "#daf4b1",
+        "button_background_color": "#daf4b1",
+        "button_text_color": "#102b26",
+        "color_overlay": "#231d18",
+        "color_overlay_gradient": "",
+        "overlay_opacity": 37,
+        "layout": "two-columns",
+        "enable_animation": true,
+        "show_frame": false,
+        "full_width": true,
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "complete-the-look": {
+      "type": "complete-the-look",
+      "blocks": {
+        "product-1": {
+          "type": "product",
+          "settings": {
+            "product_item": "cosrx-the-retinol-0-5-oil"
+          }
+        },
+        "product-2": {
+          "type": "product",
+          "settings": {
+            "product_item": "cosrx-the-retinol-0-1-cream"
+          }
+        },
+        "product-3": {
+          "type": "product",
+          "settings": {
+            "product_item": "nano-retinol-0-3-niacin-renewing-serum-anua"
+          }
+        },
+        "product-4": {
+          "type": "product",
+          "settings": {
+            "product_item": "haruharu-wonder-black-rice-night-knight-retinol-serum-20ml"
+          }
+        }
+      },
+      "block_order": [
+        "product-1",
+        "product-2",
+        "product-3",
+        "product-4"
+      ],
+      "settings": {
+        "image": "shopify://shop_images/A_professional__high-definition_202604012001.jpg",
+        "video_loop": true,
+        "video_controls": false,
+        "image_position": "left",
+        "aspect_ratio": "natural",
+        "heading": "Retinol Essentials",
+        "heading_tag": "h2",
+        "subheading": "<p>Gentle retinol options for night care—build slowly, pair with SPF</p>",
+        "link": "shopify://collections/retinoids",
+        "link_text": "Shop bundle",
+        "button_style": "btn--secondary",
+        "product_image_size": "small",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "image-with-text": {
+      "type": "image-with-text",
+      "blocks": {
+        "accent": {
+          "type": "accent",
+          "disabled": true,
+          "settings": {
+            "accent": "Save with more"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "title": "Shop Trial Kits",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-2"
+          }
+        },
+        "subheading": {
+          "type": "subheading",
+          "settings": {
+            "subheading": "Perfect for testing, gifting, or travel.",
+            "subheading_tag": "h3",
+            "subheading_font_class": "fs-heading-4-base"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Discover ready-to-go skincare routines in mini sizes.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        },
+        "button-1": {
+          "type": "button",
+          "settings": {
+            "link": "shopify://collections/kits",
+            "link_text": "Shop Kits",
+            "button_style": "btn--primary"
+          }
+        },
+        "button-2": {
+          "type": "button",
+          "disabled": true,
+          "settings": {
+            "link": "",
+            "link_text": "Shop Kits",
+            "button_style": "btn--secondary"
+          }
+        }
+      },
+      "block_order": [
+        "accent",
+        "heading",
+        "subheading",
+        "text",
+        "button-1",
+        "button-2"
+      ],
+      "settings": {
+        "image_position": "left",
+        "image": "shopify://shop_images/upscale_and_enhance_202604082112.jpg",
+        "aspect_ratio": "square",
+        "focal_point": "center",
+        "image_caption": "",
+        "text_alignment": "left",
+        "show_small_image": false,
+        "image_small_aspect": "square",
+        "image_small_focal_point": "center",
+        "background_color": "#ffffff",
+        "text_color": "#112c27",
+        "button_background_color": "#113035",
+        "button_text_color": "#daf4b1",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "featured-collection-slider-1": {
+      "type": "featured-collection-slider",
+      "blocks": {
+        "collection": {
+          "type": "collection",
+          "settings": {
+            "collection": "all",
+            "collection_name": "New Arrivals",
+            "show_view_all": true
+          }
+        }
+      },
+      "block_order": [
+        "collection"
+      ],
+      "settings": {
+        "heading": "New Arrivals",
+        "heading_tag": "h2",
+        "subheading": "",
+        "link": "",
+        "link_text": "",
+        "button_style": "btn--callout",
+        "maximum_products": 8,
+        "columns": "4",
+        "mobile_columns": "2",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "featured-collection-slider-2": {
+      "type": "featured-collection-slider",
+      "blocks": {
+        "collection": {
+          "type": "collection",
+          "settings": {
+            "collection": "k-beauty-bestsellers",
+            "collection_name": "Best Sellers",
+            "show_view_all": true
+          }
+        }
+      },
+      "block_order": [
+        "collection"
+      ],
+      "settings": {
+        "heading": "Best sellers",
+        "heading_tag": "h2",
+        "subheading": "",
+        "link": "",
+        "link_text": "",
+        "button_style": "btn--callout",
+        "maximum_products": 8,
+        "columns": "4",
+        "mobile_columns": "2",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "image-with-text-split-1": {
+      "type": "image-with-text-split",
+      "blocks": {
+        "accent": {
+          "type": "accent",
+          "settings": {
+            "accent": "Featured"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "title": "Advanced Snail 96 Mucin Power Essence",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-2"
+          }
+        },
+        "subheading": {
+          "type": "subheading",
+          "disabled": true,
+          "settings": {
+            "subheading": "Use these sections to promote a particular feature with editorial photography.",
+            "subheading_tag": "h3",
+            "subheading_font_class": "fs-heading-5-base"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Hydrate, repair, and restore your skin’s natural glow with 96% snail secretion filtrate. A K-beauty icon for plump, healthy, radiant skin.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        },
+        "button": {
+          "type": "button",
+          "settings": {
+            "link": "shopify://products/cosrx-advanced-snail-96-mucin-power-essence-100ml",
+            "link_text": "Shop now",
+            "button_style": "btn--primary"
+          }
+        }
+      },
+      "block_order": [
+        "accent",
+        "heading",
+        "subheading",
+        "text",
+        "button"
+      ],
+      "settings": {
+        "image_position": "right",
+        "image_mobile_position": "above-content",
+        "image_padding": "none",
+        "image": "shopify://shop_images/COSRX_Snail_Essence_202604091957_85545ebb-7073-4adb-afa5-f18a6032967d.jpg",
+        "aspect_ratio": "square",
+        "focal_point": "center",
+        "content_alignment": "left",
+        "background_color": "#000000",
+        "text_color": "#ffffff",
+        "button_background_color": "#daf4b1",
+        "button_text_color": "#254034",
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-none"
+      }
+    },
+    "image-with-text-split-2": {
+      "type": "image-with-text-split",
+      "blocks": {
+        "accent": {
+          "type": "accent",
+          "settings": {
+            "accent": "FeatureD"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "title": "Relief Sun : Rice + Probiotics",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-2"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Feather-light sunscreen with SPF50+ PA++++ that protects without white cast. Infused with rice extract & probiotics to nourish and brighten.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        },
+        "button": {
+          "type": "button",
+          "settings": {
+            "link": "shopify://products/beauty-of-joseon-relief-sun-rice-probiotics",
+            "link_text": "Shop now",
+            "button_style": "btn--primary"
+          }
+        }
+      },
+      "block_order": [
+        "accent",
+        "heading",
+        "text",
+        "button"
+      ],
+      "settings": {
+        "image_position": "left",
+        "image_mobile_position": "above-content",
+        "image_padding": "none",
+        "image": "shopify://shop_images/REMOVE_THE_MATERIAL_202604092014.jpg",
+        "aspect_ratio": "square",
+        "focal_point": "center",
+        "content_alignment": "left",
+        "background_color": "#000000",
+        "text_color": "#ffffff",
+        "button_background_color": "#daf4b1",
+        "button_text_color": "#254034",
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-none"
+      }
+    },
+    "ugc_video_feed_6pAazH": {
+      "type": "ugc-video-feed",
+      "blocks": {
+        "video_card_cF9Cye": {
+          "type": "video_card",
+          "settings": {
+            "video": "shopify://files/videos/1747066889667_wid_NjgyMjIwMDkzZjJiOTAwMDU4OGMxYzJi.mp4",
+            "video_url": "",
+            "product": "beauty-of-joseon-ground-rice-and-honey-glow-mask-150ml",
+            "add_to_cart_label": "Add to cart"
+          }
+        },
+        "video_card_kEzBry": {
+          "type": "video_card",
+          "settings": {
+            "video": "shopify://files/videos/1747066894346_wid_NjgyMjIwMGUzZjJiOTAwMDU4OGMxZjEx.mp4",
+            "video_url": "",
+            "product": "beauty-of-joseon-revive-eye-serum-ginseng-retinal-30ml",
+            "add_to_cart_label": "Add to cart"
+          }
+        },
+        "video_card_G9AUtD": {
+          "type": "video_card",
+          "settings": {
+            "video": "shopify://files/videos/1747066892278_wid_NjgyMjIwMGMzZjJiOTAwMDU4OGMxZTNm_h264cmobile.mp4",
+            "video_url": "",
+            "product": "anua-heartleaf-70-daily-lotion-20ml",
+            "add_to_cart_label": "Add to cart"
+          }
+        },
+        "video_card_iRYgGA": {
+          "type": "video_card",
+          "settings": {
+            "video": "shopify://files/videos/1747066891144_wid_NjgyMjIwMGIzZjJiOTAwMDU4OGMxZGQ2.mp4",
+            "video_url": "",
+            "product": "axis-y-cera-heart-my-type-duo-cream-60ml",
+            "add_to_cart_label": "Add to cart"
+          }
+        },
+        "video_card_6aUJFb": {
+          "type": "video_card",
+          "settings": {
+            "video": "shopify://files/videos/1747067655414_wid_NjgyMjIzMDczZjJiOTAwMDU4OGQ5ODRk.mp4",
+            "video_url": "",
+            "product": "axis-y-cera-heart-my-type-duo-cream-60ml",
+            "add_to_cart_label": "Add to cart"
+          }
+        },
+        "video_card_yagiaL": {
+          "type": "video_card",
+          "settings": {
+            "video": "shopify://files/videos/1747067655414_wid_NjgyMjIzMDczZjJiOTAwMDU4OGQ5ODRk.mp4",
+            "video_url": "",
+            "product": "anua-heartleaf-77-soothing-sheet-mask",
+            "add_to_cart_label": "Add to cart"
+          }
+        },
+        "video_card_D4gPWe": {
+          "type": "video_card",
+          "settings": {
+            "video": "shopify://files/videos/1747067655414_wid_NjgyMjIzMDczZjJiOTAwMDU4OGQ5ODRk.mp4",
+            "video_url": "",
+            "poster": "shopify://shop_images/Studio_photography_e-commerce_202604251809.jpg",
+            "product": "beauty-of-joseon-ginseng-essence-water-150ml",
+            "add_to_cart_label": "Add to cart"
+          }
+        }
+      },
+      "block_order": [
+        "video_card_cF9Cye",
+        "video_card_kEzBry",
+        "video_card_G9AUtD",
+        "video_card_iRYgGA",
+        "video_card_6aUJFb",
+        "video_card_yagiaL",
+        "video_card_D4gPWe"
+      ],
+      "name": "UGC Video Feed",
+      "settings": {
+        "heading": "Loved by the Community",
+        "heading_size": "h2",
+        "layout": "wide",
+        "show_arrows": true,
+        "columns_desktop": 5,
+        "columns_mobile": "1.2",
+        "slide_gap": 12,
+        "card_aspect_ratio": "9:16",
+        "card_border_radius": 8,
+        "card_shadow": false,
+        "active_scale": 100,
+        "title_font": "ibm_plex_sans_n4",
+        "title_font_size_desktop": 1,
+        "title_font_size_mobile": 1.2,
+        "title_color": "#1a1615",
+        "price_font": "ibm_plex_sans_n4",
+        "price_font_size_desktop": 1,
+        "price_font_size_mobile": 1.1,
+        "price_color": "#7a6e68",
+        "atc_button_style": "solid",
+        "atc_font": "ibm_plex_sans_n4",
+        "atc_font_size": 1,
+        "atc_border_radius": 24,
+        "atc_text_color": "#000000",
+        "atc_bg_color": "#ffffff",
+        "atc_border_color": "#1a1615",
+        "atc_text_color_hover": "#ffffff",
+        "atc_bg_color_hover": "#1a1615",
+        "atc_border_color_hover": "#1a1615",
+        "standby_slide_index": 3,
+        "padding_top": 24,
+        "padding_bottom": 24
+      }
+    },
+    "testimonials": {
+      "type": "testimonials",
+      "blocks": {
+        "testimonial-1": {
+          "type": "testimonial",
+          "settings": {
+            "product": "anua-heartleaf-pore-control-cleansing-oil",
+            "image_position": "right",
+            "aspect_ratio": "square",
+            "focal_point": "center",
+            "show_rating": true,
+            "rating": 5,
+            "quote": "\"Amazing! It removes makeup so quickly 👍🏻\"",
+            "author": "– Renad M."
+          }
+        },
+        "testimonial-2": {
+          "type": "testimonial",
+          "settings": {
+            "product": "skin1004-madagascar-centella-tone-brightening-capsule-ampoule",
+            "image_position": "right",
+            "aspect_ratio": "square",
+            "focal_point": "center",
+            "show_rating": true,
+            "rating": 5,
+            "quote": "\"Really amazing, I wish it was restocked more often.\"",
+            "author": "– Bayan A."
+          }
+        },
+        "testimonial-3": {
+          "type": "testimonial",
+          "settings": {
+            "product": "anua-niacinamide-10-txa-4-dark-spot-correcting-serum-30ml",
+            "image_position": "right",
+            "aspect_ratio": "square",
+            "focal_point": "center",
+            "show_rating": true,
+            "rating": 4.5,
+            "quote": "“So amazing, especially the glow it gives the skin — just perfect 🤩\"",
+            "author": "– Asrar B."
+          }
+        }
+      },
+      "block_order": [
+        "testimonial-1",
+        "testimonial-2",
+        "testimonial-3"
+      ],
+      "settings": {
+        "image_size": "large",
+        "quote_font": "body",
+        "background_color": "rgba(0,0,0,0)",
+        "text_color": "#01160f",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "multi-column-1": {
+      "type": "multi-column",
+      "blocks": {
+        "image_column-1": {
+          "type": "image_column",
+          "settings": {
+            "image": "shopify://shop_images/Three_women_radiant_glow_202604301537.jpg",
+            "image_width": 100,
+            "aspect_ratio": "landscape",
+            "enable_image_crop_circle": false,
+            "focal_point": "center",
+            "image_position": "above_text",
+            "image_link": "",
+            "small_caption": "",
+            "accent": "",
+            "heading": "Curated for Everyone",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p><em>We handpick the best Korean skincare and makeup, making glowing skin accessible for all.</em></p>",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--secondary"
+          }
+        },
+        "image_column-2": {
+          "type": "image_column",
+          "settings": {
+            "image": "shopify://shop_images/A_minimalist__high-end_202604092051.jpg",
+            "image_width": 100,
+            "aspect_ratio": "landscape",
+            "enable_image_crop_circle": false,
+            "focal_point": "image_presentation",
+            "image_position": "above_text",
+            "image_link": "",
+            "small_caption": "",
+            "accent": "",
+            "heading": "High Standards",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p><em>We only stock trusted Korean brands that meet global standards for quality, safety, and results.</em></p>",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--secondary"
+          }
+        },
+        "image_column-3": {
+          "type": "image_column",
+          "settings": {
+            "image": "shopify://shop_images/High-end__eye-level_studio_202604092054.jpg",
+            "image_width": 100,
+            "aspect_ratio": "landscape",
+            "enable_image_crop_circle": false,
+            "focal_point": "center",
+            "image_position": "above_text",
+            "image_link": "",
+            "small_caption": "",
+            "accent": "",
+            "heading": "Trusted & Responsible",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p><em>We partner with brands that value clean formulas and safe packaging, so you can shop with confidence.</em></p>",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--secondary"
+          }
+        }
+      },
+      "block_order": [
+        "image_column-1",
+        "image_column-2",
+        "image_column-3"
+      ],
+      "settings": {
+        "title": "Why choose us",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-3-base",
+        "subheading": "",
+        "heading_alignment": "left",
+        "content_vertical_alignment": "top",
+        "content_background_padding": "medium",
+        "columns": "3",
+        "column_spacing": 40,
+        "row_spacing": 28,
+        "column_alignment": "left",
+        "enable_slider_mobile": false,
+        "columns_mobile": "1",
+        "column_spacing_mobile": 20,
+        "row_spacing_mobile": 48,
+        "column_alignment_mobile": "left",
+        "background_behind_columns": false,
+        "background_color": "",
+        "text_color": "#000000",
+        "button_background_color": "#000000",
+        "button_text_color": "#ffffff",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "blog-posts": {
+      "type": "blog-posts",
+      "blocks": {
+        "article_PmzHt3": {
+          "type": "article",
+          "settings": {
+            "article": "news/discover-timeless-beauty-with-beauty-of-joseon"
+          }
+        },
+        "article_rHMAXt": {
+          "type": "article",
+          "settings": {
+            "article": "news/clear-calm-why-we-love-cosrx-skincare"
+          }
+        }
+      },
+      "block_order": [
+        "article_PmzHt3",
+        "article_rHMAXt"
+      ],
+      "settings": {
+        "heading": "From the blog",
+        "heading_tag": "h2",
+        "subheading": "",
+        "link": "",
+        "link_text": "View all posts",
+        "button_style": "btn--callout",
+        "display_type": "selected",
+        "blog": "",
+        "max_articles": 2,
+        "show_tags": true,
+        "show_author": false,
+        "show_date": true,
+        "show_excerpt": true,
+        "show_featured_image": true,
+        "aspect_ratio": "landscape",
+        "enable_animation": true,
+        "divider_style": "solid",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "multi-column-2": {
+      "type": "multi-column",
+      "blocks": {
+        "icon_column-1": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "security-badge",
+            "icon_width": 68,
+            "icon_width_mobile": 46,
+            "accent": "",
+            "heading": "100% Guaranteed",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p>We guarantee that all our products are 100% authentic, ensuring the highest quality standards with every single order.</p>",
+            "text_font_class": "fs-body-75",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        },
+        "icon_column-2": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "leaf",
+            "icon_width": 68,
+            "icon_width_mobile": 46,
+            "accent": "",
+            "heading": "Safe Ingredients",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p>Carefully curated with safe and clean formulas to nourish, protect, and enhance your skin's natural beauty.</p>",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        },
+        "icon_column-3": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "package-open",
+            "icon_width": 68,
+            "icon_width_mobile": 48,
+            "accent": "",
+            "heading": "Premium Packaging",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p>Every order arrives quickly and beautifully wrapped, making it a perfect treat for yourself or a special gift for loved ones.</p>",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        },
+        "icon_column-4": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "chat",
+            "icon_width": 68,
+            "icon_width_mobile": 74,
+            "accent": "",
+            "heading": "Always Here For You",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p>Our friendly team is always ready to answer your questions and help you build the perfect skincare routine for your needs.</p>",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        }
+      },
+      "block_order": [
+        "icon_column-1",
+        "icon_column-2",
+        "icon_column-3",
+        "icon_column-4"
+      ],
+      "settings": {
+        "title": "",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-3-base",
+        "subheading": "",
+        "heading_alignment": "center",
+        "content_vertical_alignment": "top",
+        "content_background_padding": "medium",
+        "columns": "4",
+        "column_spacing": 48,
+        "row_spacing": 48,
+        "column_alignment": "center",
+        "enable_slider_mobile": false,
+        "columns_mobile": "2",
+        "column_spacing_mobile": 20,
+        "row_spacing_mobile": 48,
+        "column_alignment_mobile": "left",
+        "background_behind_columns": false,
+        "background_color": "#e2ecf4",
+        "text_color": "#102c26",
+        "button_background_color": "#000000",
+        "button_text_color": "#ffffff",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "image-hero": {
+      "type": "image-hero",
+      "blocks": {
+        "accent": {
+          "type": "accent",
+          "settings": {
+            "accent": "Join the community"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "disabled": true,
+          "settings": {
+            "title": "Image hero",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-2"
+          }
+        },
+        "text": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Share your K-beauty routine and get featured.<br/>Tag <strong>@</strong>cho.mistore + <strong>#ChomiGlow</strong></p>",
+            "text_font_class": "fs-body-200"
+          }
+        },
+        "button": {
+          "type": "button",
+          "settings": {
+            "link": "https://www.instagram.com/cho.mistore",
+            "link_text": "Follow on Instagram",
+            "button_style": "btn--secondary"
+          }
+        },
+        "button_HaJw7U": {
+          "type": "button",
+          "settings": {
+            "link": "https://www.tiktok.com/@cho.mistore",
+            "link_text": "Follow on Tiktok",
+            "button_style": "btn--secondary"
+          }
+        }
+      },
+      "block_order": [
+        "accent",
+        "heading",
+        "text",
+        "button",
+        "button_HaJw7U"
+      ],
+      "settings": {
+        "image_aspect": "custom",
+        "desktop_height": 50,
+        "mobile_height": 50,
+        "image": "shopify://shop_images/Edited-Article-5.webp",
+        "focal_point": "top",
+        "mobile_focal_point": "center",
+        "media_link": "",
+        "text_position": "center_center",
+        "text_position_mobile": "center_center",
+        "text_color": "#ffffff",
+        "button_background_color": "#ffffff",
+        "button_text_color": "#102b26",
+        "color_overlay": "#000000",
+        "color_overlay_gradient": "radial-gradient(rgba(34, 30, 45, 1), rgba(115, 145, 141, 0.14) 100%)",
+        "overlay_opacity": 81,
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-none"
+      }
+    },
+    "multi-column-3": {
+      "type": "multi-column",
+      "blocks": {
+        "column": {
+          "type": "column",
+          "settings": {
+            "accent": "",
+            "heading": "Pure, plant-based, totally clean skincare",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-3-base",
+            "text": "",
+            "text_font_class": "fs-body-300",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        }
+      },
+      "block_order": [
+        "column"
+      ],
+      "settings": {
+        "title": "",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-3-base",
+        "subheading": "",
+        "heading_alignment": "left",
+        "content_vertical_alignment": "top",
+        "content_background_padding": "medium",
+        "columns": "1",
+        "column_spacing": 28,
+        "row_spacing": 28,
+        "column_alignment": "center",
+        "enable_slider_mobile": false,
+        "columns_mobile": "1",
+        "column_spacing_mobile": 20,
+        "row_spacing_mobile": 20,
+        "column_alignment_mobile": "center",
+        "background_behind_columns": false,
+        "background_color": "#000000",
+        "text_color": "#ffffff",
+        "button_background_color": "#ffffff",
+        "button_text_color": "#ffffff",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    }
+  },
+  "order": [
+    "slideshow-1",
+    "rich-text-1",
+    "grid-1",
+    "collection-list-slider",
+    "rich-text-2",
+    "grid-2",
+    "scrolling_content",
+    "sales-banner",
+    "complete-the-look",
+    "image-with-text",
+    "featured-collection-slider-1",
+    "featured-collection-slider-2",
+    "image-with-text-split-1",
+    "image-with-text-split-2",
+    "ugc_video_feed_6pAazH",
+    "testimonials",
+    "multi-column-1",
+    "blog-posts",
+    "multi-column-2",
+    "image-hero",
+    "multi-column-3"
+  ]
+}

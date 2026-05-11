@@ -1,0 +1,14 @@
+<meta property="og:site_name" content="{{ shop.name }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:title" content="{{ page_title | escape }}">
+<meta property="og:description" content="{{ page_description | default: shop.description | escape }}">
+<meta property="og:type" content="{% if request.page_type == 'product' %}product{% else %}website{% endif %}">
+
+{%- assign og_image = og_image_url | default: page.image | default: product.featured_image | default: collection.image -%}
+{%- if og_image -%}
+  <meta property="og:image" content="{{ og_image | image_url: width: 1200 }}">
+{%- endif -%}
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ page_title | escape }}">
+<meta name="twitter:description" content="{{ page_description | default: shop.description | escape }}">

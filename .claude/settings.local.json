@@ -8,7 +8,21 @@
       "PowerShell(uvicorn --version 2>&1)",
       "PowerShell(pip install litellm motor pydantic-settings apscheduler python-socketio chromadb 2>&1)",
       "PowerShell(python -c \"import litellm; import motor; import chromadb; print\\('OK'\\)\" 2>&1)",
-      "PowerShell(Set-Location \"d:\\\\2026\\\\Projects\\\\AI\\\\OmniBot-main-claude\\\\backend\"; $proc = Start-Process python -ArgumentList \"-m\", \"uvicorn\", \"main:app\", \"--port\", \"3001\" -PassThru -NoNewWindow -RedirectStandardOutput \"$env:TEMP\\\\uvicorn_out.txt\" -RedirectStandardError \"$env:TEMP\\\\uvicorn_err.txt\"; Start-Sleep -Seconds 6; Get-Content \"$env:TEMP\\\\uvicorn_out.txt\", \"$env:TEMP\\\\uvicorn_err.txt\" -ErrorAction SilentlyContinue | Select-Object -Last 20; Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue)"
+      "PowerShell(Set-Location \"d:\\\\2026\\\\Projects\\\\AI\\\\OmniBot-main-claude\\\\backend\"; $proc = Start-Process python -ArgumentList \"-m\", \"uvicorn\", \"main:app\", \"--port\", \"3001\" -PassThru -NoNewWindow -RedirectStandardOutput \"$env:TEMP\\\\uvicorn_out.txt\" -RedirectStandardError \"$env:TEMP\\\\uvicorn_err.txt\"; Start-Sleep -Seconds 6; Get-Content \"$env:TEMP\\\\uvicorn_out.txt\", \"$env:TEMP\\\\uvicorn_err.txt\" -ErrorAction SilentlyContinue | Select-Object -Last 20; Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue)",
+      "Bash(python -m pip list)",
+      "Bash(cat)",
+      "Bash(python /tmp/check_db.py)",
+      "Bash(python -m py_compile backend/main.py backend/core/autonomous_evolution/loop_orchestrator.py backend/core/autonomous_evolution/problem_scanner.py backend/api/evolution_registry.py backend/tests/test_evolution_core.py)",
+      "Bash(python -m py_compile backend/utils/health_check.py backend/tests/test_evolution_core.py backend/api/evolution_registry.py)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Phase 1: Evolution System Hardening & Security Fixes *)",
+      "Bash(Get-ChildItem -Directory)",
+      "Bash(Select-Object -First 10)",
+      "Bash(Format-Table Name)",
+      "Bash(python -m py_compile main.py)",
+      "Bash(npx tsc *)",
+      "Bash(docker-compose up *)",
+      "Bash(docker-compose logs *)"
     ]
   }
 }

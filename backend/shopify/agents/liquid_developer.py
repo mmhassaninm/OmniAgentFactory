@@ -1,18 +1,81 @@
 """
 Shopify Theme Factory — Agent 4: Liquid Developer
 Writes all Liquid/HTML/CSS/JS code for the theme.
+Now powered by Glimmer (Stiletto v5.0.1) design patterns as reference inspiration.
 """
 
 import json
 import logging
 import re
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, List
 
 from core.model_router import call_model
 from shopify.models import SharedContext
 from shopify.utils import robust_parse_json
 
 logger = logging.getLogger(__name__)
+
+# ── Glimmer Reference Theme Integration ───────────────────────────────────────
+# Path: backend/shopify/templates/Glimmer/
+_HERE = Path(__file__).resolve()
+GLIMMER_PATH = _HERE.parent.parent / "templates" / "Glimmer"
+
+# Key sections from Glimmer to use as reference patterns
+GLIMMER_REFERENCE_SECTIONS = [
+    "image-hero.liquid",
+    "countdown-banner.liquid",
+    "complete-the-look.liquid",
+    "featured-collection-grid.liquid",
+    "collapsible-row-list.liquid",
+    "image-compare.liquid",
+    "gallery-carousel.liquid",
+]
+
+
+def _load_glimmer_patterns() -> str:
+    """
+    Load key sections from Glimmer theme as design pattern references.
+    Returns a compact summary of patterns for injection into the system prompt.
+    """
+    patterns_text = ""
+    sections_path = GLIMMER_PATH / "sections"
+
+    if not sections_path.exists():
+        logger.debug("Glimmer sections path not found — skipping inspiration load")
+        return ""
+
+    loaded = []
+    for section_file in GLIMMER_REFERENCE_SECTIONS:
+        path = sections_path / section_file
+        if not path.exists():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+            # Take first 40 lines as pattern preview
+            preview = "\n".join(content.split("\n")[:40])
+            loaded.append(f"### {section_file}\n```liquid\n{preview}\n```")
+        except Exception as e:
+            logger.debug(f"Could not load Glimmer section {section_file}: {e}")
+
+    if loaded:
+        section_list = "\n".join(f"- {s}" for s in GLIMMER_REFERENCE_SECTIONS if (sections_path / s).exists())
+        patterns_text = (
+            "\n\n# REFERENCE DESIGN PATTERNS (from Stiletto/Glimmer v5.0.1 — for inspiration ONLY, do NOT copy):\n"
+            f"Available sections in Glimmer: {len(list(sections_path.glob('*.liquid')))} sections\n"
+            f"Key reference sections loaded:\n{section_list}\n\n"
+            "Study these patterns for: Liquid variable assignment style, overlay_opacity usage, "
+            "responsive CSS class naming, animation classes, full-width handling, "
+            "mobile-specific settings, and ARIA patterns.\n"
+            "BLEND inspiration from multiple sections — never copy a single one verbatim.\n"
+        )
+        logger.info(f"[LiquidDeveloper] Loaded {len(loaded)} Glimmer reference patterns")
+
+    return patterns_text
+
+
+# Load Glimmer patterns once at module level (cached)
+_GLIMMER_INSPIRATION = _load_glimmer_patterns()
 
 SYSTEM_PROMPT = """
 CRITICAL — OUTPUT FORMAT:
@@ -45,7 +108,7 @@ NEVER use deprecated legacy image filters from old themes.
 ALWAYS use: | image_url: width: 800   (standard)
             | image_url: width: 1200  (hero/banner)
             | image_url: width: 400   (thumbnails)
-RIGHT:  {{ section.settings.image | image_url: width: 1200 | image_tag }}
+RIGHT:  {{ section.settings.image | image_url: width: 1200 | image_tag: loading: 'lazy', class: 'section__image', sizes: '(min-width: 1024px) 1200px, 100vw' }}
 
 SECTION SCHEMA PRESETS — MANDATORY:
 WRONG:  "presets": [{}]
@@ -70,9 +133,32 @@ RIGHT:
   "presets": [{ "name": "Header" }]
 }
 {% endschema %}
+
+MULTI-LANGUAGE — MANDATORY:
+Never hardcode visible text. Always use translation keys:
+WRONG: <h2>Welcome to our store</h2>
+RIGHT: <h2>{{ 'sections.hero.heading' | t: default: section.settings.heading }}</h2>
+
+RESPONSIVE CSS — MANDATORY (mobile-first with these exact breakpoints):
+.section { padding: 40px 16px; }
+@media (min-width: 768px) { .section { padding: 60px 40px; } }
+@media (min-width: 1024px) { .section { padding: 80px 60px; } }
+@media (min-width: 1440px) { .section { padding: 100px; max-width: var(--page-width); margin: 0 auto; } }
+
+STANDARD SECTION SETTINGS — Add to EVERY section schema:
+{"type": "select", "id": "color_scheme", "label": "Color scheme", "default": "light",
+  "options": [{"value": "light", "label": "Light"}, {"value": "dark", "label": "Dark"}, {"value": "accent", "label": "Accent"}]},
+{"type": "range", "id": "padding_top", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Top padding", "default": 60},
+{"type": "range", "id": "padding_bottom", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Bottom padding", "default": 60},
+{"type": "checkbox", "id": "hide_on_mobile", "label": "Hide on mobile", "default": false}
+
+ACCESSIBILITY — MANDATORY:
+- All images: alt="{{ section.settings.image.alt | escape | default: shop.name }}"
+- All interactive elements: aria-label attributes
+- Lazy loading: loading="lazy" for all images except hero (use loading="eager" for hero)
 """
 
-BATCH_SIZE = 2
+BATCH_SIZE = 3
 
 
 class LiquidDeveloper:
@@ -124,6 +210,9 @@ class LiquidDeveloper:
         for batch_num, batch in enumerate(batches, 1):
             logger.info("[LiquidDeveloper] Batch %d/%d — %d sections", batch_num, len(batches), len(batch))
 
+            # Inject Glimmer inspiration into system prompt for this batch
+            enriched_system_prompt = SYSTEM_PROMPT + _GLIMMER_INSPIRATION
+
             batch_content = f"""Write Liquid code for {len(batch)} Shopify theme sections.
 
 THEME: {brief_summary}
@@ -140,11 +229,11 @@ No markdown fences. No explanation. Valid JSON only.
             try:
                 text = await call_model(
                     messages=[
-                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "system", "content": enriched_system_prompt},
                         {"role": "user",   "content": batch_content},
                     ],
                     task_type="general",
-                    max_tokens=3000,
+                    max_tokens=4000,
                     temperature=0.7,
                 )
                 if not text or not text.strip():

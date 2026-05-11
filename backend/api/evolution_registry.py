@@ -171,3 +171,49 @@ async def get_loop_status(request: Request):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get loop status: {str(e)}")
+
+
+@router.get("/diagnostics")
+async def get_diagnostics(request: Request):
+    """Get comprehensive diagnostics of the evolution system."""
+    try:
+        orch = get_orchestrator(request)
+        registry = orch.registry
+
+        # Check component states
+        components = {
+            "idea_engine": orch.idea_engine is not None,
+            "problem_scanner": orch.problem_scanner is not None,
+            "agent_council": orch.agent_council is not None,
+            "implementation_runner": orch.runner is not None,
+            "model_router": orch.model_router is not None,
+        }
+
+        # Get database stats
+        ideas_count = await registry.ideas_col.count_documents({})
+        problems_count = await registry.problems_col.count_documents({})
+        implemented_count = await registry.ideas_col.count_documents({"status": "implemented"})
+        failed_count = await registry.ideas_col.count_documents({"status": "rejected"})
+
+        return {
+            "loop_active": orch.running,
+            "loop_paused": orch.paused,
+            "cycle_count": orch.cycle_count,
+            "components_ready": components,
+            "all_components_ready": all(components.values()),
+            "database_stats": {
+                "total_ideas": ideas_count,
+                "total_problems": problems_count,
+                "implemented_ideas": implemented_count,
+                "rejected_ideas": failed_count,
+            },
+            "system_health": "healthy" if all(components.values()) and orch.running else "degraded",
+            "warnings": [
+                "Loop is paused" if orch.paused else None,
+                "Implementation runner not configured" if not components["implementation_runner"] else None,
+            ]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Diagnostics failed: {str(e)}")

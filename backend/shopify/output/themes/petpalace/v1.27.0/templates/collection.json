@@ -1,0 +1,19 @@
+{
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "disabled": false
+    },
+    "header": {
+      "type": "header"
+    },
+    "footer": {
+      "type": "footer"
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header",
+    "footer"
+  ]
+}

@@ -1,0 +1,323 @@
+<div class="all-brands-page yl-container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+  <!-- Styles for the brand page -->
+  <style>
+    .all-brands-header {
+      position: sticky;
+      top: var(--header-bottom-position, var(--header-height, 0px));
+      z-index: 100;
+      background: #fff;
+      padding: 15px 0 20px;
+      margin-bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      border-bottom: 1px solid #efefef;
+    }
+    .brands-breadcrumb {
+      font-size: 14px;
+      color: #666;
+    }
+    .brands-alphabet-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .brands-nav-letter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #e0e0e0;
+      background: #fafafa;
+      color: #333;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .brands-nav-letter:hover,
+    .brands-nav-letter.active {
+      background: #333;
+      color: #fff;
+      border-color: #333;
+    }
+    .brands-nav-letter.disabled {
+      opacity: 0.3;
+      pointer-events: none;
+      background: #fcfcfc;
+    }
+    .brand-letter-group {
+      margin-bottom: 50px;
+      display: flex;
+      flex-direction: row;
+      gap: 30px;
+      scroll-margin-top: 150px;
+    }
+
+    .brand-letter {
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      background-color: #fafafa;
+      color: #333;
+    }
+    .brand-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      width: 100%;
+    }
+    .brand-item {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid #eee;
+      width: calc(20% - 12px); /* 5 columns roughly */
+      min-width: 160px;
+      transition: all 0.3s ease;
+      background: #fff;
+    }
+    .brand-item:hover {
+      border-color: #ccc;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+    .brand-logo-wrapper {
+      width: 100%;
+      aspect-ratio: 2 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #fff;
+      padding: 15px;
+      position: relative;
+    }
+    .brand-logo {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+    .brand-name {
+      text-align: center;
+      padding: 12px 10px;
+      font-size: 14px;
+      font-weight: 500;
+      border-top: 1px solid #f5f5f5;
+      text-transform: capitalize;
+    }
+
+    @media screen and (max-width: 768px) {
+      .brand-letter-group {
+        flex-direction: column;
+        gap: 15px;
+      }
+      .brand-item {
+        width: calc(50% - 7.5px);
+        min-width: unset;
+      }
+    }
+  </style>
+
+  {% assign alphabet = 'A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z' | split: ',' %}
+  {% assign vendors = shop.vendors | sort %}
+
+  <div class="all-brands-header">
+    <div class="brands-breadcrumb">
+      {% render 'breadcrumbs' %}
+    </div>
+
+    <div class="brands-alphabet-nav">
+      {%- for nav_letter in alphabet -%}
+        <a href="#letter-{{ nav_letter }}" class="brands-nav-letter">{{ nav_letter }}</a>
+      {%- endfor -%}
+      <a href="#letter-symbol" class="brands-nav-letter">#</a>
+    </div>
+  </div>
+
+  {% for letter in alphabet %}
+    {%- assign letter_has_vendors = false -%}
+    {%- assign letter_brands = '' -%}
+
+    {%- for vendor in vendors -%}
+      {%- assign first_char = vendor | slice: 0 | upcase -%}
+      {%- if first_char == letter -%}
+        {%- assign letter_has_vendors = true -%}
+        {%- assign vendor_handle = vendor | handleize -%}
+        {%- assign brand_collection = collections[vendor_handle] -%}
+
+        {%- capture brand_item -%}
+          <a href="{% if brand_collection != blank %}{{ brand_collection.url }}{% else %}/collections/all?filter.p.vendor={{ vendor | url_param_escape }}{% endif %}" class="brand-item">
+            {% if section.settings.show_brand_images %}
+              <div class="brand-logo-wrapper">
+                {% if brand_collection and brand_collection.image %}
+                  <img src="{{ brand_collection.image | img_url: '400x' }}" alt="{{ vendor }}" class="brand-logo" loading="lazy">
+                {% elsif brand_collection and brand_collection.products.first.featured_image %}
+                  <img src="{{ brand_collection.products.first.featured_image | img_url: '400x' }}" alt="{{ vendor }}" class="brand-logo" loading="lazy">
+                {% else %}
+                  <span style="color: #666; font-size: 18px; font-weight: bold; text-align: center;">{{ vendor }}</span>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="brand-logo-wrapper">
+                <span style="color: #666; font-size: 18px; font-weight: bold; text-align: center;">{{ vendor }}</span>
+              </div>
+            {% endif %}
+          </a>
+        {%- endcapture -%}
+        {%- assign letter_brands = letter_brands | append: brand_item -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- if letter_has_vendors -%}
+      <div class="brand-letter-group" id="letter-{{ letter }}">
+        <div class="brand-letter">{{ letter }}</div>
+        <div class="brand-grid">
+          {{ letter_brands }}
+        </div>
+      </div>
+    {%- endif -%}
+  {% endfor %}
+
+  {% comment %} Special logic for brands starting with numbers or symbols {% endcomment %}
+  {%- assign symbol_has_vendors = false -%}
+  {%- assign symbol_brands = '' -%}
+  {%- for vendor in vendors -%}
+    {%- assign first_char = vendor | slice: 0 | upcase -%}
+    {%- unless alphabet contains first_char -%}
+      {%- assign symbol_has_vendors = true -%}
+      {%- assign vendor_handle = vendor | handleize -%}
+      {%- assign brand_collection = collections[vendor_handle] -%}
+
+      {%- capture brand_item -%}
+          <a href="{% if brand_collection != blank %}{{ brand_collection.url }}{% else %}/collections/all?filter.p.vendor={{ vendor | url_param_escape }}{% endif %}" class="brand-item">
+            {% if section.settings.show_brand_images %}
+              <div class="brand-logo-wrapper">
+                {% if brand_collection and brand_collection.image %}
+                  <img src="{{ brand_collection.image | img_url: '400x' }}" alt="{{ vendor }}" class="brand-logo" loading="lazy">
+                {% elsif brand_collection and brand_collection.products.first.featured_image %}
+                  <img src="{{ brand_collection.products.first.featured_image | img_url: '400x' }}" alt="{{ vendor }}" class="brand-logo" loading="lazy">
+                {% else %}
+                  <span style="color: #666; font-size: 18px; font-weight: bold; text-align: center;">{{ vendor }}</span>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="brand-name" style="border-top: none;">{{ vendor }}</div>
+            {% endif %}
+          </a>
+      {%- endcapture -%}
+      {%- assign symbol_brands = symbol_brands | append: brand_item -%}
+    {%- endunless -%}
+  {%- endfor -%}
+
+  {%- if symbol_has_vendors -%}
+    <div class="brand-letter-group" id="letter-symbol">
+      <div class="brand-letter">#</div>
+      <div class="brand-grid">
+        {{ symbol_brands }}
+      </div>
+    </div>
+  {%- endif -%}
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const navLetters = document.querySelectorAll('.brands-nav-letter');
+    const sections = [];
+
+    navLetters.forEach((letter) => {
+      const targetId = letter.getAttribute('href').substring(1);
+      const target = document.getElementById(targetId);
+
+      if (!target) {
+        letter.classList.add('disabled');
+      } else {
+        sections.push({ target, letter, id: targetId });
+      }
+
+      letter.addEventListener('click', function (e) {
+        if (this.classList.contains('disabled')) return;
+        e.preventDefault();
+
+        if (target) {
+          const header = document.querySelector('.all-brands-header');
+          const headerOffset = header ? header.getBoundingClientRect().height : 0;
+
+          let siteHeaderHeight = parseInt(
+            getComputedStyle(document.documentElement).getPropertyValue('--header-bottom-position')
+          );
+          if (isNaN(siteHeaderHeight)) siteHeaderHeight = 0;
+
+          const targetPosition = target.getBoundingClientRect().top + window.scrollY;
+          const offsetPosition = targetPosition - headerOffset - siteHeaderHeight - 20;
+
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth',
+          });
+        }
+      });
+    });
+
+    window.addEventListener('scroll', function () {
+      let currentActive = null;
+      const header = document.querySelector('.all-brands-header');
+      const headerOffset = header ? header.getBoundingClientRect().height : 0;
+
+      let siteHeaderHeight = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue('--header-bottom-position')
+      );
+      if (isNaN(siteHeaderHeight)) siteHeaderHeight = 0;
+
+      const scrollPosition = window.scrollY + headerOffset + siteHeaderHeight + 60;
+
+      sections.forEach((sec) => {
+        const top = sec.target.getBoundingClientRect().top + window.scrollY;
+        if (scrollPosition >= top) {
+          currentActive = sec.letter;
+        }
+      });
+
+      navLetters.forEach((l) => l.classList.remove('active'));
+      if (currentActive) {
+        currentActive.classList.add('active');
+      }
+    });
+  });
+</script>
+
+{% schema %}
+{
+  "name": "All Brands Index",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Brands Index"
+    },
+    {
+      "type": "paragraph",
+      "content": "This section pulls all product vendors and groups them by letter A-Z. Make sure you create a Collection with exactly the same name as each vendor, and set the Collection Image. That image will be used as the Brand Logo!"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_brand_images",
+      "label": "Show brand images",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "All Brands Index"
+    }
+  ]
+}
+{% endschema %}

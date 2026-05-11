@@ -1,0 +1,444 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "video_hero_X3hRWG": {
+      "type": "video-hero",
+      "blocks": {
+        "text_f8gB4D": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "<p>Use this section to promote a particular feature with editorial video.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        },
+        "accent_cimCkR": {
+          "type": "accent",
+          "disabled": true,
+          "settings": {
+            "accent": "Accent"
+          }
+        },
+        "heading_ncCYyD": {
+          "type": "heading",
+          "settings": {
+            "title": "About Chomi",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-2"
+          }
+        },
+        "text_YqQFBc": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "<p>Use this section to promote a particular feature with editorial video.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        },
+        "play_button_3myfYb": {
+          "type": "play-button",
+          "disabled": true,
+          "settings": {
+            "video_source": "external",
+            "video_url": "https://www.youtube.com/watch?v=_9VUPq3SxOc",
+            "aspect_ratio": "square",
+            "text": "Watch now",
+            "icon_style": "outline"
+          }
+        }
+      },
+      "block_order": [
+        "text_f8gB4D",
+        "accent_cimCkR",
+        "heading_ncCYyD",
+        "text_YqQFBc",
+        "play_button_3myfYb"
+      ],
+      "name": "t:sections.video_hero.presets.name",
+      "settings": {
+        "image_aspect": "custom",
+        "desktop_height": 75,
+        "mobile_height": 100,
+        "video": "shopify://files/videos/Flow - Chomi-arabia.mp4",
+        "media_link": "",
+        "focal_point": "top",
+        "focal_point_mobile": "center",
+        "text_position": "flex-start_center",
+        "text_position_mobile": "center_center",
+        "text_color": "#ffffff",
+        "button_background_color": "#ffffff",
+        "button_text_color": "#000000",
+        "color_overlay": "#000000",
+        "color_overlay_gradient": "",
+        "overlay_opacity": 30,
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-none"
+      }
+    },
+    "main": {
+      "type": "main-page",
+      "disabled": true,
+      "settings": {
+        "enable_animation": true,
+        "content_width": "full",
+        "custom_content_width": 700
+      }
+    },
+    "my_new_custom_section": {
+      "type": "custom-about-section",
+      "blocks": {
+        "block_1": {
+          "type": "text_block",
+          "settings": {
+            "text": "<p>مرحباً بكم في متجرنا</p>"
+          }
+        }
+      },
+      "block_order": [
+        "block_1"
+      ],
+      "disabled": true,
+      "settings": {
+        "heading": "About Our Brand",
+        "bg_color": "#ffffff",
+        "text_alignment": "center",
+        "padding_top": 36,
+        "padding_bottom": 36
+      }
+    },
+    "rich_text_aLyTNb": {
+      "type": "rich-text",
+      "blocks": {
+        "heading_efkdRD": {
+          "type": "heading",
+          "settings": {
+            "title": "Your trusted destination for authentic K-Beauty in Saudi Arabia & the GCC.",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-2-base"
+          }
+        },
+        "text_Tgpg7j": {
+          "type": "text",
+          "settings": {
+            "text": "<p>At Chomi, we carefully curate proven Korean skincare from top brands like Beauty of Joseon and COSRX. We go the extra mile to ensure you get the best results:</p><ul><li><strong>Strict Storage Standards:</strong> Preserving each product’s efficacy so it reaches you in perfect condition.</li><li><strong>Fast Regional Shipping:</strong> Quick delivery across the GCC.</li><li><strong>Arabic-Speaking Support:</strong> Personalized help to find the perfect match for your skin type and concerns.</li></ul>",
+            "text_font_class": "fs-body-100"
+          }
+        }
+      },
+      "block_order": [
+        "heading_efkdRD",
+        "text_Tgpg7j"
+      ],
+      "name": "t:sections.rich_text.presets.name",
+      "settings": {
+        "alignment": "left_left",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom",
+        "content_width": "full",
+        "custom_content_width": 700
+      }
+    },
+    "image_with_text_split_f7ep9N": {
+      "type": "image-with-text-split",
+      "blocks": {
+        "heading_6EMJMY": {
+          "type": "heading",
+          "settings": {
+            "title": "Our Standards",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-3"
+          }
+        },
+        "text_Rgj6P7": {
+          "type": "text",
+          "settings": {
+            "text": "<p>We curate authentic K-Beauty and keep every product effective until it reaches you.</p><ul><li>Guaranteed authenticity<br/></li><li>Proper storage to maintain potency<br/></li><li>Fast shipping across KSA & the GCC<br/></li><li>Helpful Arabic-speaking support<br/></li></ul><h1></h1>",
+            "text_font_class": "fs-body-100"
+          }
+        }
+      },
+      "block_order": [
+        "heading_6EMJMY",
+        "text_Rgj6P7"
+      ],
+      "name": "t:sections.image_with_text_split.presets.name",
+      "settings": {
+        "image_position": "right",
+        "image_mobile_position": "above-content",
+        "image_padding": "none",
+        "image": "shopify://shop_images/Unboxing_K-Beauty_products_202604091326.jpg",
+        "aspect_ratio": "square",
+        "focal_point": "image_presentation",
+        "content_alignment": "left",
+        "background_color": "#f7f7e8",
+        "text_color": "#000000",
+        "button_background_color": "#000000",
+        "button_text_color": "#ffffff",
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-none"
+      }
+    },
+    "rich_text_QU78nt": {
+      "type": "rich-text",
+      "blocks": {
+        "heading_fjcXF7": {
+          "type": "heading",
+          "settings": {
+            "title": "Quality & Sustainability",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-2-base"
+          }
+        },
+        "subheading_QGmHiy": {
+          "type": "subheading",
+          "settings": {
+            "subheading": "Fresh results, lighter footprint.",
+            "subheading_tag": "h3",
+            "subheading_font_class": "fs-heading-5-base"
+          }
+        },
+        "text_WtDzwq": {
+          "type": "text",
+          "settings": {
+            "text": "<p>We source authentic K-Beauty from trusted distributors and store it in climate-aware conditions, so every product reaches you at full potency.</p><p>We ship in right-size recycled cartons with minimal plastic, consolidate deliveries where possible, and offer fast shipping across KSA & the GCC—better care for your skin and the planet.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        }
+      },
+      "block_order": [
+        "heading_fjcXF7",
+        "subheading_QGmHiy",
+        "text_WtDzwq"
+      ],
+      "name": "t:sections.rich_text.presets.name",
+      "settings": {
+        "alignment": "center_center",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom",
+        "content_width": "custom",
+        "custom_content_width": 700
+      }
+    },
+    "gallery_carousel_TLrYCc": {
+      "type": "gallery-carousel",
+      "blocks": {
+        "image_CDQ9jj": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/Serum_bottle_and_202604091343_2.jpg",
+            "focal_point": "image_presentation",
+            "title": "Made for Our Climate",
+            "text": "<p>Light, non-greasy textures and barrier-friendly formulas curated to perform in Gulf heat and humidity.</p>"
+          }
+        },
+        "image_awJGjA": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/Serum_bottle_on_202604091449.jpg",
+            "focal_point": "image_presentation",
+            "title": "Ingredient Transparency",
+            "text": "<p>Clear INCI with plain-English benefits and filters to shop by concern or preference (niacinamide, ceramides; fragrance-free, alcohol-free, non-comedogenic).</p>"
+          }
+        },
+        "image_74BcFA": {
+          "type": "image",
+          "settings": {
+            "image": "shopify://shop_images/Serum_bottle_with_202604091357.jpg",
+            "focal_point": "image_presentation",
+            "title": "Support & Easy Returns",
+            "text": "<p>Arabic/English advice to build your routine, quick responses, and a simple returns policy if something isn’t the right match.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "image_CDQ9jj",
+        "image_awJGjA",
+        "image_74BcFA"
+      ],
+      "name": "t:sections.gallery_carousel.presets.name",
+      "settings": {
+        "heading": "Our Features",
+        "heading_tag": "h2",
+        "subheading": "",
+        "link": "",
+        "link_text": "",
+        "button_style": "btn--callout",
+        "columns": "2",
+        "mobile_columns": "1",
+        "loop_carousel": true,
+        "aspect_ratio": "landscape",
+        "image_caption_size": "fs-body-100",
+        "image_caption_style": "beneath",
+        "overlay_text_background_style": "gradient",
+        "overlay_text_color": "#ffffff",
+        "overlay_text_background": "#000000",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "collapsible_row_list_zPTbXa": {
+      "type": "collapsible-row-list",
+      "blocks": {
+        "item_njJhDT": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "moving-truck",
+            "title": "What is your delivery policy?",
+            "text": "<p>We offer delivery to most areas, with delivery fees varying by location and shipping type (dry or chilled). Orders are typically delivered within 1–5 business days, depending on the selected shipping method and delivery destination. Weekends and public holidays are excluded from delivery timelines.</p>"
+          }
+        },
+        "item_AfLyMk": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "package-open",
+            "title": "What is your return policy?",
+            "text": "<p>You may cancel or return within 7 days of delivery if the item is unused, unopened, and in its original sealed packaging (return shipping at the customer’s cost unless we’re at fault).<br/><br/>For hygiene and safety, opened or used skincare/beauty products aren’t eligible for change-of-mind returns.<br/><br/>If an item arrives damaged, defective, or not as described, we will repair, replace, or refund, please contact us promptly with your order number and photos.</p>"
+          }
+        },
+        "item_A6cNpK": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "checked-box",
+            "title": "Do you offer product guarantees?",
+            "text": "<p>Yes. We guarantee that all products are <strong>100% authentic</strong> and sourced through <strong>authorized channels</strong> and in compliance with <strong>SFDA</strong> requirements. If any item is proven <strong>counterfeit, defective, or not as described</strong>, we will <strong>replace it or issue a full refund</strong> (and cover return shipping where we’re at fault) in line with <strong>Saudi E-Commerce Law</strong>. Documentation to verify authenticity (e.g., batch codes or supplier evidence) is available upon request.</p>"
+          }
+        },
+        "item_a9Udtk": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "bank",
+            "title": "Do you provide payment options via Tabby and Tamara?",
+            "text": "<p>The service will be available soon.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "item_njJhDT",
+        "item_AfLyMk",
+        "item_A6cNpK",
+        "item_a9Udtk"
+      ],
+      "name": "t:sections.collapsible_row_list.presets.name",
+      "settings": {
+        "title": "",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-3-base",
+        "heading_alignment": "left",
+        "subheading": "",
+        "subheading_tag": "h3",
+        "subheading_font_class": "fs-heading-5-base",
+        "item_heading_font": "heading",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom",
+        "content_width": "custom",
+        "custom_content_width": 700
+      }
+    },
+    "rich_text_xcmUM9": {
+      "type": "rich-text",
+      "blocks": {
+        "heading_rBw6mB": {
+          "type": "heading",
+          "settings": {
+            "title": "Quality You Can Trust",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-2-base"
+          }
+        },
+        "text_pcNULw": {
+          "type": "text",
+          "settings": {
+            "text": "<p>We sell authentic, brand-new Korean skincare and makeup. Items are factory-sealed with batch codes for traceability and stored in temperature-aware conditions away from heat and direct sunlight to keep them fresh. If anything isn’t as described on arrival, we’ll make it right.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        }
+      },
+      "block_order": [
+        "heading_rBw6mB",
+        "text_pcNULw"
+      ],
+      "disabled": true,
+      "name": "t:sections.rich_text.presets.name",
+      "settings": {
+        "alignment": "center_center",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom",
+        "content_width": "custom",
+        "custom_content_width": 700
+      }
+    },
+    "image_hero_hpfNBW": {
+      "type": "image-hero",
+      "blocks": {
+        "heading_GirbTQ": {
+          "type": "heading",
+          "settings": {
+            "title": "Quality You Can Trust",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-2"
+          }
+        },
+        "text_BeKP4p": {
+          "type": "text",
+          "settings": {
+            "text": "<p>We sell authentic, brand-new Korean skincare and makeup. Items are factory-sealed with batch codes for traceability and stored in temperature-aware conditions away from heat and direct sunlight to keep them fresh. If anything isn’t as described on arrival, we’ll make it right.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        }
+      },
+      "block_order": [
+        "heading_GirbTQ",
+        "text_BeKP4p"
+      ],
+      "name": "t:sections.image_hero.presets.name",
+      "settings": {
+        "image_aspect": "custom",
+        "desktop_height": 50,
+        "mobile_height": 100,
+        "image": "shopify://shop_images/202604091428.jpg",
+        "focal_point": "left",
+        "mobile_focal_point": "image_presentation",
+        "media_link": "",
+        "text_position": "center_center",
+        "text_position_mobile": "center_center",
+        "text_color": "#ffffff",
+        "button_background_color": "#ffffff",
+        "button_text_color": "#000000",
+        "color_overlay": "#000000",
+        "color_overlay_gradient": "",
+        "overlay_opacity": 40,
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-none"
+      }
+    }
+  },
+  "order": [
+    "video_hero_X3hRWG",
+    "main",
+    "my_new_custom_section",
+    "rich_text_aLyTNb",
+    "image_with_text_split_f7ep9N",
+    "rich_text_QU78nt",
+    "gallery_carousel_TLrYCc",
+    "collapsible_row_list_zPTbXa",
+    "rich_text_xcmUM9",
+    "image_hero_hpfNBW"
+  ]
+}

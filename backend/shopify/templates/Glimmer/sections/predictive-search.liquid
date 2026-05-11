@@ -1,0 +1,199 @@
+<script id="ps-config" type="application/json">
+{
+  "types": "product,collection,article,page",
+  "limit": 4,
+  "fields": [
+    {% if settings.searchable_fields_title %}"title",{% endif %}
+    {% if settings.searchable_fields_product_type %}"product_type",{% endif %}
+    {% if settings.searchable_fields_vendor %}"vendor",{% endif %}
+    {% if settings.searchable_fields_variant_title %}"variants.title",{% endif %}
+    {% if settings.searchable_fields_variant_sku %}"variants.sku",{% endif %}
+    {% if settings.searchable_fields_variant_barcode %}"variants.barcode"{% endif %}
+  ]
+}
+</script>
+
+{%- liquid
+  assign p = predictive_search.resources.products.size
+  assign q = predictive_search.resources.queries.size
+  assign c = predictive_search.resources.collections.size
+  assign pg = predictive_search.resources.pages.size
+  assign a = predictive_search.resources.articles.size
+  assign total_results = p | plus: q | plus: c | plus: pg | plus: a
+
+  assign sizes = '80px'
+  if settings.quick_search_product_style == 'columns'
+    assign sizes = '200px'
+  endif
+-%}
+
+{%- if predictive_search.performed -%}
+{% comment %}
+  Store the current locale in a data attribute for JavaScript
+  This helps with fallback logic in case of search issues
+{% endcomment %}
+<div data-current-locale="{{ request.locale.iso_code }}" style="display: none;"></div>
+  {%- if total_results > 0 -%}
+
+    {%- if predictive_search.resources.queries.size > 0 -%}
+      <h4 class="quick-search__header ff-body fs-body-100" dir="auto">
+        <span class="t-subdued">{{ 'search.suggestions' | t }}</span>
+      </h4>
+      <ul class="quick-search__suggested-queries-list list-reset" role="listbox">
+        {%- for query in predictive_search.resources.queries -%}
+          <li class="quick-search__suggested-queries-list-item" role="option">
+            <a href="{{ query.url }}" class="quick-search__result ff-body fs-body-75" dir="auto">
+              <p
+                class="quick-search__result-details quick-search__result-details--query"
+                aria-label="{{ query.text }}"
+                dir="auto"
+              >
+                {{ query.styled_text }}
+              </p>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    {%- if predictive_search.resources.products.size > 0 -%}
+      <h4 class="quick-search__header ff-body fs-body-100" dir="auto">
+        <span class="t-subdued">{{ 'search.headings.products' | t }}</span>
+      </h4>
+      {%- for product in predictive_search.resources.products -%}
+        <a
+          class="quick-search__result quick-search__result--product quick-search__result--{{ settings.quick_search_product_style }}"
+          href="{{ product.url }}"
+          dir="auto"
+        >
+          {%- if settings.quick_search_product_style != 'list' -%}
+            <div class="quick-search__result-image-wrapper">
+              {%
+                render 'image' with
+                image: product.featured_media,
+                wrapper_class: 'quick-search__result-image',
+                aspect_ratio: settings.product_listing_aspect_ratio,
+                object_fit: settings.product_listing_media_fit,
+                include_placeholder: true,
+                sizes: sizes
+              %}
+            </div>
+          {%- endif -%}
+          <div class="quick-search__result-details ff-body fs-body-75">
+            <div class="quick-search__result-info">
+              <div class="quick-search__result-heading fs-product-card-title" dir="auto">{{ product.title }}</div>
+              {%- if settings.quick_search_show_vendor and product.vendor -%}
+                <span class="quick-search__result-vendor t-subdued" dir="auto">{{ product.vendor }}</span>
+              {%- endif -%}
+            </div>
+
+            {% liquid
+              assign price_content_type = 'price'
+
+              if settings.quick_search_show_price
+                if product.available
+                  if product.price == 0 and product.price_varies == false
+                    if settings.zero_dollar_listing_price_display == 'replace'
+                      assign price_content_type = 'custom'
+                      assign custom_price_content = 'products.inventory.zero_price_custom_label' | t
+                    elsif settings.zero_dollar_listing_price_display == 'hide'
+                      assign price_content_type = 'hide'
+                      assign custom_price_content = blank
+                    endif
+                  endif
+                else
+                  if settings.sold_out_listing_price_display == 'hide'
+                    assign price_content_type = 'hide'
+                    assign custom_price_content = blank
+                  elsif settings.sold_out_listing_price_display == 'replace'
+                    assign price_content_type = 'custom'
+                    assign custom_price_content = 'products.inventory.sold_out_price_custom_label' | t
+                  endif
+                endif
+              else
+                assign price_content_type = 'hide'
+              endif
+            %}
+
+            {% if price_content_type == 'price' %}
+              <span class="quick-search__result-price">
+                {% if product.compare_at_price > product.price %}
+                  <span class="visually-hidden">{{ 'products.product.regular_price' | t }}</span>
+                  <s>{{ product.compare_at_price | money }}</s>
+
+                  {%- if product.price_varies -%}
+                    {%- assign sale_price = product.price | money -%}
+                    <span class="sale">
+                      {{- 'products.product.on_sale_from_html' | t: price: sale_price -}}
+                    </span>
+                  {%- else -%}
+                    <span class="sale">{{ product.price | money }}</span>
+                  {%- endif -%}
+                {%- else -%}
+                  {%- if product.price_varies -%}
+                    {%- assign price = product.price | money -%}
+                    {{ 'products.product.from_lowest_price_html' | t: lowest_price: price }}
+                  {%- else -%}
+                    <span>{{ product.price | money }}</span>
+                  {%- endif -%}
+                {% endif %}
+
+                {%- render 'unit-price', item: product.selected_or_first_available_variant -%}
+              </span>
+            {% elsif price_content_type == 'custom' %}
+              {% if product.price_varies and product.price == 0 %}
+                {%- assign sale_price = product.price | money -%}
+                {%- assign custom_price_content = 'products.inventory.zero_price_custom_label' | t -%}
+                {{ 'products.product.from_lowest_price_html' | t: lowest_price: custom_price_content }}
+              {% else %}
+                <span>{{ custom_price_content }}</span>
+              {% endif %}
+            {% endif %}
+          </div>
+        </a>
+      {%- endfor -%}
+    {%- endif -%}
+
+    {%- if predictive_search.resources.collections.size > 0 -%}
+      <h4 class="quick-search__header ff-body fs-body-100" dir="auto">
+        <span class="t-subdued">{{ 'search.headings.collections' | t }}</span>
+      </h4>
+
+      {%- for collection in predictive_search.resources.collections -%}
+        <a class="quick-search__result" href="{{ collection.url }}" dir="auto">
+          <div class="quick-search__result-heading ff-body fs-body-75" dir="auto">{{ collection.title }}</div>
+        </a>
+      {%- endfor -%}
+    {%- endif -%}
+
+    {%- if predictive_search.resources.pages.size > 0 -%}
+      <h4 class="quick-search__header ff-body fs-body-100" dir="auto">
+        <span class="t-subdued">{{ 'search.headings.pages' | t }}</span>
+      </h4>
+
+      {%- for page in predictive_search.resources.pages -%}
+        <a class="quick-search__result" href="{{ page.url }}" dir="auto">
+          <div class="quick-search__result-heading ff-body fs-body-75" dir="auto">{{ page.title }}</div>
+        </a>
+      {%- endfor -%}
+    {%- endif -%}
+
+    {%- if predictive_search.resources.articles.size > 0 -%}
+      <h4 class="quick-search__header ff-body fs-body-100" dir="auto">
+        <span class="t-subdued">{{ 'search.headings.articles' | t }}</span>
+      </h4>
+
+      {%- for article in predictive_search.resources.articles -%}
+        <a class="quick-search__result" href="{{ article.url }}" dir="auto">
+          <div class="quick-search__result-heading ff-body fs-body-75" dir="auto">{{ article.title }}</div>
+        </a>
+      {%- endfor -%}
+    {%- endif -%}
+
+  {%- else -%}
+    <h4 class="quick-search__no-results-header ff-body fs-body-200" dir="auto">
+      {{ 'search.no_results_html' | t: terms: predictive_search.terms }}
+    </h4>
+    <p class="quick-search__no-results t-subdued" dir="auto">{{ 'search.check_spelling' | t }}</p>
+  {%- endif -%}
+{%- endif -%}

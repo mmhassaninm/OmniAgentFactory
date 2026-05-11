@@ -1,0 +1,87 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "promotion_bar_NMLzGj": {
+      "type": "promotion-bar",
+      "disabled": true,
+      "settings": {
+        "min_height": 60,
+        "min_height_mobile": 60,
+        "heading": "Get 5 and save 20%",
+        "heading_tag": "h2",
+        "text": "<p>Choose any 5 Minis or get a Minis Care kit for savings on a complete routine!</p>",
+        "link": "",
+        "link_text": "",
+        "button_style": "btn--secondary",
+        "focal_point": "center",
+        "mobile_focal_point": "center",
+        "background_color": "#c51c26",
+        "text_color": "#0f2d27",
+        "button_background_color": "#ffffff",
+        "button_text_color": "#000000",
+        "color_overlay": "#ebf0f2",
+        "color_overlay_gradient": "",
+        "overlay_opacity": 88,
+        "enable_animation": true,
+        "full_width": false,
+        "section_padding": "section--vertical-padding-top-only"
+      }
+    },
+    "banner": {
+      "type": "main-collection-banner",
+      "settings": {
+        "show_breadcrumbs": false,
+        "show_collection_description": false,
+        "show_collection_image": true,
+        "image_aspect": "custom",
+        "desktop_height": 50,
+        "mobile_height": 100,
+        "focal_point": "center",
+        "text_position": "center_center",
+        "text_position_mobile": "center_center",
+        "text_color": "#ffffff",
+        "color_overlay": "#000000",
+        "color_overlay_gradient": "",
+        "overlay_opacity": 50,
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-none"
+      }
+    },
+    "main-collection-product-grid": {
+      "type": "main-collection-product-grid",
+      "settings": {
+        "columns_desktop": "4",
+        "columns_mobile": "2",
+        "rows": "4",
+        "show_item_count": true,
+        "show_sort": true,
+        "show_filters": true,
+        "enable_sticky_filter_bar": true,
+        "desktop_filter_location": "sidebar",
+        "collapse_filter_bar": false,
+        "enable_sticky_filter_sidebar": true,
+        "collapse_filter_groups_desktop": true,
+        "collapse_filter_groups_mobile": false,
+        "show_swatch_filters": true,
+        "show_chip_filters": true,
+        "chip_layout": "natural",
+        "pagination": "infinite",
+        "enable_animation": false,
+        "divider_style": "solid"
+      }
+    }
+  },
+  "order": [
+    "promotion_bar_NMLzGj",
+    "banner",
+    "main-collection-product-grid"
+  ]
+}

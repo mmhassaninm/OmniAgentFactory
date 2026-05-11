@@ -1,0 +1,115 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "type": "custom.overlay",
+  "name": "t:groups.overlay_group.name",
+  "sections": {
+    "quick-cart": {
+      "type": "quick-cart",
+      "settings": {
+        "enable_quick_cart": true,
+        "show_product_currency": true,
+        "continue_shopping_link": "shopify:\/\/collections",
+        "promotion_text": "<p><br>Not sure where to start? <br>Try these categories:<\/p>",
+        "collection_list": [
+          "body",
+          "bath",
+          "face",
+          "hair"
+        ],
+        "collection_list_button_style": "btn--secondary"
+      }
+    },
+    "popup": {
+      "type": "popup",
+      "blocks": {
+        "ec11c2ad-6486-429b-ae99-a558c2969564": {
+          "type": "popup_signup",
+          "disabled": true,
+          "settings": {
+            "delay": "timer_10000",
+            "frequency": "frequency_100000",
+            "show_on_exit_intent": false,
+            "disable_for_account_holders": true,
+            "show_on_specific_page": false,
+            "target_page": "",
+            "accent": "Welcome",
+            "heading": "Enjoy 10% off your first purchase",
+            "heading_font_class": "fs-heading-1-base",
+            "subheading": "",
+            "text": "<p>When you join the list<\/p>",
+            "link_text": "Unlock 10% off",
+            "dismiss_text": "No, thanks",
+            "footer_text": "<p>*Not valid with other codes and limited time promotions. By completing this form, you are signing up to receive our emails and can unsubscribe at any time<\/p>",
+            "tags": "newsletter",
+            "show_social_icons": true,
+            "popup_size": "medium",
+            "content_alignment": "left",
+            "image_position": "left",
+            "focal_point": "center",
+            "show_image_on_mobile": true,
+            "background_color": "#000000",
+            "text_color": "#ffffff",
+            "input_color": "#ffffff",
+            "input_background": "#000000",
+            "button_background_color": "#ffffff",
+            "button_text_color": "#000000",
+            "color_overlay": "#000000",
+            "overlay_opacity": 0,
+            "enable_tab": true,
+            "tab_text": "Get 10% Off",
+            "text_font_class": "fs-body-100",
+            "tab_position": "bottom_left_floating",
+            "tab_text_color": "#000000",
+            "tab_background_color": "#ffffff"
+          }
+        },
+        "25c67488-8f18-4840-9990-87bc12602bd3": {
+          "type": "flyout",
+          "disabled": true,
+          "settings": {
+            "delay": "timer_10000",
+            "frequency": "frequency_100000",
+            "show_on_exit_intent": false,
+            "disable_for_account_holders": false,
+            "show_on_specific_page": false,
+            "target_page": "",
+            "accent": "THEME WALKTHROUGH",
+            "heading": "Learn more about Stiletto's features",
+            "heading_font_class": "fs-heading-1-base",
+            "text": "",
+            "link": "https:\/\/stiletto-theme-organic.myshopify.com\/pages\/theme#stiletto-walkthrough",
+            "link_text": "WATCH VIDEO",
+            "dismiss_text": "",
+            "footer_text": "",
+            "flyout_position": "right",
+            "content_alignment": "center",
+            "focal_point": "image_presentation",
+            "background_color": "#ffffff",
+            "text_color": "#102b26",
+            "button_background_color": "#e0eaed",
+            "button_text_color": "#1e3934",
+            "color_overlay": "#000000",
+            "overlay_opacity": 53
+          }
+        }
+      },
+      "block_order": [
+        "ec11c2ad-6486-429b-ae99-a558c2969564",
+        "25c67488-8f18-4840-9990-87bc12602bd3"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "quick-cart",
+    "popup"
+  ]
+}

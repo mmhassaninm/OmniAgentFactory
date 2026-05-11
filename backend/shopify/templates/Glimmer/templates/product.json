@@ -1,0 +1,662 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-product--default",
+      "blocks": {
+        "product_header": {
+          "type": "product_header",
+          "settings": {
+            "show_divider": false,
+            "show_vendor": true,
+            "show_sku": true,
+            "show_discount": true,
+            "discount_format": "percent_off",
+            "show_product_rating": true,
+            "show_sale_badge": true,
+            "show_custom_badges": true
+          }
+        },
+        "text": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text_font_class": "fs-body-100",
+            "text": "<p>Plump up, firm up and moisturize like you mean business with premium botanicals and intense hyaluronic power.</p>",
+            "column_placement": "right"
+          }
+        },
+        "variant_picker": {
+          "type": "variant_picker",
+          "settings": {
+            "variant_popup_option": "Size",
+            "variant_popup_icon": "none",
+            "variant_popup_text": "Size guide",
+            "variant_popup_page": "",
+            "swatch_size": "medium",
+            "chip_layout": "3col"
+          }
+        },
+        "quantity_selector": {
+          "type": "quantity_selector",
+          "settings": {
+            "show_labels": true
+          }
+        },
+        "inventory-counter": {
+          "type": "inventory-counter",
+          "settings": {
+            "label": "Availability",
+            "inventory_max": "100",
+            "low_inventory_threshold": "40",
+            "show_status_bar": true,
+            "show_untracked_quantity": true
+          }
+        },
+        "buy_buttons": {
+          "type": "buy_buttons",
+          "settings": {
+            "show_dynamic_checkout": false,
+            "enable_sticky_atc_bar_desktop": true,
+            "enable_sticky_atc_bar_mobile": true,
+            "divider_width": "shadow--large"
+          }
+        },
+        "description": {
+          "type": "description",
+          "settings": {
+            "title": "Description",
+            "title_tag": "h3",
+            "text_font_class": "fs-body-100",
+            "column_placement": "left",
+            "display_as_collapsible_row": true,
+            "expand_by_default": true
+          }
+        },
+        "accordion-1": {
+          "type": "accordion",
+          "disabled": true,
+          "settings": {
+            "expand_by_default": false,
+            "column_placement": "left",
+            "heading": "How to use",
+            "heading_tag": "h3",
+            "content": "<p>Massage into skin using circular motions. For an insanely radiant glow, press a steamy hot cloth into the skin before wiping clean.</p>",
+            "page_for_content": "",
+            "custom_liquid": ""
+          }
+        },
+        "accordion-2": {
+          "type": "accordion",
+          "disabled": true,
+          "settings": {
+            "expand_by_default": false,
+            "column_placement": "left",
+            "heading": "Ingredients",
+            "heading_tag": "h3",
+            "content": "<p><strong>Argan oil</strong></p><p>Rich in vitamins E, A and linoleac acid, argan oil is packed with antioxidants and essential fatty acids (omega 6 + omega 3) for ultimate skin protection and nourishment. It absorbs quickly and doesn't leave any oily residue.</p><p><strong>Tucuma Butter</strong></p><p>Tucuma is packed with antioxidant polyphenols which means it's great for battling free radicals. It also has lots of fatty acids, so it can protect and moisturize your skin while keeping it supple. Tucuma butter is rich in lauric, myristic and oleic acids and is considered to have excellent cell regeneration properties.</p>",
+            "page_for_content": "",
+            "custom_liquid": ""
+          }
+        },
+        "accordion-3": {
+          "type": "accordion",
+          "disabled": true,
+          "settings": {
+            "expand_by_default": false,
+            "column_placement": "left",
+            "heading": "Product Care",
+            "heading_tag": "h3",
+            "content": "<p>Our products do not contain harsh preservatives so we recommend using them up within 6 months of purchase. Opened products will remain stable up to one year, but using them at their freshest is always recommended.</p>",
+            "page_for_content": "",
+            "custom_liquid": ""
+          }
+        },
+        "accordion-4": {
+          "type": "accordion",
+          "disabled": true,
+          "settings": {
+            "expand_by_default": false,
+            "column_placement": "left",
+            "heading": "Shipping & Returns",
+            "heading_tag": "h3",
+            "content": "<p></p><p><strong>Standard Shipping:</strong><span style=\"text-decoration:underline\"><br/></span>Free Standard Shipping on orders over $50. Select “Free Shipping” at checkout.<br/><br/></p><p><strong>Free Easy Returns:</strong><span style=\"text-decoration:underline\"><br/></span>Need to return an item? We make it easy. Email us and we'll send you a free return label with instructions on how to return.</p>",
+            "page_for_content": "",
+            "custom_liquid": ""
+          }
+        },
+        "product_callouts-1": {
+          "type": "product_callouts",
+          "disabled": true,
+          "settings": {
+            "title": "",
+            "title_tag": "h3",
+            "add_box": true,
+            "add_dividers": true,
+            "icon_1": "none",
+            "text_1": "<p><strong>Ideal for Skin Types: </strong>Dry, Mature,  Sensitive, Combination</p>",
+            "icon_2": "none",
+            "text_2": "<p><strong>Scent: </strong>Natural hint of Vanilla</p>",
+            "icon_3": "none",
+            "text_3": "",
+            "icon_4": "none",
+            "text_4": "",
+            "icon_5": "none",
+            "text_5": "",
+            "icon_6": "chat",
+            "text_6": "",
+            "display_as_collapsible_row": false,
+            "expand_by_default": false
+          }
+        },
+        "product_callouts": {
+          "type": "product_callouts",
+          "settings": {
+            "title": "",
+            "title_tag": "h3",
+            "add_box": false,
+            "add_dividers": false,
+            "icon_1": "package-closed",
+            "text_1": "<p>Free shipping over 300 SAR</p>",
+            "icon_2": "moving-truck",
+            "text_2": "<p>Fast delivery</p>",
+            "icon_3": "chat",
+            "text_3": "<p>Need help? <a href=\"/pages/contact\">Contact us</a></p>",
+            "icon_4": "none",
+            "text_4": "",
+            "icon_5": "none",
+            "text_5": "",
+            "icon_6": "chat",
+            "text_6": "",
+            "display_as_collapsible_row": false,
+            "expand_by_default": false
+          }
+        },
+        "share": {
+          "type": "share",
+          "settings": {}
+        },
+        "featured_products": {
+          "type": "featured_products",
+          "disabled": true,
+          "settings": {
+            "heading": "Pairs well with",
+            "heading_tag": "h3",
+            "column_placement": "left",
+            "max_products": 3,
+            "product_source": "app-recommendations",
+            "product_list": [],
+            "enable_swiper_mobile": true,
+            "display_as_collapsible_row": true,
+            "expand_by_default": true
+          }
+        }
+      },
+      "block_order": [
+        "product_header",
+        "text",
+        "variant_picker",
+        "quantity_selector",
+        "inventory-counter",
+        "buy_buttons",
+        "description",
+        "accordion-1",
+        "accordion-2",
+        "accordion-3",
+        "accordion-4",
+        "product_callouts-1",
+        "product_callouts",
+        "share",
+        "featured_products"
+      ],
+      "settings": {
+        "enable_sticky_product_details": true,
+        "show_breadcrumbs": true,
+        "show_navigation_buttons": false,
+        "show_featured_media_first": false,
+        "gallery_style": "thumbnails",
+        "gallery_style_mobile": "grid",
+        "gallery_size": "large",
+        "gallery_overflow": "2",
+        "enable_video_looping": true,
+        "enable_product_lightbox": true,
+        "image_aspect_ratio": "square",
+        "enable_multiple_variant_media": true,
+        "enable_mobile_carousel_looping": true,
+        "show_mobile_carousel_images_full_width": false,
+        "hide_mobile_carousel_dots": false,
+        "enable_gift_card_recipient": true,
+        "enable_animation": true
+      }
+    },
+    "multi-column-1": {
+      "type": "multi-column",
+      "blocks": {
+        "icon_column-1": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "none",
+            "icon_width": 50,
+            "icon_width_mobile": 50,
+            "accent": "",
+            "heading": "",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        },
+        "icon_column-2": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "heart",
+            "icon_width": 56,
+            "icon_width_mobile": 38,
+            "accent": "",
+            "heading": "Cruelty Free",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p>Products and ingredients are never tested on animals</p>",
+            "text_font_class": "fs-body-75",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        },
+        "icon_column-3": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "plant",
+            "icon_width": 58,
+            "icon_width_mobile": 38,
+            "accent": "",
+            "heading": "Vegan",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p>Pure, plant-based, totally clean Skincare.</p>",
+            "text_font_class": "fs-body-75",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        },
+        "icon_column-4": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "globe",
+            "icon_width": 56,
+            "icon_width_mobile": 36,
+            "accent": "",
+            "heading": "Certified",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "<p>Certified by certCLEAN  for toxin-free skin care.</p>",
+            "text_font_class": "fs-body-75",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        },
+        "icon_column-5": {
+          "type": "icon_column",
+          "settings": {
+            "icon": "none",
+            "icon_width": 50,
+            "icon_width_mobile": 50,
+            "accent": "",
+            "heading": "",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-4-base",
+            "text": "",
+            "text_font_class": "fs-body-100",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        }
+      },
+      "block_order": [
+        "icon_column-1",
+        "icon_column-2",
+        "icon_column-3",
+        "icon_column-4",
+        "icon_column-5"
+      ],
+      "disabled": true,
+      "settings": {
+        "title": "",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-3-base",
+        "subheading": "",
+        "heading_alignment": "center",
+        "content_vertical_alignment": "top",
+        "content_background_padding": "small",
+        "columns": "5",
+        "column_spacing": 24,
+        "row_spacing": 28,
+        "column_alignment": "center",
+        "enable_slider_mobile": false,
+        "columns_mobile": "1",
+        "column_spacing_mobile": 16,
+        "row_spacing_mobile": 36,
+        "column_alignment_mobile": "center",
+        "background_behind_columns": false,
+        "background_color": "rgba(0,0,0,0)",
+        "text_color": "#0f2d27",
+        "button_background_color": "#000000",
+        "button_text_color": "#ffffff",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-none"
+      }
+    },
+    "image-with-text-split": {
+      "type": "image-with-text-split",
+      "blocks": {
+        "accent": {
+          "type": "accent",
+          "disabled": true,
+          "settings": {
+            "accent": "Accent"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "title": "Our Promise",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-3"
+          }
+        },
+        "border": {
+          "type": "border",
+          "settings": {}
+        },
+        "text-1": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Pure, plant-based, totally clean skincare<br/></p>",
+            "text_font_class": "fs-body-200"
+          }
+        },
+        "text-2": {
+          "type": "text",
+          "settings": {
+            "text": "<p>No synthetic colour or fragrance<br/></p>",
+            "text_font_class": "fs-body-200"
+          }
+        },
+        "text-3": {
+          "type": "text",
+          "settings": {
+            "text": "<p>No fillers, parabens or sulfates<br/></p>",
+            "text_font_class": "fs-body-200"
+          }
+        },
+        "text-4": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Cruelty-free, gluten-free, vegan<br/></p>",
+            "text_font_class": "fs-body-200"
+          }
+        },
+        "text-5": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Safe for moms-to-be<br/></p>",
+            "text_font_class": "fs-body-200"
+          }
+        }
+      },
+      "block_order": [
+        "accent",
+        "heading",
+        "border",
+        "text-1",
+        "text-2",
+        "text-3",
+        "text-4",
+        "text-5"
+      ],
+      "disabled": true,
+      "settings": {
+        "image_position": "right",
+        "image_mobile_position": "above-content",
+        "image_padding": "none",
+        "aspect_ratio": "square",
+        "focal_point": "center",
+        "content_alignment": "left",
+        "background_color": "#102b26",
+        "text_color": "#ffffff",
+        "button_background_color": "#000000",
+        "button_text_color": "#ffffff",
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "collapsible-row-list": {
+      "type": "collapsible-row-list",
+      "blocks": {
+        "item-1": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "none",
+            "title": "What skin types are your products suitable for?",
+            "text": "<p>This is an example of a response that you might give. It's good to be as thorough as possible in responses as that has a tendency to improve trust overall.</p>"
+          }
+        },
+        "item-2": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "none",
+            "title": "Who is this product best suited for?",
+            "text": "<p>This is an example of a response that you might give. It's good to be as thorough as possible in responses as that has a tendency to improve trust overall.</p>"
+          }
+        },
+        "item-3": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "none",
+            "title": "Are your products safe for all ages and pregnancies?",
+            "text": "<p>This is an example of a response that you might give. It's good to be as thorough as possible in responses as that has a tendency to improve trust overall.</p>"
+          }
+        },
+        "item-4": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "none",
+            "title": "Is your packaging recyclable?",
+            "text": "<p>This is an example of a response that you might give. It's good to be as thorough as possible in responses as that has a tendency to improve trust overall.</p>"
+          }
+        },
+        "item-5": {
+          "type": "item",
+          "settings": {
+            "expand_by_default": false,
+            "icon": "none",
+            "title": "Are your products all-natural/organic?",
+            "text": "<p>This is an example of a response that you might give. It's good to be as thorough as possible in responses as that has a tendency to improve trust overall.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "item-1",
+        "item-2",
+        "item-3",
+        "item-4",
+        "item-5"
+      ],
+      "disabled": true,
+      "settings": {
+        "title": "FAQ",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-3-base",
+        "heading_alignment": "left",
+        "subheading": "",
+        "subheading_tag": "h3",
+        "subheading_font_class": "fs-heading-5-base",
+        "item_heading_font": "heading",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom",
+        "content_width": "full",
+        "custom_content_width": 700
+      }
+    },
+    "video-hero": {
+      "type": "video-hero",
+      "blocks": {
+        "accent": {
+          "type": "accent",
+          "disabled": true,
+          "settings": {
+            "accent": "Accent"
+          }
+        },
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "title": "Better for Everyone",
+            "heading_tag": "h2",
+            "heading_font_class": "fs-heading-display-2"
+          }
+        },
+        "text": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "<p>Use this section to promote a particular feature with editorial video.</p>",
+            "text_font_class": "fs-body-100"
+          }
+        }
+      },
+      "block_order": [
+        "accent",
+        "heading",
+        "text"
+      ],
+      "disabled": true,
+      "settings": {
+        "image_aspect": "custom",
+        "desktop_height": 50,
+        "mobile_height": 55,
+        "media_link": "",
+        "focal_point": "center",
+        "focal_point_mobile": "image_presentation",
+        "text_position": "center_center",
+        "text_position_mobile": "center_center",
+        "text_color": "#cfff9b",
+        "button_background_color": "#ffffff",
+        "button_text_color": "#000000",
+        "color_overlay": "#000000",
+        "color_overlay_gradient": "radial-gradient(rgba(43, 21, 0, 0.52) 3%, rgba(196, 182, 125, 0.19) 84%)",
+        "overlay_opacity": 49,
+        "enable_animation": true,
+        "section_padding": "section--vertical-padding-top-only"
+      }
+    },
+    "recommendations": {
+      "type": "recommended-products",
+      "disabled": true,
+      "settings": {
+        "title": "You may also like",
+        "heading_tag": "h2",
+        "subheading": "",
+        "maximum_products": 8,
+        "columns": "5",
+        "mobile_columns": "2",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "1757502411f036866a": {
+      "type": "apps",
+      "settings": {
+        "heading": "App section",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    },
+    "multi-column-2": {
+      "type": "multi-column",
+      "blocks": {
+        "column": {
+          "type": "column",
+          "settings": {
+            "accent": "",
+            "heading": "Pure, plant-based, totally clean skincare",
+            "heading_tag": "h3",
+            "heading_font_class": "fs-heading-3-base",
+            "text": "",
+            "text_font_class": "fs-body-300",
+            "text_max_width": 100,
+            "link": "",
+            "link_text": "",
+            "button_style": "btn--primary"
+          }
+        }
+      },
+      "block_order": [
+        "column"
+      ],
+      "settings": {
+        "title": "",
+        "heading_tag": "h2",
+        "heading_font_class": "fs-heading-3-base",
+        "subheading": "",
+        "heading_alignment": "left",
+        "content_vertical_alignment": "top",
+        "content_background_padding": "medium",
+        "columns": "1",
+        "column_spacing": 28,
+        "row_spacing": 28,
+        "column_alignment": "center",
+        "enable_slider_mobile": false,
+        "columns_mobile": "1",
+        "column_spacing_mobile": 20,
+        "row_spacing_mobile": 20,
+        "column_alignment_mobile": "center",
+        "background_behind_columns": false,
+        "background_color": "#000000",
+        "text_color": "#ffffff",
+        "button_background_color": "#ffffff",
+        "button_text_color": "#ffffff",
+        "enable_animation": true,
+        "divider_style": "none",
+        "section_padding": "section--vertical-padding-top-bottom"
+      }
+    }
+  },
+  "order": [
+    "main",
+    "multi-column-1",
+    "image-with-text-split",
+    "collapsible-row-list",
+    "video-hero",
+    "recommendations",
+    "1757502411f036866a",
+    "multi-column-2"
+  ]
+}

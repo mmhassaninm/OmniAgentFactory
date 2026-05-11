@@ -1,0 +1,89 @@
+{
+  "general": {
+    "meta": {"page": "صفحة {{ page_num }}"}
+  },
+  "products": {
+    "product": {
+      "add_to_cart": "أضف إلى السلة",
+      "sold_out": "نفد المخزون",
+      "unavailable": "غير متاح",
+      "on_sale": "عرض",
+      "quantity": {"label": "الكمية"},
+      "description": "الوصف",
+      "share": "شارك",
+      "you_may_also_like": "قد يعجبك أيضاً"
+    }
+  },
+  "collections": {
+    "general": {
+      "no_matches": "لا توجد منتجات",
+      "sort_by_label": "ترتيب حسب",
+      "filter_by_label": "تصفية حسب",
+      "clear_all": "مسح الكل"
+    },
+    "sorting": {
+      "featured": "مميز",
+      "best_selling": "الأكثر مبيعاً",
+      "title_ascending": "أ إلى ي",
+      "title_descending": "ي إلى أ",
+      "price_ascending": "السعر: من الأرخص",
+      "price_descending": "السعر: من الأغلى",
+      "created_descending": "الأحدث أولاً"
+    }
+  },
+  "cart": {
+    "general": {
+      "title": "سلة التسوق",
+      "empty": "سلتك فارغة",
+      "checkout": "إتمام الشراء",
+      "continue_shopping": "مواصلة التسوق",
+      "remove": "حذف",
+      "subtotal": "المجموع الجزئي",
+      "note": "ملاحظة على الطلب",
+      "free_shipping_message": "أضف {{ amount }} للحصول على شحن مجاني",
+      "free_shipping_reached": "حصلت على شحن مجاني!"
+    }
+  },
+  "sections": {
+    "header": {
+      "menu": "القائمة",
+      "search": "بحث",
+      "cart": "السلة",
+      "account": "حساب"
+    },
+    "footer": {
+      "newsletter_title": "اشترك في نشرتنا",
+      "newsletter_placeholder": "بريدك الإلكتروني"
+    },
+    "hero": {
+      "heading": "مرحباً بك",
+      "subheading": "اكتشف أفضل المنتجات",
+      "cta": "تسوق الآن"
+    },
+    "featured_collection": {
+      "title": "منتجاتنا المميزة",
+      "view_all": "عرض الكل"
+    },
+    "testimonials": {"title": "ماذا يقول عملاؤنا"},
+    "newsletter": {
+      "title": "ابق على اطلاع",
+      "subtitle": "اشترك للحصول على عروض حصرية",
+      "button": "اشترك"
+    }
+  },
+  "accessibility": {
+    "skip_to_content": "انتقل إلى المحتوى",
+    "close": "إغلاق",
+    "open_menu": "فتح القائمة",
+    "loading": "جاري التحميل"
+  },
+  "search": {
+    "placeholder": "ابحث عن منتج...",
+    "no_results": "لا نتائج",
+    "results_with_count": "{{ count }} نتيجة"
+  },
+  "pagination": {
+    "previous": "السابق",
+    "next": "التالي"
+  }
+}

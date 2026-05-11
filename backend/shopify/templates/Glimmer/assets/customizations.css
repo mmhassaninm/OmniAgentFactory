@@ -1,0 +1,330 @@
+/* IBM Plex Sans Arabic for Arabic language 
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&display=swap");
+
+html[lang="ar"] body,
+html[lang="ar"] body *,
+html[lang="ar"] body input,
+html[lang="ar"] body textarea,
+html[lang="ar"] body select,
+html[lang="ar"] body button {
+  font-family: "IBM Plex Sans Arabic", sans-serif !important;
+}
+*/
+
+/* === PingARLT: fonts loaded from your theme /assets === */
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-Black.woff2") format("woff2"),
+    url("/assets/PingARLT-Black.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-Heavy.woff2") format("woff2"),
+    url("/assets/PingARLT-Heavy.woff") format("woff");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-Bold.woff2") format("woff2"),
+    url("/assets/PingARLT-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-Medium.woff2") format("woff2"),
+    url("/assets/PingARLT-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-Regular.woff2") format("woff2"),
+    url("/assets/PingARLT-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-Light.woff2") format("woff2"),
+    url("/assets/PingARLT-Light.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-ExtraLight.woff2") format("woff2"),
+    url("/assets/PingARLT-ExtraLight.woff") format("woff");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+/* Choose ONE at 100 (don’t load both at the same weight) */
+@font-face {
+  font-family: "PingARLT";
+  src: url("/assets/PingARLT-Thin.woff2") format("woff2"),
+    url("/assets/PingARLT-Thin.woff") format("woff");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+/* If you prefer Hairline instead, comment Thin above and use:
+@font-face{font-family:'PingARLT';src:url('/assets/PingARLT-Hairline.woff2') format('woff2'),
+  url('/assets/PingARLT-Hairline.woff') format('woff');font-weight:100;font-style:normal;font-display:swap}
+*/
+
+html[lang="ar"] body,
+html[lang="ar"] body * {
+  font-family: "PingARLT", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif !important;
+}
+
+body {
+  direction: rtl;
+}
+
+header[data-navigation-position="left"][data-logo-position="left"]
+  .header__row.header__row-desktop.lower
+  .header__row-segment.left
+  .header__logo,
+header[data-navigation-position="center"][data-logo-position="left"]
+  .header__row.header__row-desktop.lower
+  .header__row-segment.left
+  .header__logo {
+  margin-left: 28px;
+  margin-left: var(--spacing-7);
+  margin-right: 0;
+}
+
+.header__links-primary .header__links-list > li:not(:last-child) {
+  margin-left: 24px;
+  margin-left: var(--spacing-6);
+  margin-right: 0;
+}
+
+.header__links-list .header__links-icon {
+  margin-right: 8px;
+  margin-right: var(--spacing-2);
+  margin-left: 0;
+}
+
+.header__links-list > li:not(:last-child) {
+  margin-left: 20px;
+  margin-left: var(--spacing-5);
+  margin-right: 0;
+}
+
+.disclosure__toggle .icon {
+  margin-right: 6px;
+  margin-right: calc(var(--spacing-2) - 2px);
+  margin-left: 0;
+}
+
+.disclosure-list__option > .icon {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.header__row .header__row-segment.right .header__icon-touch:last-child {
+  margin-right: 0px;
+}
+
+/*
+.quick-cart__container {
+  margin-right: auto;
+  margin-left: 0;
+}
+ 
+
+.quick-cart__wrapper {
+  padding-right: 36px;
+  padding-right: var(--flyout-mobile-gap);
+  padding-left: 0;
+}
+   */
+
+.slideshow-navigation__navigation-button--previous {
+  transform: rotate(270deg);
+}
+
+.slideshow-navigation__navigation-button--next {
+  transform: rotate(-270deg);
+}
+
+.quick-search__close {
+  margin-left: 28px;
+  margin-left: var(--spacing-7);
+  margin-right: 0;
+}
+
+.slideshow-slide__text-container {
+  text-align: right;
+}
+
+.scrolling-content__inner {
+  direction: ltr;
+}
+
+@media (min-width: 720px) {
+  .complete-the-look__image-container {
+    width: 48.75%;
+    margin-left: 2.5%;
+    margin-right: 0;
+    flex-shrink: 0;
+  }
+}
+
+.carousel__navigation-buttons {
+  margin-right: auto;
+  margin-left: 0;
+  direction: ltr;
+}
+
+.footer__newsletter .footer__newsletter-button {
+  left: 0;
+  right: auto;
+}
+
+.footer__header {
+  text-align: right;
+}
+
+@media (min-width: 960px) {
+  .image-with-text-split.image-with-text-split--image-position-right
+    .image-with-text-split__text-container {
+    text-align: right;
+  }
+}
+
+@media (min-width: 960px) {
+  .image-with-text-split.image-with-text-split--image-position-left
+    .image-with-text-split__text-container {
+    text-align: right;
+  }
+}
+
+.quick-search__form.active .quick-search__results-wrapper {
+  direction: ltr;
+}
+
+.collapsible-row-list-item__heading {
+  padding-left: 60px;
+  padding-left: var(--spacing-15);
+  padding-right: 15px;
+}
+
+.accordion__label-icons {
+  margin-right: AUTO;
+  margin-left: 0;
+}
+
+.breadcrumbs__item {
+  margin-left: 12px;
+  margin-left: var(--spacing-3);
+  margin-right: 0;
+  padding-left: 12px;
+  padding-left: var(--spacing-3);
+  padding-right: 0;
+}
+
+.breadcrumbs__icon {
+  left: -4px;
+  left: calc(var(--spacing-1) * -1);
+  right: auto;
+  transform: rotate(180deg);
+}
+
+.filter-bar__sort-group {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.filter-bar__sort-group .filter-group__values {
+  right: auto;
+  left: 0;
+}
+
+.filter-item__label {
+  padding-right: 12px;
+  padding-right: var(--spacing-3);
+  padding-left: 0;
+}
+
+.filter-bar__button .icon-chevron-small {
+  margin-right: 8px;
+  margin-right: var(--spacing-2);
+  margin-left: 0;
+}
+
+.filter-bar__button.filter-bar__button--filters[data-filter-location="sidebar"] {
+  margin-left: 20px;
+  margin-left: var(--spacing-5);
+  margin-right: 0;
+}
+
+.filter-bar__button .icon-filter {
+  margin-left: 12px;
+  margin-right: 0;
+}
+
+.sar-price-wrapper {
+  font-weight: inherit;
+  color: inherit;
+}
+
+.sar-icon-final {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.sar-icon-final svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Scale up slightly for large price displays (e.g., product page hero price) */
+.price--large .sar-icon-final,
+.product__price .sar-icon-final {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+/* Price group for SAR — ensures sale + compare stay on one line */
+.sar-price-group {
+  white-space: nowrap;
+}
+
+.sar-compare-wrapper {
+  font-size: 0.85em;
+}
+
+/* Isolates non-SAR currency symbols from RTL page direction */
+.default-price-bdi {
+  display: inline-block;
+  unicode-bidi: isolate;
+  direction: ltr;
+}
+
+/* Force strikethrough inheritance for display: inline-block / inline-flex elements in price displays */
+s,
+del,
+s .default-price-bdi,
+del .default-price-bdi,
+.sar-compare-wrapper,
+.sar-compare-wrapper .sar-price-amount {
+  text-decoration: line-through !important;
+}

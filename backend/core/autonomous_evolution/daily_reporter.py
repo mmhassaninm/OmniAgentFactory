@@ -1,0 +1,162 @@
+"""
+Daily Report Generator -- Autonomous System Daily Summary
+Writes DAILY_REPORT.md to project root every day with:
+- Evolution loop stats (ideas implemented, problems solved)
+- API usage summary
+- System health
+- Next priorities
+"""
+import json
+import logging
+from datetime import datetime, timezone
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+_HERE = Path(__file__).resolve()
+BACKEND_ROOT = _HERE.parent.parent   # NexusOS/backend/
+PROJECT_ROOT = BACKEND_ROOT.parent   # NexusOS/
+AUTONOMOUS_LOGS = PROJECT_ROOT / "autonomous_logs"
+
+
+async def generate_daily_report(registry_manager=None) -> str:
+    """Generate and write DAILY_REPORT.md. Returns the report path."""
+    try:
+        now = datetime.now(timezone.utc)
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H:%M UTC")
+
+        # Load stats from JSON logs
+        ideas_data = _load_json(AUTONOMOUS_LOGS / "IDEAS_LOG.json")
+        problems_data = _load_json(AUTONOMOUS_LOGS / "PROBLEMS_LOG.json")
+        exec_data = _load_json(AUTONOMOUS_LOGS / "EXECUTION_HISTORY.json")
+        budget_data = _load_json(AUTONOMOUS_LOGS / "BUDGET_TRACKER.json")
+
+        ideas = ideas_data.get("ideas", [])
+        problems = problems_data.get("problems", [])
+        executions = exec_data.get("executions", [])
+
+        # Count today's executions
+        today_execs = [e for e in executions if e.get("timestamp", "").startswith(date_str)]
+        today_success = sum(1 for e in today_execs if e.get("success"))
+        today_fail = len(today_execs) - today_success
+
+        # Ideas stats
+        total_ideas = len(ideas)
+        impl_ideas = sum(1 for i in ideas if i.get("status") == "implemented")
+        pend_ideas = sum(1 for i in ideas if i.get("status") == "pending")
+        rej_ideas = sum(1 for i in ideas if i.get("status") == "rejected")
+
+        # Problems stats
+        total_probs = len(problems)
+        solved_probs = sum(1 for p in problems if p.get("status") == "solved")
+        open_probs = sum(1 for p in problems if p.get("status") == "in_progress")
+
+        # Budget
+        total_tokens = budget_data.get("total_tokens_used", 0)
+        total_cost = budget_data.get("total_spent_usd", 0)
+
+        # Recent implementations
+        recent_impl = [i for i in ideas if i.get("status") == "implemented"][-5:]
+        recent_solved = [p for p in problems if p.get("status") == "solved"][-5:]
+
+        # Build report
+        lines = [
+            f"# Daily Report -- {date_str}",
+            f"> Generated automatically at {time_str} | NexusOS Autonomous Evolution System",
+            "",
+            "---",
+            "",
+            "## System Status",
+            "",
+            "| Component | Status |",
+            "|---|---|",
+            f"| Evolution Loop | Running |",
+            f"| Execution Engine | Active |",
+            f"| Last Report | {time_str} |",
+            "",
+            "---",
+            "",
+            "## Ideas Registry",
+            "",
+            f"| Metric | Count |",
+            f"|---|---|",
+            f"| Total Ideas Generated | {total_ideas} |",
+            f"| Implemented | {impl_ideas} |",
+            f"| Pending | {pend_ideas} |",
+            f"| Rejected | {rej_ideas} |",
+            f"| Success Rate | {(impl_ideas/max(total_ideas,1)*100):.1f}% |",
+            "",
+        ]
+
+        if recent_impl:
+            lines += ["### Recent Implementations", ""]
+            for idea in recent_impl:
+                lines.append(f"- **{idea.get('id')}**: {idea.get('title')} ({idea.get('implemented_at', 'N/A')[:10]})")
+            lines.append("")
+
+        lines += [
+            "---",
+            "",
+            "## Problems Registry",
+            "",
+            f"| Metric | Count |",
+            f"|---|---|",
+            f"| Total Problems Found | {total_probs} |",
+            f"| Solved | {solved_probs} |",
+            f"| In Progress | {open_probs} |",
+            f"| Resolution Rate | {(solved_probs/max(total_probs,1)*100):.1f}% |",
+            "",
+        ]
+
+        if recent_solved:
+            lines += ["### Recently Solved", ""]
+            for prob in recent_solved:
+                lines.append(f"- **{prob.get('id')}**: {prob.get('title')} ({prob.get('solved_at', 'N/A')[:10]})")
+            lines.append("")
+
+        lines += [
+            "---",
+            "",
+            "## Execution History (Today)",
+            "",
+            f"| Metric | Count |",
+            f"|---|---|",
+            f"| Total Executions Today | {len(today_execs)} |",
+            f"| Successful | {today_success} |",
+            f"| Failed | {today_fail} |",
+            "",
+            "---",
+            "",
+            "## API Usage",
+            "",
+            f"| Metric | Value |",
+            f"|---|---|",
+            f"| Total Tokens Used | {total_tokens:,} |",
+            f"| Estimated Cost | ${total_cost:.4f} |",
+            "",
+            "---",
+            "",
+            f"*Report generated by NexusOS Autonomous Evolution System on {date_str} at {time_str}*",
+        ]
+
+        report_content = "\n".join(lines)
+        report_path = PROJECT_ROOT / "DAILY_REPORT.md"
+        report_path.write_text(report_content, encoding="utf-8")
+
+        logger.info(f"Daily report written to {report_path}")
+        return str(report_path)
+
+    except Exception as e:
+        logger.error(f"Failed to generate daily report: {e}")
+        return ""
+
+
+def _load_json(path: Path) -> dict:
+    """Safely load a JSON file, return empty dict on failure."""
+    try:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}

@@ -94,7 +94,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
             transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
             maxWidth: isFit ? '100%' : 'none',
             maxHeight: isFit ? '100%' : 'none',
-            objectFit: isFit ? 'contain' : 'auto',
+            objectFit: isFit ? 'contain' : 'cover',
           }}
           className="transition-transform duration-200"
         />

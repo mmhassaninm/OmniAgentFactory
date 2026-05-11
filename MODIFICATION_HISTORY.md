@@ -422,3 +422,81 @@
 - Approach      : Replaced `robust_parse_json()` with multi-step recovery logic (fence stripping, trailing comma cleanup, truncation pair-extraction fallback, strict logging). Reduced LiquidDeveloper batch size and token budget (`BATCH_SIZE=2`, `max_tokens=3000`), enforced strict escaped-JSON output instructions, and added real per-section fallback generation when a batch parse fails. Added Phase 2 intelligence in SwarmEngine with calculated theme scoring, score persistence to `shopify_theme_scores`, and intelligence loading (top themes + per-niche recommendations) into evolution context. Upgraded Version Timeline UI into clickable entries with one-line summaries and a modal release-notes popup.
 - Outcome       : success
 - Notes         : Frontend lint check returned no issues; backend syntax compile passed for all edited Shopify Python files.
+
+## [2026-05-10] — 3-Phase Completion: Loop API + Evolution Dashboard + Shopify Factory Upgrade
+- Files changed : backend/api/evolution_registry.py (bug fix: Request type annotation on all 8 endpoints),
+                  backend/main.py (registered Evolution Registry API router),
+                  frontend/src/pages/EvolutionRegistry.tsx (new — full real-time dashboard),
+                  frontend/src/App.tsx (added /evolution route),
+                  frontend/src/components/MainLayout.tsx (added Evolution nav link + Brain icon),
+                  backend/shopify/templates/base_theme/config/settings_schema.json (expanded: 5 → 13 groups),
+                  backend/shopify/templates/base_theme/config/settings_data.json (added 5 color presets),
+                  backend/shopify/templates/base_theme/locales/ar.json (new — full Arabic locale),
+                  backend/shopify/agents/ux_designer.py (10 pages, 6-9 sections, schema rules),
+                  backend/shopify/agents/liquid_developer.py (BATCH_SIZE 2→3, max_tokens 3000→4000, multi-lang + responsive),
+                  backend/shopify/tools/shopify_builder.py (_apply_creative_brief: fonts + border-radius + content injection)
+- Approach      : Phase 1: Fixed FastAPI Request type bug in all evolution_registry endpoints. Registered router in main.py.
+                  Phase 2: Created full EvolutionRegistry.tsx dashboard with ideas/problems tables, loop controls,
+                  approve/reject mutations, stats cards, and 10s auto-refresh via react-query.
+                  Phase 3: Expanded settings_schema from 5 to 13 groups (Social Media, Cart, Animations, Search,
+                  Currency, Header, Footer, Product Cards). Added 5 named color presets (Light Minimal, Dark Luxury,
+                  Bold Colorful, Warm Earthy, Ocean Fresh). Created ar.json Arabic locale. Updated UXDesigner to
+                  generate 10 pages with 6-9 sections each and mandatory schema rules. Updated LiquidDeveloper
+                  with multi-language t() keys, responsive mobile-first CSS, standard section settings.
+                  Upgraded _apply_creative_brief to inject typography, border-radius, and content data.
+- Outcome       : success
+- Notes         : Evolution loop was already integrated in main.py from previous session — only API router was missing.
+
+## [2026-05-10] -- Phase 2: Real ImplementationRunner (replaces stub)
+- Files changed : backend/core/autonomous_evolution/implementation_runner.py
+- Approach      : Complete rewrite -- LLM plan generation + git safety branch + py_compile validation + rollback
+- Outcome       : success
+- Notes         : Original file was a 34-line stub that returned hardcoded dicts. Now a full 353-line engine.
+
+## [2026-05-10] -- Phase 2: Fix ProblemScanner absolute paths
+- Files changed : backend/core/autonomous_evolution/problem_scanner.py
+- Approach      : Replaced relative path strings with Path(__file__).resolve() based BACKEND_ROOT constants
+- Outcome       : success
+- Notes         : scan_paths and important_files were using CWD-relative strings that failed under Docker
+
+## [2026-05-10] -- Phase 2: Fix RegistryManager Markdown write path
+- Files changed : backend/core/autonomous_evolution/registry_manager.py
+- Approach      : Added PROJECT_ROOT detection, Markdown writes to project root, added JSON sync methods
+- Outcome       : success
+- Notes         : Was writing to backend/ instead of NexusOS/; added _sync_ideas_json + _sync_problems_json
+
+## [2026-05-10] -- Phase 2: Glimmer theme integration into LiquidDeveloper
+- Files changed : backend/shopify/agents/liquid_developer.py
+- Approach      : Added _load_glimmer_patterns() loading 7 reference sections, injected into system prompt
+- Outcome       : success
+- Notes         : Glimmer has 79 professional sections; now used as design inspiration for every batch
+
+## [2026-05-10] -- Phase 2: LoopOrchestrator daily report + model_router injection
+- Files changed : backend/core/autonomous_evolution/loop_orchestrator.py
+- Approach      : Added DAILY_REPORT_EVERY_N_CYCLES trigger, _generate_daily_report(), model_router param
+- Outcome       : success
+- Notes         : Used %s logging throughout to avoid f-string/em-dash truncation issue
+
+## [2026-05-10] -- Phase 2: Daily Reporter (new module)
+- Files changed : backend/core/autonomous_evolution/daily_reporter.py
+- Approach      : New module reading all 4 JSON logs, generating Markdown daily report to DAILY_REPORT.md
+- Outcome       : success
+- Notes         : Reads IDEAS_LOG.json, PROBLEMS_LOG.json, EXECUTION_HISTORY.json, BUDGET_TRACKER.json
+
+## [2026-05-10] -- Phase 2: main.py startup wiring
+- Files changed : backend/main.py
+- Approach      : Injected model_router into ImplementationRunner and LoopOrchestrator constructors
+- Outcome       : success
+- Notes         : File was truncated mid-dict at line 446; fixed by head + append approach
+
+## [2026-05-11] — Phase 1 Evolution: Playwright DDGS Refactor & Safe File CRUD API
+- Files changed : backend/tools/browser_tool.py, backend/routers/files.py, EVOLUTION_IDEAS_REGISTRY.md, Evolve_plan.md
+- Approach      : (1) Replaced brittle, heavy Playwright page queries in `BrowserTool.search_web` with the efficient, pre-installed `duckduckgo_search` (DDGS) library. Added resilient error handling with warning logging and fallback empty results to completely eliminate timeout crashes. (2) Extended `backend/routers/files.py` to support safe `GET /api/files/read`, `POST /api/files/write`, and `DELETE /api/files/delete` file CRUD endpoints with dynamic `pathlib` root resolution and absolute traversal security limits. (3) Physically inspected and verified `backend/core/autonomous_evolution/*` and aligned `EVOLUTION_IDEAS_REGISTRY.md` to reflect full implementation status of `IDEA-001` and `IDEA-008`. (4) Seeded the master `Evolve_plan.md` in the project root with prioritized backlog tracking.
+- Outcome       : success
+- Notes         : Highly reliable, dynamic resolution paths, zero hardcoded paths, 100% stable compilation check with 0 syntax errors.
+
+## [2026-05-11] — Phase 1 Completion Session 2: Critical Fixes & Optimizations
+- Files changed : frontend/src/components/Apps/ImageViewer.tsx, frontend/src/components/PreLoader.tsx, backend/requirements.txt, backend/tools/desktop_control_tool.py, docker-compose.yml, frontend/src/App.tsx, backend/utils/error_log.py, Evolve_plan.md
+- Approach      : **Session 2 Critical Fixes** (FRONTEND) Fixed 3 TypeScript compilation errors: (1) ImageViewer objectFit invalid value 'auto' → 'cover' (CSS correctness). (2) PreLoader NodeJS.Timeout type errors → ReturnType<typeof setInterval> (browser-compatible types). (3) **Docker Build Fixes** Removed Windows-only dependencies (pyautogui, pynput, pywin32) from requirements.txt; made desktop_control_tool.py use lazy imports to prevent ImportError in Docker environment. **System Verification** Successfully built and deployed Docker stack: MongoDB + ChromaDB + Backend + Frontend all running and passing health checks. API endpoints tested and working. **Frontend Optimization** Implemented route-based code-splitting using React.lazy + Suspense, reducing main bundle from 660KB to 306KB (54% reduction). Each page now loads as separate chunk on demand. **Configuration Update** Removed obsolete `version: "3.9"` from docker-compose.yml to eliminate deprecation warnings. **Improved Error Logging** Enhanced error_log.py to accept extra_info dict parameter for richer diagnostic context in ERROR_LOG.md.
+- Outcome       : success
+- Notes         : All changes are production-ready and non-breaking. TypeScript compilation now passes without errors. Docker stack is fully operational with healthy services. Frontend bundle optimization will significantly improve initial page load time. Code-splitting enables progressive enhancement and faster app initialization. Error logging now provides better diagnostics for troubleshooting failures.

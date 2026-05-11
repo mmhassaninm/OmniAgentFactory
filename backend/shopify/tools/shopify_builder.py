@@ -262,22 +262,53 @@ class ShopifyBuilder:
             result[f'templates/{template_name}'] = make_template(matched)
         return result
 
-    def _apply_creative_brief(self, theme_dir: Path, brief: dict):
-        """Inject color palette and font settings into settings_data.json."""
+    def _apply_creative_brief(self, theme_dir: Path, brief: dict, content_package: dict = None):
+        """Inject color palette, fonts, border-radius, and content into settings_data.json."""
         settings_file = theme_dir / "config" / "settings_data.json"
         try:
             data = _json.loads(settings_file.read_text(encoding="utf-8"))
+            current = data.get("current", {})
+
+            # 1. Apply colors
             colors = brief.get("colors", {})
             if colors:
-                current = data.get("current", {})
                 current.update({
                     "color_primary": colors.get("primary", current.get("color_primary")),
                     "color_secondary": colors.get("secondary", current.get("color_secondary")),
                     "color_accent": colors.get("accent", current.get("color_accent")),
                     "color_background": colors.get("background", current.get("color_background")),
                     "color_text": colors.get("text", current.get("color_text")),
+                    "color_button_bg": colors.get("primary", current.get("color_button_bg")),
+                    "color_footer_bg": colors.get("primary", current.get("color_footer_bg")),
                 })
-                data["current"] = current
+
+            # 2. Apply typography
+            if brief.get("font_primary"):
+                font_id = brief["font_primary"].lower().replace(" ", "_") + "_n4"
+                current["type_header_font"] = font_id
+            if brief.get("font_secondary"):
+                font_id = brief["font_secondary"].lower().replace(" ", "_") + "_n4"
+                current["type_body_font"] = font_id
+
+            # 3. Apply border radius by design style
+            style = brief.get("border_radius", "sharp")
+            br_map = {"sharp": 0, "soft": 8, "rounded": 16}
+            br = br_map.get(style, 4)
+            current["border_radius"] = br
+            current["button_border_radius"] = br
+
+            # 4. Apply content from content_package if provided
+            if content_package:
+                if content_package.get("hero_headline"):
+                    current["hero_headline"] = content_package["hero_headline"]
+                if content_package.get("hero_subheading"):
+                    current["hero_subheading"] = content_package["hero_subheading"]
+                if content_package.get("about_story"):
+                    current["footer_about_text"] = content_package.get("about_story", "")[:300]
+                if content_package.get("brand_tagline"):
+                    current["brand_tagline"] = content_package.get("brand_tagline", "")
+
+            data["current"] = current
             settings_file.write_text(_json.dumps(data, indent=2), encoding="utf-8")
         except Exception as e:
             logger.warning("Could not apply creative brief to settings_data.json: %s", e)

@@ -117,15 +117,17 @@ async def lifespan(app: FastAPI):
             idea_engine = IdeaEngineV2(router, registry_mgr)
             problem_scanner = ProblemScanner(router, registry_mgr)
             agent_council = AgentCouncil(router)
-            impl_runner = ImplementationRunner()
+            # ImplementationRunner now receives model_router for LLM-guided code generation
+            impl_runner = ImplementationRunner(model_router=router)
 
-            # Create and start orchestrator
+            # Create and start orchestrator — pass model_router so runner gets it
             orchestrator = LoopOrchestrator(
                 idea_engine=idea_engine,
                 problem_scanner=problem_scanner,
                 agent_council=agent_council,
                 registry_manager=registry_mgr,
-                implementation_runner=impl_runner
+                implementation_runner=impl_runner,
+                model_router=router,
             )
 
             # Start in background
@@ -220,9 +222,14 @@ async def log_requests(request: Request, call_next):
 
 
 # Add CORS Middleware
+# FIX: Removed wildcard "*" — only allow specific dev/prod origins
+import os
+_CORS_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
+if os.getenv("ALLOWED_ORIGINS"):
+    _CORS_ORIGINS.extend(os.getenv("ALLOWED_ORIGINS", "").split(","))
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "*"],
+    allow_origins=_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -448,5 +455,7 @@ async def simple_health():
     }
 
 
+
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=3001, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

@@ -15,7 +15,7 @@ from shopify.utils import robust_parse_json
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
-You are a Senior UX Architect specializing in Shopify themes and conversion rate optimization.
+You are a Senior UX Architect specializing in Shopify OS 2.0 themes and conversion rate optimization.
 
 Given a Creative Brief, produce a complete UX Blueprint defining every section for every page.
 
@@ -26,11 +26,34 @@ For EACH section, specify:
 - blocks: Array of block type objects [{type, name, settings: [...]}] (for repeatable elements)
 - responsive_notes: How layout changes on mobile
 
-REQUIRED PAGES (include exactly these 6 core pages):
-index, product, collection, cart, blog, page
+REQUIRED PAGES (include exactly these 10 pages):
+index, product, collection, list-collections, cart, blog, article, page, search, 404
 
 REQUIRED GLOBAL SECTIONS (included in every page via layout/theme.liquid):
 header, footer, announcement-bar
+
+SECTION COUNT: 6 to 9 sections per page (never fewer than 5, never more than 10)
+
+SECTION SCHEMA RULES — MANDATORY:
+1. Every text field = type "text" or "richtext" with translatable: true
+2. Images = type "image_picker"
+3. Repeatable items (testimonials, FAQs, product lists) = BLOCKS not settings
+4. Every section must have a color_scheme select setting (light/dark/accent)
+5. Every section must have padding_top and padding_bottom range settings (0-100px)
+6. Every section must have a hide_on_mobile checkbox
+7. preset "name" is ALWAYS set
+
+BLOCKS example for testimonials:
+{
+  "type": "testimonial",
+  "name": "Testimonial",
+  "settings": [
+    {"type": "image_picker", "id": "author_image", "label": "Author photo"},
+    {"type": "text", "id": "author_name", "label": "Author name"},
+    {"type": "range", "id": "rating", "min": 1, "max": 5, "step": 1, "label": "Rating", "default": 5},
+    {"type": "textarea", "id": "text", "label": "Testimonial text"}
+  ]
+}
 
 OUTPUT ONLY valid JSON:
 {
@@ -46,7 +69,11 @@ OUTPUT ONLY valid JSON:
             {"type": "text", "id": "heading", "label": "Heading", "default": "Welcome"},
             {"type": "text", "id": "subheading", "label": "Subheading", "default": ""},
             {"type": "text", "id": "cta_label", "label": "Button label", "default": "Shop Now"},
-            {"type": "url", "id": "cta_url", "label": "Button URL"}
+            {"type": "url", "id": "cta_url", "label": "Button URL"},
+            {"type": "select", "id": "color_scheme", "label": "Color scheme", "default": "light", "options": [{"value": "light", "label": "Light"}, {"value": "dark", "label": "Dark"}]},
+            {"type": "range", "id": "padding_top", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Top padding", "default": 60},
+            {"type": "range", "id": "padding_bottom", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Bottom padding", "default": 60},
+            {"type": "checkbox", "id": "hide_on_mobile", "label": "Hide on mobile", "default": false}
           ],
           "blocks": [],
           "responsive_notes": "Stack vertically on mobile, reduce hero height to 60vh"
@@ -57,7 +84,7 @@ OUTPUT ONLY valid JSON:
   "global_sections": [
     {
       "file_name": "header.liquid",
-      "purpose": "Sticky navigation with logo, menu, search, and cart icon",
+      "purpose": "Sticky navigation with logo, menu, search, cart icon, and mobile hamburger",
       "settings": [
         {"type": "image_picker", "id": "logo", "label": "Logo"},
         {"type": "range", "id": "logo_width", "min": 80, "max": 300, "step": 10, "unit": "px", "label": "Logo width", "default": 150},
@@ -69,7 +96,6 @@ OUTPUT ONLY valid JSON:
   ]
 }
 
-Be brief and concise — include max 3 sections per page, and exactly 6 pages total.
 Return ONLY a valid JSON object. No markdown. No explanation. Start your response with { and end with }
 """
 
@@ -99,7 +125,7 @@ Create a complete UX Blueprint for this Shopify theme.
 CREATIVE BRIEF:
 {json.dumps(stripped_brief, indent=2)}
 
-Design all sections for the 6 required pages (index, product, collection, cart, blog, page) and global sections. Make them conversion-optimized for the {stripped_brief.get('niche', 'e-commerce')} niche, with max 3 sections per page.
+Design 6-9 sections for all 10 required pages (index, product, collection, list-collections, cart, blog, article, page, search, 404) and the 3 global sections (header, footer, announcement-bar). Make them conversion-optimized for the {stripped_brief.get('niche', 'e-commerce')} niche.
 Return ONLY a valid JSON object. No markdown. No explanation. Start your response with {{ and end with }}
 """
 

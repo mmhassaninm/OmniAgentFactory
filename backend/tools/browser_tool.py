@@ -55,19 +55,26 @@ class BrowserTool:
     async def search_web(self, query: str) -> str:
         """Search DuckDuckGo and return text results."""
         try:
-            page = await self._browser.new_page()
-            await page.goto(f"https://duckduckgo.com/?q={quote_plus(query)}&t=h_&ia=web")
-            await page.wait_for_timeout(2000)
-            results = await page.query_selector_all(".result__body")
+            logger.info("Searching web via DDGS for: %s", query)
+            ddgs = DDGS()
+            try:
+                search_results = ddgs.text(query, max_results=5)
+            except Exception as e:
+                logger.warning("[BrowserTool.search_web] DDGS query failed, using empty list fallback: %s", e)
+                search_results = []  # Fallback to empty list [] with a logged warning
+                
+            if not search_results:
+                return ""
+            
             texts = []
-            for r in results[:5]:
-                text = await r.inner_text()
-                texts.append(text.strip())
-            await page.close()
+            for r in search_results:
+                title = r.get("title", "")
+                snippet = r.get("body", "")
+                texts.append(f"{title}\n{snippet}")
             return "\n\n".join(texts)
         except Exception as e:
-            log_error("BrowserTool.search_web", e)
-            return f"Search failed: {str(e)}"
+            logger.warning("[BrowserTool.search_web] Critical error, returning empty string: %s", e)
+            return ""
 
     async def get_page_content(self, url: str) -> str:
         """Get text content from any URL."""

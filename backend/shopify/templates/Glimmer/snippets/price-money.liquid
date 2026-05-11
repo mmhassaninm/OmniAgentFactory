@@ -1,0 +1,23 @@
+{% if request.locale.iso_code == 'ar' %}
+  {% if cart.currency.iso_code == 'SAR' and settings.enable_sar_icon_arabic %}
+    <span class="sar-price-wrapper" style="display: inline-flex; flex-direction: row; align-items: center; direction: ltr; gap: 4px;">
+      {% render 'icon-sar' %}
+      <span class="sar-price-amount">
+        {{ price | money | replace: 'SR', '' | replace: 'SAR', '' | replace: 'ر.س', '' | strip }}
+      </span>
+    </span>
+  {% else %}
+    {% capture formatted_money %}{{ price | money }}{% endcapture %}
+    {%- assign formatted_money = formatted_money 
+      | replace: 'SAR', 'ر.س' 
+      | replace: 'SR', 'ر.س' 
+      | replace: 'AED', 'د.إ' 
+      | replace: 'Dhs.', 'د.إ' 
+      | replace: 'Dhs', 'د.إ' 
+      | replace: 'QAR', 'ر.ق' 
+    -%}
+    <bdi dir="ltr" class="default-price-bdi">{{ formatted_money }}</bdi>
+  {% endif %}
+{% else %}
+  <bdi dir="ltr" class="default-price-bdi">{{ price | money }}</bdi>
+{% endif %}

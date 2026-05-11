@@ -1,5 +1,5 @@
 """
-DesktopControlTool — Windows desktop automation via pyautogui.
+DesktopControlTool — Windows desktop automation via _pyautogui.
 Enables agents to control mouse, keyboard, and capture screenshots on Windows host.
 Only works on Windows (not in Docker containers).
 """
@@ -12,14 +12,23 @@ logger = logging.getLogger(__name__)
 
 # Verify Windows-only usage
 _IS_WINDOWS = platform.system() == "Windows"
-if not _IS_WINDOWS:
-    raise RuntimeError("DesktopControlTool requires Windows platform. Running on Linux/Mac will fail.")
 
-try:
-    import pyautogui
-    import pynput.mouse
-except ImportError:
-    raise RuntimeError("DesktopControlTool requires: pip install pyautogui pynput")
+# Lazy imports — only required on Windows
+_pyautogui = None
+_pynput_mouse = None
+
+def _ensure_imports():
+    global _pyautogui, _pynput_mouse
+    if not _IS_WINDOWS:
+        raise RuntimeError("DesktopControlTool requires Windows platform. Running on Linux/Mac will fail.")
+    if _pyautogui is None:
+        try:
+            import pyautogui
+            import pynput.mouse
+            _pyautogui = pyautogui
+            _pynput_mouse = pynput.mouse
+        except ImportError:
+            raise RuntimeError("DesktopControlTool requires: pip install pyautogui pynput")
 
 
 class DesktopControlTool:
@@ -33,16 +42,17 @@ class DesktopControlTool:
     """
 
     def __init__(self):
+        _ensure_imports()
         # Safety settings
-        pyautogui.FAILSAFE = True    # Move cursor to 0,0 to interrupt
-        pyautogui.PAUSE = 0.3        # Delay between actions (human-like)
+        __pyautogui.FAILSAFE = True    # Move cursor to 0,0 to interrupt
+        __pyautogui.PAUSE = 0.3        # Delay between actions (human-like)
 
     # ── Mouse Control ────────────────────────────────────────────────────────
 
     def mouse_move(self, x: int, y: int, duration: float = 0.5) -> dict:
         """Move mouse smoothly to x,y coordinates with easing."""
         try:
-            pyautogui.moveTo(x, y, duration=duration, tween=pyautogui.easeInOutQuad)
+            _pyautogui.moveTo(x, y, duration=duration, tween=_pyautogui.easeInOutQuad)
             return {"status": "ok", "x": x, "y": y}
         except Exception as e:
             logger.error("mouse_move failed: %s", e)
@@ -55,7 +65,7 @@ class DesktopControlTool:
             if button not in valid_buttons:
                 return {"status": "error", "error": f"Invalid button: {button}. Must be {valid_buttons}"}
 
-            pyautogui.click(x, y, button=button, clicks=clicks)
+            _pyautogui.click(x, y, button=button, clicks=clicks)
             return {"status": "ok", "x": x, "y": y, "button": button, "clicks": clicks}
         except Exception as e:
             logger.error("mouse_click failed: %s", e)
@@ -65,7 +75,7 @@ class DesktopControlTool:
         """Scroll mouse wheel. amount > 0 scrolls up, amount < 0 scrolls down."""
         try:
             scroll_amount = -amount if direction == "down" else amount
-            pyautogui.scroll(scroll_amount)
+            _pyautogui.scroll(scroll_amount)
             return {"status": "ok", "amount": amount, "direction": direction}
         except Exception as e:
             logger.error("mouse_scroll failed: %s", e)
@@ -74,7 +84,7 @@ class DesktopControlTool:
     def get_mouse_position(self) -> dict:
         """Get current mouse position."""
         try:
-            x, y = pyautogui.position()
+            x, y = _pyautogui.position()
             return {"status": "ok", "x": x, "y": y}
         except Exception as e:
             logger.error("get_mouse_position failed: %s", e)
@@ -85,7 +95,7 @@ class DesktopControlTool:
     def type_text(self, text: str, interval: float = 0.05) -> dict:
         """Type text as if human were typing (with interval between chars)."""
         try:
-            pyautogui.typewrite(text, interval=interval)
+            _pyautogui.typewrite(text, interval=interval)
             return {"status": "ok", "text_length": len(text)}
         except Exception as e:
             logger.error("type_text failed: %s", e)
@@ -97,10 +107,10 @@ class DesktopControlTool:
             if "+" in key:
                 # Combination: split by + and press
                 keys = key.split("+")
-                pyautogui.hotkey(*keys)
+                _pyautogui.hotkey(*keys)
             else:
                 # Single key
-                pyautogui.press(key)
+                _pyautogui.press(key)
             return {"status": "ok", "key": key}
         except Exception as e:
             logger.error("press_key failed: %s", e)
@@ -113,7 +123,7 @@ class DesktopControlTool:
             # Use clip to paste (Windows-specific)
             process = subprocess.Popen(["clip"], stdin=subprocess.PIPE)
             process.communicate(text.encode("utf-8"))
-            pyautogui.hotkey("ctrl", "v")
+            _pyautogui.hotkey("ctrl", "v")
             return {"status": "ok", "text_length": len(text), "method": "paste"}
         except Exception as e:
             logger.warning("write_text_smart paste failed, falling back to typewrite: %s", e)
@@ -129,7 +139,7 @@ class DesktopControlTool:
         """Take full-screen screenshot and save to file."""
         try:
             Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-            img = pyautogui.screenshot()
+            img = _pyautogui.screenshot()
             img.save(save_path)
             return {"status": "ok", "path": str(Path(save_path).absolute())}
         except Exception as e:
@@ -141,7 +151,7 @@ class DesktopControlTool:
         """Take screenshot of specific region (x, y, width, height)."""
         try:
             Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-            img = pyautogui.screenshot(region=(x, y, width, height))
+            img = _pyautogui.screenshot(region=(x, y, width, height))
             img.save(save_path)
             return {"status": "ok", "path": str(Path(save_path).absolute()), "region": (x, y, width, height)}
         except Exception as e:
@@ -176,7 +186,7 @@ class DesktopControlTool:
     def find_on_screen(self, image_path: str, confidence: float = 0.8) -> Optional[Tuple[int, int]]:
         """Find image on screen and return top-left coordinates. Returns None if not found."""
         try:
-            location = pyautogui.locateOnScreen(image_path, confidence=confidence)
+            location = _pyautogui.locateOnScreen(image_path, confidence=confidence)
             if location:
                 return {"status": "ok", "x": location[0], "y": location[1]}
             else:

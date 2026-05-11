@@ -1,7 +1,6 @@
 """
-Registry Manager — Dual-Registry Memory System (MongoDB + Markdown Sync)
+Registry Manager -- Dual-Registry Memory System (MongoDB + Markdown Sync)
 Manages EVOLUTION_IDEAS_REGISTRY.md and PROBLEMS_REGISTRY.md
-This is the system's persistent memory — do not lose or corrupt these records.
 """
 import json
 import logging
@@ -12,15 +11,24 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
 
+# Absolute path resolution
+# This file: backend/core/autonomous_evolution/registry_manager.py
+_HERE = Path(__file__).resolve()
+BACKEND_ROOT = _HERE.parent.parent.parent   # NexusOS/backend/
+PROJECT_ROOT = BACKEND_ROOT.parent          # NexusOS/
+AUTONOMOUS_LOGS = PROJECT_ROOT / "autonomous_logs"
+
 
 class RegistryManager:
-    """Manages idea and problem registries with MongoDB persistence and Markdown export."""
+    """Manages idea and problem registries with MongoDB + Markdown + JSON sync."""
 
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.ideas_col = db["evolution_ideas_registry"]
         self.problems_col = db["problems_registry"]
-        self.registry_dir = Path(".")
+        # FIX: use PROJECT_ROOT so Markdown files land in the right place
+        self.registry_dir = PROJECT_ROOT
+        AUTONOMOUS_LOGS.mkdir(parents=True, exist_ok=True)
 
     # ===== IDEAS MANAGEMENT =====
 
@@ -29,7 +37,6 @@ class RegistryManager:
         try:
             count = await self.ideas_col.count_documents({})
             idea_id = f"IDEA-{count + 1:03d}"
-
             doc = {
                 "id": idea_id,
                 "title": idea.get("title", "Untitled"),
@@ -46,10 +53,9 @@ class RegistryManager:
                 "files_changed": [],
                 "outcome": None,
             }
-
             await self.ideas_col.insert_one(doc)
             await self._update_markdown("ideas")
-            logger.info(f"📝 Registered idea: {idea_id} — {idea.get('title')}")
+            logger.info(f"Registered idea: {idea_id} -- {idea.get('title')}")
             return idea_id
         except Exception as e:
             logger.error(f"Failed to register idea: {e}")
@@ -70,30 +76,23 @@ class RegistryManager:
     async def filter_duplicate_ideas(self, ideas: List[dict]) -> List[dict]:
         """Filter out duplicate ideas using keyword overlap detection."""
         try:
-            existing = await self.ideas_col.find(
-                {},
-                {"_id": 0, "title": 1}
-            ).to_list(None)
+            existing = await self.ideas_col.find({}, {"_id": 0, "title": 1}).to_list(None)
             existing_titles = [e.get("title", "").lower() for e in existing]
-
             filtered = []
             for idea in ideas:
                 title_lower = idea.get("title", "").lower()
                 keywords = set(title_lower.split())
-
                 is_duplicate = False
                 for existing_title in existing_titles:
                     existing_keywords = set(existing_title.split())
                     overlap = len(keywords & existing_keywords)
                     max_keys = max(len(keywords), len(existing_keywords), 1)
-                    if overlap / max_keys > 0.6:  # 60% overlap = duplicate
+                    if overlap / max_keys > 0.6:
                         is_duplicate = True
-                        logger.info(f"🚫 Filtered duplicate idea: {idea.get('title')}")
+                        logger.info(f"Filtered duplicate idea: {idea.get('title')}")
                         break
-
                 if not is_duplicate:
                     filtered.append(idea)
-
             return filtered
         except Exception as e:
             logger.error(f"Failed to filter duplicates: {e}")
@@ -112,7 +111,7 @@ class RegistryManager:
                 }}
             )
             await self._update_markdown("ideas")
-            logger.info(f"✅ Idea {idea_id} marked as implemented")
+            logger.info(f"Idea {idea_id} marked as implemented")
         except Exception as e:
             logger.error(f"Failed to mark idea implemented: {e}")
 
@@ -121,13 +120,10 @@ class RegistryManager:
         try:
             await self.ideas_col.update_one(
                 {"id": idea_id},
-                {"$set": {
-                    "status": "rejected",
-                    "outcome": reason
-                }}
+                {"$set": {"status": "rejected", "outcome": reason}}
             )
             await self._update_markdown("ideas")
-            logger.info(f"❌ Idea {idea_id} marked as rejected: {reason}")
+            logger.info(f"Idea {idea_id} rejected: {reason}")
         except Exception as e:
             logger.error(f"Failed to mark idea rejected: {e}")
 
@@ -138,7 +134,6 @@ class RegistryManager:
         try:
             count = await self.problems_col.count_documents({})
             prob_id = f"PROB-{count + 1:03d}"
-
             doc = {
                 "id": prob_id,
                 "title": problem.get("title", "Untitled"),
@@ -156,10 +151,9 @@ class RegistryManager:
                 "files_changed": [],
                 "verified": False,
             }
-
             await self.problems_col.insert_one(doc)
             await self._update_markdown("problems")
-            logger.info(f"🔴 Registered problem: {prob_id} — {problem.get('title')}")
+            logger.info(f"Registered problem: {prob_id} -- {problem.get('title')}")
             return prob_id
         except Exception as e:
             logger.error(f"Failed to register problem: {e}")
@@ -169,8 +163,7 @@ class RegistryManager:
         """Get all solved problems."""
         try:
             cursor = self.problems_col.find(
-                {"status": "solved"},
-                {"_id": 0}
+                {"status": "solved"}, {"_id": 0}
             ).sort("solved_at", -1).limit(limit)
             return await cursor.to_list(length=limit)
         except Exception as e:
@@ -178,29 +171,25 @@ class RegistryManager:
             return []
 
     async def filter_known_problems(self, problems: List[dict]) -> List[dict]:
-        """Filter out problems we've already seen."""
+        """Filter out problems we have already seen."""
         try:
             known = await self.problems_col.find({}, {"_id": 0, "title": 1}).to_list(None)
             known_titles = [k.get("title", "").lower() for k in known]
-
             filtered = []
             for prob in problems:
                 title_lower = prob.get("title", "").lower()
                 keywords = set(title_lower.split())
-
                 is_known = False
                 for known_title in known_titles:
                     known_keywords = set(known_title.split())
                     overlap = len(keywords & known_keywords)
                     max_keys = max(len(keywords), len(known_keywords), 1)
-                    if overlap / max_keys > 0.5:  # 50% overlap = known
+                    if overlap / max_keys > 0.5:
                         is_known = True
-                        logger.info(f"⏭️ Skipped known problem: {prob.get('title')}")
+                        logger.info(f"Skipped known problem: {prob.get('title')}")
                         break
-
                 if not is_known:
                     filtered.append(prob)
-
             return filtered
         except Exception as e:
             logger.error(f"Failed to filter known problems: {e}")
@@ -220,7 +209,7 @@ class RegistryManager:
                 }}
             )
             await self._update_markdown("problems")
-            logger.info(f"✅ Problem {prob_id} marked as solved")
+            logger.info(f"Problem {prob_id} marked as solved")
         except Exception as e:
             logger.error(f"Failed to mark problem solved: {e}")
 
@@ -233,7 +222,6 @@ class RegistryManager:
             impl_ideas = await self.ideas_col.count_documents({"status": "implemented"})
             total_probs = await self.problems_col.count_documents({})
             solved_probs = await self.problems_col.count_documents({"status": "solved"})
-
             return {
                 "total_ideas": total_ideas,
                 "implemented_ideas": impl_ideas,
@@ -259,23 +247,21 @@ class RegistryManager:
             logger.error(f"Failed to update markdown: {e}")
 
     async def _sync_ideas_markdown(self):
-        """Sync ideas to EVOLUTION_IDEAS_REGISTRY.md"""
+        """Sync ideas to EVOLUTION_IDEAS_REGISTRY.md in project root."""
         try:
             docs = await self.ideas_col.find({}, {"_id": 0}).sort("created_at", -1).to_list(None)
-
             lines = [
                 "# EVOLUTION IDEAS REGISTRY\n",
                 "\n",
-                "| ID | الفكرة | المصدر | الحالة | التأثير | قابلية التنفيذ | تاريخ الإضافة | تاريخ التنفيذ | الملفات المتأثرة | النتيجة |\n",
-                "|--|----|-----|------|------|------|------|------|---|---|\n",
+                "| ID | Title | Source | Status | Impact | Feasibility | Created | Implemented | Files | Outcome |\n",
+                "|---|---|---|---|---|---|---|---|---|---|\n",
             ]
-
             for d in docs:
-                impl_date = d.get("implemented_at", "—")
-                if impl_date != "—":
+                impl_date = d.get("implemented_at") or "N/A"
+                if impl_date != "N/A":
                     impl_date = impl_date[:10]
-                outcome = d.get("outcome", "—")
-                if outcome and len(outcome) > 50:
+                outcome = d.get("outcome") or "N/A"
+                if len(outcome) > 50:
                     outcome = outcome[:50] + "..."
                 lines.append(
                     f"| {d.get('id')} | {d.get('title')} | {d.get('source')} | "
@@ -283,29 +269,28 @@ class RegistryManager:
                     f"{d.get('created_at', '')[:10]} | {impl_date} | "
                     f"{', '.join(d.get('estimated_files', [])[:3])} | {outcome} |\n"
                 )
-
-            Path("EVOLUTION_IDEAS_REGISTRY.md").write_text("".join(lines), encoding="utf-8")
-            logger.debug("💾 Synced ideas to Markdown")
+            # FIX: Write to PROJECT_ROOT
+            (PROJECT_ROOT / "EVOLUTION_IDEAS_REGISTRY.md").write_text("".join(lines), encoding="utf-8")
+            await self._sync_ideas_json(docs)
+            logger.debug("Synced ideas to Markdown + JSON")
         except Exception as e:
             logger.error(f"Failed to sync ideas markdown: {e}")
 
     async def _sync_problems_markdown(self):
-        """Sync problems to PROBLEMS_REGISTRY.md"""
+        """Sync problems to PROBLEMS_REGISTRY.md in project root."""
         try:
             docs = await self.problems_col.find({}, {"_id": 0}).sort("created_at", -1).to_list(None)
-
             lines = [
                 "# PROBLEMS REGISTRY\n",
                 "\n",
-                "| ID | المشكلة | التشخيص | الحل المنفذ | الملفات | تاريخ الاكتشاف | تاريخ الحل | حالة التحقق |\n",
-                "|--|----|-----|-----|---|-----|------|----|\n",
+                "| ID | Title | Root Cause | Solution | Files | Created | Solved | Verified |\n",
+                "|---|---|---|---|---|---|---|---|\n",
             ]
-
             for d in docs:
-                solved_date = d.get("solved_at", "—")
-                if solved_date != "—":
+                solved_date = d.get("solved_at") or "N/A"
+                if solved_date != "N/A":
                     solved_date = solved_date[:10]
-                verified = "✅ verified" if d.get("verified") else "⏳ pending"
+                verified = "yes" if d.get("verified") else "pending"
                 diagnosis = d.get("root_cause", "")[:30]
                 solution = d.get("solution_applied", "")[:30]
                 lines.append(
@@ -313,8 +298,79 @@ class RegistryManager:
                     f"{', '.join(d.get('files_changed', [])[:2])} | {d.get('created_at', '')[:10]} | "
                     f"{solved_date} | {verified} |\n"
                 )
-
-            Path("PROBLEMS_REGISTRY.md").write_text("".join(lines), encoding="utf-8")
-            logger.debug("💾 Synced problems to Markdown")
+            # FIX: Write to PROJECT_ROOT
+            (PROJECT_ROOT / "PROBLEMS_REGISTRY.md").write_text("".join(lines), encoding="utf-8")
+            await self._sync_problems_json(docs)
+            logger.debug("Synced problems to Markdown + JSON")
         except Exception as e:
             logger.error(f"Failed to sync problems markdown: {e}")
+
+    # ===== AUTONOMOUS_LOGS JSON SYNC =====
+
+    async def _sync_ideas_json(self, docs: list):
+        """Sync ideas to autonomous_logs/IDEAS_LOG.json."""
+        try:
+            ideas_log_path = AUTONOMOUS_LOGS / "IDEAS_LOG.json"
+            data = {
+                "_meta": {
+                    "description": "Ideas registry - autonomous sync",
+                    "last_synced": datetime.now().isoformat(),
+                    "total": len(docs)
+                },
+                "ideas": [
+                    {
+                        "id": d.get("id"),
+                        "title": d.get("title"),
+                        "description": d.get("description", ""),
+                        "source": d.get("source", ""),
+                        "status": d.get("status"),
+                        "impact": d.get("impact"),
+                        "feasibility": d.get("feasibility"),
+                        "category": d.get("category"),
+                        "estimated_files": d.get("estimated_files", []),
+                        "council_verdict": d.get("council_verdict", {}),
+                        "created_at": d.get("created_at"),
+                        "implemented_at": d.get("implemented_at"),
+                        "files_changed": d.get("files_changed", []),
+                        "outcome": d.get("outcome"),
+                    }
+                    for d in docs
+                ]
+            }
+            ideas_log_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Failed to sync ideas JSON: {e}")
+
+    async def _sync_problems_json(self, docs: list):
+        """Sync problems to autonomous_logs/PROBLEMS_LOG.json."""
+        try:
+            problems_log_path = AUTONOMOUS_LOGS / "PROBLEMS_LOG.json"
+            data = {
+                "_meta": {
+                    "description": "Problems registry - autonomous sync",
+                    "last_synced": datetime.now().isoformat(),
+                    "total": len(docs)
+                },
+                "problems": [
+                    {
+                        "id": d.get("id"),
+                        "title": d.get("title"),
+                        "description": d.get("description", ""),
+                        "location": d.get("location", ""),
+                        "severity": d.get("severity"),
+                        "root_cause": d.get("root_cause", ""),
+                        "proposed_solution": d.get("proposed_solution", ""),
+                        "category": d.get("category"),
+                        "status": d.get("status"),
+                        "created_at": d.get("created_at"),
+                        "solved_at": d.get("solved_at"),
+                        "solution_applied": d.get("solution_applied"),
+                        "files_changed": d.get("files_changed", []),
+                        "verified": d.get("verified", False),
+                    }
+                    for d in docs
+                ]
+            }
+            problems_log_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Failed to sync problems JSON: {e}")

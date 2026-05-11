@@ -9,8 +9,8 @@ export const PreLoader: React.FC<PreLoaderProps> = ({ children }) => {
   const [phase, setPhase] = useState<'connecting' | 'connected' | 'loading_vault' | 'ready' | 'error'>('connecting')
   const [elapsed, setElapsed] = useState(0)
   const [fadeOut, setFadeOut] = useState(false)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const elapsedTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const checkHealth = async () => {
     try {

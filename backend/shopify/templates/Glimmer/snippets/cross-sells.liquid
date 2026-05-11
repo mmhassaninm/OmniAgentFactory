@@ -1,0 +1,198 @@
+{%- liquid
+  assign product_limit = settings.cross_sells_max_products
+  assign product_count = 0
+  assign cart_item_ids = cart.items | map: 'product_id'
+
+  if settings.cross_sells_recommendations_type == 'collection'
+    assign product_pool = settings.collection.products
+  elsif settings.cross_sells_recommendations_type == 'product-list'
+    assign product_pool = settings.product_list
+  endif
+
+  assign product_will_show = false
+
+  for item in product_pool
+    if cart_item_ids contains item.id
+      continue
+    elsif item.available == false
+      continue
+    else
+      assign product_will_show = true
+      break
+    endif
+  endfor
+
+  assign display_currency = cart.currency.iso_code
+  if request.locale.iso_code == 'ar'
+    if cart.currency.iso_code == 'SAR'
+      assign display_currency = 'ر.س'
+    elsif cart.currency.iso_code == 'AED'
+      assign display_currency = 'د.إ'
+    elsif cart.currency.iso_code == 'QAR'
+      assign display_currency = 'ر.ق'
+    endif
+  endif
+-%}
+
+{%- if product_will_show -%}
+  <div class="cross-sells" data-cross-sells data-position="{{ position }}">
+    <div class="cross-sells__heading ff-heading fs-heading-6-base">{{ settings.cross_sells_heading }}</div>
+    <div class="cross-sells__items {% if is_slider %}swiper{% endif %}" data-cross-sells-slider="{{ is_slider }}">
+      {% if is_slider %}<div class="cross-sells__slider-inner swiper-wrapper">{% endif %}
+      {%- for item in product_pool -%}
+        {%- if product_count >= product_limit -%}
+          {%- break -%}
+        {%- elsif cart_item_ids contains item.id -%}
+          {%- continue -%}
+        {%- elsif item.available == false -%}
+          {%- continue -%}
+        {%- endif -%}
+        {%- assign product_count = product_count | plus: 1 -%}
+        <div class="cross-sells__item {% if is_slider %}swiper-slide{% endif %}">
+          {%- if settings.cross_sells_show_thumbnails -%}
+            <div class="cross-sells__item-image">
+              <a href="{{ item.url }}" class="cross-sells__item-link">
+                {%- render 'image',
+                  image: item.featured_image,
+                  sizes: '64px',
+                  prioritize_loading: true,
+                  aspect_ratio: settings.cart_item_aspect_ratio,
+                  include_placeholder: true
+                -%}
+              </a>
+            </div>
+          {%- endif -%}
+          <div class="cross-sells__item-content">
+            <div class="cross-sells__item-details ff-body fs-body-75">
+              <h4 class="cross-sells__item-title fs-body-75">
+                <a href="{{ item.url }}">{{ item.title }}</a>
+              </h4>
+              <div class="cross-sells__item-price-wrapper">
+                {% if item.compare_at_price > item.price %}
+                  {% if request.locale.iso_code == 'ar' %}
+                    <span class="arabic-price-group" style="display: inline-flex; flex-direction: row; align-items: center; direction: ltr; gap: 6px; flex-wrap: nowrap; vertical-align: middle;">
+                      {% if cart.currency.iso_code == 'SAR' and settings.enable_sar_icon_arabic %}
+                        <span class="sar-price-wrapper" style="display: inline-flex; flex-direction: row; align-items: center; direction: ltr; gap: 4px;">
+                          {% render 'icon-sar' %}
+                          <span class="sar-price-amount price--sale">
+                            {% if item.price_varies %}
+                              {{ 'products.product.on_sale_from_html' | t: price: '' }}{{ item.price | money | replace: 'SR', '' | replace: 'SAR', '' | replace: 'ر.س', '' | strip }}
+                            {% else %}
+                              {{ item.price | money | replace: 'SR', '' | replace: 'SAR', '' | replace: 'ر.س', '' | strip }}
+                            {% endif %}
+                          </span>
+                        </span>
+                        <span class="sar-price-wrapper sar-compare-wrapper" style="display: inline-flex; flex-direction: row; align-items: center; direction: ltr; gap: 4px; opacity: 0.6; text-decoration: line-through;">
+                          {% render 'icon-sar' %}
+                          <span class="sar-price-amount price--compare">
+                            {{ item.compare_at_price | money | replace: 'SR', '' | replace: 'SAR', '' | replace: 'ر.س', '' | strip }}
+                          </span>
+                        </span>
+                      {% else %}
+                        <div class="sale" style="color: var(--color-products-sale-price); font-weight: bold; display: inline-block;">
+                          {% if item.price_varies %}
+                            {%- capture sale_price -%}{%- render 'price-money', price: item.price -%}{%- endcapture -%}{{- 'products.product.on_sale_from_html' | t: price: sale_price -}}
+                          {% else %}
+                            {%- render 'price-money', price: item.price -%}
+                          {% endif %}
+                          {%- if section.settings.show_product_currency %} {{ display_currency }}{% endif -%}
+                        </div>
+                        <s class="t-subdued" style="opacity: 0.6; text-decoration: line-through; display: inline-block;">
+                          {%- render 'price-money', price: item.compare_at_price -%}
+                          {%- if section.settings.show_product_currency %} {{ display_currency }}{% endif -%}
+                        </s>
+                      {% endif %}
+                    </span>
+                  {% else %}
+                    <span class="visually-hidden">{{ 'products.product.regular_price' | t }}</span>
+                    <s class="t-subdued">
+                      {%- render 'price-money', price: item.compare_at_price -%}
+                      {%- unless request.locale.iso_code == 'ar' and cart.currency.iso_code == 'SAR' and settings.enable_sar_icon_arabic -%}
+                        {%- if section.settings.show_product_currency %} {{ display_currency }}{% endif -%}
+                      {%- endunless -%}
+                    </s>
+
+                    {% if item.price_varies %}
+                      <div class="sale">
+                        {%- capture sale_price -%}
+                          {%- render 'price-money', price: item.price -%}
+                        {%- endcapture -%}
+                        {{ 'products.product.on_sale_from_html' | t: price: sale_price }}
+                        {%- unless request.locale.iso_code == 'ar' and cart.currency.iso_code == 'SAR' and settings.enable_sar_icon_arabic -%}
+                          {%- if section.settings.show_product_currency %} {{ display_currency }}{% endif -%}
+                        {%- endunless -%}
+                      </div>
+                    {% else %}
+                      <div class="sale">
+                        {%- render 'price-money', price: item.price -%}
+                        {%- unless request.locale.iso_code == 'ar' and cart.currency.iso_code == 'SAR' and settings.enable_sar_icon_arabic -%}
+                          {%- if section.settings.show_product_currency %} {{ display_currency }}{% endif %}
+                        {%- endunless -%}
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                {% else %}
+                  {% if item.price_varies %}
+                    {%- capture price -%}
+                      {%- render 'price-money', price: item.price -%}
+                    {%- endcapture -%}
+                    {{ 'products.product.from_lowest_price_html' | t: lowest_price: price }}
+                    {%- unless request.locale.iso_code == 'ar' and cart.currency.iso_code == 'SAR' and settings.enable_sar_icon_arabic -%}
+                      {%- if section.settings.show_product_currency %} {{ display_currency }}{% endif -%}
+                    {%- endunless -%}
+                  {% else %}
+                    <span class="cross-sells__item-price">
+                      {%- render 'price-money', price: item.price -%}
+                      {%- unless request.locale.iso_code == 'ar' and cart.currency.iso_code == 'SAR' and settings.enable_sar_icon_arabic -%}
+                        {%- if section.settings.show_product_currency %} {{ display_currency }}{% endif -%}
+                      {%- endunless -%}
+                    </span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+            <div class="cross-sells__item-button">
+              <button
+                type="button"
+                class="cross-sells__item-add btn btn--tertiary btn--x-small"
+                data-product-url="{{ item.url }}"
+                {%- if item.has_only_default_variant -%}
+                  data-add-item-id="{{ item.variants[0].id }}"
+                {%- else -%}
+                  data-quick-view-trigger
+                {%- endif -%}
+              >
+                {%- unless section.id == 'quick-cart' -%}
+                  <span class="cross-sells__text-add-to-cart">{{ 'product.add_to_cart' | t }}</span>
+                {%- endunless -%}
+                <span class="cross-sells__text-add">{{ 'cart.general.add' | t }}</span>
+                <div class="btn__loading-wrap">
+                  <div class="btn__loading-bar"></div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endfor -%}
+      {% if is_slider %}
+        </div>
+        <button
+          type="button"
+          class="slider-nav-button slider-nav-button-prev"
+          title="{{ 'general.accessibility.previous' | t }}"
+          data-prev
+        >
+          {% render 'icon' with icon: 'chevron' %}
+        </button>
+        <button
+          type="button"
+          class="slider-nav-button slider-nav-button-next"
+          title="{{ 'general.accessibility.next' | t }}"
+          data-next
+        >
+          {% render 'icon' with icon: 'chevron' %}
+        </button>
+      {% endif %}
+    </div>
+  </div>
+{%- endif -%}

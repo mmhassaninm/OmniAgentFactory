@@ -9,6 +9,14 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+# ── Absolute path resolution ───────────────────────────────────────────────────
+# This file: backend/core/autonomous_evolution/problem_scanner.py
+# BACKEND_ROOT = backend/
+# PROJECT_ROOT = NexusOS/
+_HERE = Path(__file__).resolve()
+BACKEND_ROOT = _HERE.parent.parent.parent   # NexusOS/backend/
+PROJECT_ROOT = BACKEND_ROOT.parent          # NexusOS/
+
 PROBLEM_DIAGNOSIS_PROMPT = """
 أنت مهندس قائد في تشخيص مشاكل الأنظمة AI.
 You are a lead engineer diagnosing AI system issues.
@@ -52,12 +60,13 @@ class ProblemScanner:
     def __init__(self, model_router, registry_manager):
         self.model_router = model_router
         self.registry = registry_manager
+        # ── FIX: Use absolute paths so scanner works regardless of cwd ────────
         self.scan_paths = [
-            "backend/core/",
-            "backend/tools/",
-            "backend/shopify/",
-            "backend/workers/",
-            "backend/agent/",
+            BACKEND_ROOT / "core",
+            BACKEND_ROOT / "tools",
+            BACKEND_ROOT / "shopify",
+            BACKEND_ROOT / "workers",
+            BACKEND_ROOT / "agent",
         ]
 
     async def scan_and_identify(self) -> List[Dict[str, Any]]:
@@ -94,8 +103,9 @@ class ProblemScanner:
             logger.info("  Running static analysis...")
 
             for scan_path in self.scan_paths:
-                path = Path(scan_path)
+                path = Path(scan_path)  # already absolute Path objects
                 if not path.exists():
+                    logger.debug(f"  Scan path not found (skipped): {path}")
                     continue
 
                 for py_file in path.rglob("*.py"):
@@ -134,6 +144,38 @@ class ProblemScanner:
                                 "detail": "Run method without logging (hard to debug)"
                             })
 
+                        # Check 5: Unused imports (improved heuristic)
+                        lines = content.split("\n")
+                        imports = [l for l in lines if l.startswith("import ") or l.startswith("from ")]
+                        for imp in imports:
+                            module = imp.split()[1].split(".")[0] if len(imp.split()) > 1 else ""
+                            if module and f"{module}." not in content and f" {module}(" not in content:
+                                issues.append({
+                                    "type": "unused_import",
+                                    "file": str(py_file),
+                                    "detail": f"Import '{module}' may be unused"
+                                })
+
+                        # Check 6: Functions > 50 lines (complexity)
+                        func_count = content.count("\ndef ")
+                        if func_count > 0:
+                            avg_lines = len(content.split("\n")) / func_count
+                            if avg_lines > 50:
+                                issues.append({
+                                    "type": "complex_function",
+                                    "file": str(py_file),
+                                    "detail": f"Average function size {int(avg_lines)} lines (refactor into smaller functions)"
+                                })
+
+                        # Check 7: TODO comments
+                        if "TODO" in content or "FIXME" in content:
+                            todo_count = content.count("TODO") + content.count("FIXME")
+                            issues.append({
+                                "type": "incomplete_code",
+                                "file": str(py_file),
+                                "detail": f"File contains {todo_count} TODO/FIXME comments (needs completion)"
+                            })
+
                     except Exception as e:
                         logger.debug(f"Error analyzing {py_file}: {e}")
 
@@ -147,11 +189,12 @@ class ProblemScanner:
     async def _sample_code(self) -> List[Dict[str, Any]]:
         """Sample code from important files."""
         samples = []
+        # ── FIX: Use absolute paths via BACKEND_ROOT ────────────────────────
         important_files = [
-            "backend/core/evolve_engine.py",
-            "backend/core/autonomous_evolution/loop_orchestrator.py",
-            "backend/workers/infinite_dev_loop.py",
-            "backend/tools/executor.py",
+            BACKEND_ROOT / "core" / "evolve_engine.py",
+            BACKEND_ROOT / "core" / "autonomous_evolution" / "loop_orchestrator.py",
+            BACKEND_ROOT / "workers" / "infinite_dev_loop.py",
+            BACKEND_ROOT / "tools" / "executor.py",
         ]
 
         try:
@@ -159,13 +202,14 @@ class ProblemScanner:
             for filename in important_files:
                 path = Path(filename)
                 if not path.exists():
+                    logger.debug(f"  Sample file not found: {path}")
                     continue
 
                 try:
                     content = path.read_text(encoding="utf-8", errors="ignore")
                     lines = content.split("\n")[:40]  # First 40 lines
                     samples.append({
-                        "file": filename,
+                        "file": str(path),  # absolute path as string
                         "code_preview": "\n".join(lines[:30])
                     })
                 except Exception as e:
@@ -213,9 +257,16 @@ class ProblemScanner:
                 max_tokens=1000
             )
 
-            # Parse JSON
+            # Parse JSON — strip markdown fences if present
             try:
-                data = json.loads(response)
+                clean = response.strip()
+                if clean.startswith("```json"):
+                    clean = clean[7:]
+                elif clean.startswith("```"):
+                    clean = clean[3:]
+                if clean.endswith("```"):
+                    clean = clean[:-3]
+                data = json.loads(clean.strip())
                 problems = data.get("problems", [])
                 logger.info(f"  LLM identified {len(problems)} problems")
                 return problems

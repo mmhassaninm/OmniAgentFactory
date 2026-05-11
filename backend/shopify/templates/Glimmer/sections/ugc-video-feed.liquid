@@ -1,0 +1,719 @@
+{%- comment -%}
+  ============================================================
+  UGC VIDEO FEED — Shopify OS 2.0 Custom Section (v3.0)
+  ============================================================
+  Horizontally-scrollable UGC video carousel with shoppable
+  product cards. Full Theme Customizer controls for typography,
+  button styling, layout columns, card aesthetics, and AJAX ATC.
+  Theme: Stiletto v5.0.1 — K-Beauty Premium Aesthetic.
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign title_font = section.settings.title_font
+  assign price_font = section.settings.price_font
+  assign atc_font = section.settings.atc_font
+-%}
+
+{%- comment -%} ─── Load selected Google Fonts ─── {%- endcomment -%}
+{% style %}
+  {{ title_font | font_face: font_display: 'swap' }}
+  {{ price_font | font_face: font_display: 'swap' }}
+  {{ atc_font | font_face: font_display: 'swap' }}
+{% endstyle %}
+
+{%- comment -%} ─── Scoped padding + CSS custom properties ─── {%- endcomment -%}
+<style>
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+  @media (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+
+  #UGCVideoFeed-{{ section.id }} {
+    /* Layout */
+    --ugc-columns-desktop: {{ section.settings.columns_desktop }};
+    --ugc-columns-mobile: {{ section.settings.columns_mobile }};
+    --ugc-gap: {{ section.settings.slide_gap }}px;
+    --ugc-active-scale: {{ section.settings.active_scale | divided_by: 100.0 }};
+    --ugc-inactive-scale: calc(var(--ugc-active-scale) - 0.12);
+    --ugc-card-radius: {{ section.settings.card_border_radius }}px;
+    /* Aspect ratio */
+    {%- case section.settings.card_aspect_ratio -%}
+      {%- when '9:16' -%}--ugc-aspect: 177.78%;
+      {%- when '1:1' -%}--ugc-aspect: 100%;
+      {%- when '3:4' -%}--ugc-aspect: 133.33%;
+      {%- when '4:5' -%}--ugc-aspect: 125%;
+      {%- else -%}--ugc-aspect: 177.78%;
+    {%- endcase %}
+    /* Typography — Title */
+    --ugc-title-font: {{ title_font.family }}, {{ title_font.fallback_families }};
+    --ugc-title-weight: {{ title_font.weight }};
+    --ugc-title-style: {{ title_font.style }};
+    --ugc-title-size: {{ section.settings.title_font_size_mobile }}rem;
+    --ugc-title-color: {{ section.settings.title_color }};
+    /* Typography — Price */
+    --ugc-price-font: {{ price_font.family }}, {{ price_font.fallback_families }};
+    --ugc-price-weight: {{ price_font.weight }};
+    --ugc-price-style: {{ price_font.style }};
+    --ugc-price-size: {{ section.settings.price_font_size_mobile }}rem;
+    --ugc-price-color: {{ section.settings.price_color }};
+    /* ATC Button */
+    --ugc-atc-font: {{ atc_font.family }}, {{ atc_font.fallback_families }};
+    --ugc-atc-weight: {{ atc_font.weight }};
+    --ugc-atc-style: {{ atc_font.style }};
+    --ugc-atc-size: {{ section.settings.atc_font_size }}rem;
+    --ugc-atc-radius: {{ section.settings.atc_border_radius }}px;
+    --ugc-atc-text: {{ section.settings.atc_text_color }};
+    --ugc-atc-bg: {{ section.settings.atc_bg_color }};
+    --ugc-atc-border: {{ section.settings.atc_border_color }};
+    --ugc-atc-text-hover: {{ section.settings.atc_text_color_hover }};
+    --ugc-atc-bg-hover: {{ section.settings.atc_bg_color_hover }};
+    --ugc-atc-border-hover: {{ section.settings.atc_border_color_hover }};
+  }
+
+  @media (min-width: 750px) {
+    #UGCVideoFeed-{{ section.id }} {
+      --ugc-title-size: {{ section.settings.title_font_size_desktop }}rem;
+      --ugc-price-size: {{ section.settings.price_font_size_desktop }}rem;
+    }
+  }
+</style>
+
+{%- comment -%} ─── Component styles ─── {%- endcomment -%}
+<style>
+  .ugc-video-feed { position: relative; overflow: hidden; }
+  .ugc-feed__header { text-align: center; margin-bottom: 2.4rem; }
+  .ugc-feed__heading { margin: 0; letter-spacing: -0.02em; line-height: 1.15; color: #1a1615; }
+  .ugc-feed__track-wrapper { position: relative; }
+
+  /* Boxed layout: constrain to theme page width */
+  .ugc-feed--boxed .ugc-feed__header,
+  .ugc-feed--boxed .ugc-feed__track-wrapper {
+    max-width: var(--page-width, 1200px);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .ugc-feed__track {
+    display: flex;
+    gap: var(--ugc-gap, 12px);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 1.5rem;
+    align-items: center;
+  }
+  .ugc-feed__track::-webkit-scrollbar { display: none; }
+
+  .ugc-feed__card {
+    flex: 0 0 calc((100% - (var(--ugc-gap) * (var(--ugc-columns-desktop) - 1))) / var(--ugc-columns-desktop));
+    scroll-snap-align: center;
+    cursor: pointer;
+    transform: scale(var(--ugc-inactive-scale, 0.88));
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .ugc-feed__card.is-active { transform: scale(var(--ugc-active-scale, 1)); }
+
+  .ugc-feed__card-video-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: var(--ugc-aspect, 177.78%);
+    border-radius: var(--ugc-card-radius, 8px);
+    overflow: hidden;
+    background: #1a1615;
+    {% if section.settings.card_shadow %}box-shadow: 0 4px 20px rgba(0,0,0,0.12);{% endif %}
+  }
+  .ugc-feed__video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  .ugc-feed__video-controls {
+    position: absolute; top: 8px; right: 8px;
+    display: flex; flex-direction: column; gap: 6px;
+    opacity: 0; transition: opacity 0.2s; z-index: 2;
+  }
+  .ugc-feed__card.is-active .ugc-feed__video-controls { opacity: 1; }
+
+  .ugc-feed__btn-mute, .ugc-feed__btn-play {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(0,0,0,0.45); border: none; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    padding: 0; -webkit-tap-highlight-color: transparent;
+  }
+  .ugc-feed__btn-mute:hover, .ugc-feed__btn-play:hover { background: rgba(0,0,0,0.6); }
+
+  .ugc-feed__card-product { padding: 10px 0 0; }
+  .ugc-feed__product-meta { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .ugc-feed__product-image { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+
+  .ugc-feed__product-title {
+    font-family: var(--ugc-title-font);
+    font-weight: var(--ugc-title-weight, 600);
+    font-style: var(--ugc-title-style, normal);
+    font-size: var(--ugc-title-size, 1.3rem);
+    color: var(--ugc-title-color, #1a1615);
+    margin: 0 0 3px; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .ugc-feed__product-price {
+    font-family: var(--ugc-price-font);
+    font-weight: var(--ugc-price-weight, 400);
+    font-style: var(--ugc-price-style, normal);
+    font-size: var(--ugc-price-size, 1.2rem);
+    color: var(--ugc-price-color, #7a6e68);
+    margin: 0;
+  }
+
+  .ugc-feed__atc-btn {
+    width: 100%; padding: 9px; box-sizing: border-box;
+    font-family: var(--ugc-atc-font);
+    font-weight: var(--ugc-atc-weight, 500);
+    font-style: var(--ugc-atc-style, normal);
+    font-size: var(--ugc-atc-size, 1.2rem);
+    letter-spacing: 0.03em;
+    color: var(--ugc-atc-text, #1a1615);
+    background: var(--ugc-atc-bg, transparent);
+    border: 1px solid var(--ugc-atc-border, #1a1615);
+    border-radius: var(--ugc-atc-radius, 4px);
+    cursor: pointer; text-align: center; text-decoration: none; display: block;
+    transition: background 0.22s, color 0.22s, border-color 0.22s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ugc-feed__atc-btn:hover {
+    color: var(--ugc-atc-text-hover, #fff);
+    background: var(--ugc-atc-bg-hover, #1a1615);
+    border-color: var(--ugc-atc-border-hover, #1a1615);
+  }
+  .ugc-feed__atc-btn:disabled { opacity: 0.6; cursor: wait; }
+
+  /* BEM button style modifiers */
+  .ugc-feed__atc-btn--solid {
+    background: var(--ugc-atc-bg, #1a1615);
+    color: var(--ugc-atc-text, #fff);
+    border-color: var(--ugc-atc-border, #1a1615);
+  }
+  .ugc-feed__atc-btn--solid:hover {
+    background: var(--ugc-atc-bg-hover, #3d3330);
+    color: var(--ugc-atc-text-hover, #fff);
+    border-color: var(--ugc-atc-border-hover, #3d3330);
+  }
+  .ugc-feed__atc-btn--outline {
+    background: transparent;
+    color: var(--ugc-atc-text, #1a1615);
+    border-color: var(--ugc-atc-border, #1a1615);
+  }
+  .ugc-feed__atc-btn--outline:hover {
+    background: var(--ugc-atc-bg-hover, #1a1615);
+    color: var(--ugc-atc-text-hover, #fff);
+    border-color: var(--ugc-atc-border-hover, #1a1615);
+  }
+
+  /* Product info link */
+  .ugc-feed__product-link {
+    display: flex; align-items: flex-start; gap: 8px;
+    text-decoration: none; color: inherit;
+    transition: opacity 0.18s;
+  }
+  .ugc-feed__product-link:hover { opacity: 0.8; }
+
+  /* Drag state — only applied after actual movement, not on mousedown */
+  .ugc-feed__track.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+  .ugc-feed__track.is-dragging a,
+  .ugc-feed__track.is-dragging button { pointer-events: none; }
+  .ugc-feed__track:not(.is-dragging) { cursor: grab; }
+
+  /* Nav arrows */
+  .ugc-feed__nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #fff; border: 1px solid #e0d8d4;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: opacity 0.2s; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ugc-feed__nav--prev { left: 8px; }
+  .ugc-feed__nav--next { right: 8px; }
+  .ugc-feed__nav:disabled { opacity: 0.3; pointer-events: none; }
+  .ugc-feed__nav svg { width: 16px; height: 16px; color: #1a1615; }
+
+  .ugc-feed__placeholder { text-align: center; padding: 4rem 2rem; color: #7a6e68; font-size: 1.4rem; }
+
+  /* === CHOMI CUSTOM START: UGC Standby Styling === */
+  .ugc-feed__card {
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+  .ugc-feed__card.is-standby {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    z-index: 1;
+    position: relative;
+  }
+  .ugc-feed__card.is-standby .ugc-feed__card-video-wrapper {
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  }
+  /* When a card is both active AND standby, active takes visual precedence */
+  .ugc-feed__card.is-active.is-standby {
+    transform: scale(var(--ugc-active-scale, 1));
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  }
+  /* === CHOMI CUSTOM END: UGC Standby Styling === */
+
+  @media (max-width: 749px) {
+    .ugc-feed__nav { display: none; }
+    .ugc-feed__track { padding: 16px 1.5rem; }
+    .ugc-feed__card {
+      flex: 0 0 calc((100% - (var(--ugc-gap) * (var(--ugc-columns-mobile) - 1))) / var(--ugc-columns-mobile));
+      transform: scale(calc(var(--ugc-inactive-scale) + 0.04));
+    }
+    .ugc-feed__card.is-active { transform: scale(var(--ugc-active-scale, 1)); }
+    .ugc-feed__header { margin-bottom: 1.6rem; }
+    /* === CHOMI CUSTOM START: UGC Standby Mobile === */
+    .ugc-feed__card.is-standby {
+      transform: scale(1.03);
+    }
+    .ugc-feed__card.is-active.is-standby {
+      transform: scale(var(--ugc-active-scale, 1));
+    }
+    /* === CHOMI CUSTOM END: UGC Standby Mobile === */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ugc-feed__card, .ugc-feed__video-controls, .ugc-feed__atc-btn, .ugc-feed__nav { transition: none; }
+  }
+</style>
+
+{%- comment -%} ─── Section markup ─── {%- endcomment -%}
+<div class="ugc-video-feed{% if section.settings.layout == 'boxed' %} ugc-feed--boxed{% endif %} section-{{ section.id }}-padding" id="UGCVideoFeed-{{ section.id }}">
+  {%- if section.settings.heading != blank -%}
+    <div class="ugc-feed__header">
+      <h2 class="ugc-feed__heading {{ section.settings.heading_size }}">{{ section.settings.heading }}</h2>
+    </div>
+  {%- endif -%}
+
+  {%- if section.blocks.size > 0 -%}
+    <div class="ugc-feed__track-wrapper">
+      {%- if section.settings.show_arrows -%}
+        <button class="ugc-feed__nav ugc-feed__nav--prev" type="button" aria-label="Previous" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="10 2 4 8 10 14"/></svg>
+        </button>
+      {%- endif -%}
+
+      <ugc-video-feed>
+        {% comment %} === CHOMI CUSTOM START: UGC Standby Data Attribute === {% endcomment %}
+        <div class="ugc-feed__track" data-standby-index="{{ section.settings.standby_slide_index | minus: 1 }}">
+        {% comment %} === CHOMI CUSTOM END: UGC Standby Data Attribute === {% endcomment %}
+          {%- for block in section.blocks -%}
+            {%- liquid
+              assign product = block.settings.product
+              assign video = block.settings.video
+              assign video_url = block.settings.video_url
+              assign poster = block.settings.poster
+              assign atc_label = block.settings.add_to_cart_label | default: 'Add to cart'
+              assign variant_id = ''
+              if product != blank
+                assign variant_id = product.selected_or_first_available_variant.id
+              endif
+              assign standby_zero_index = section.settings.standby_slide_index | minus: 1
+            -%}
+            {% comment %} === CHOMI CUSTOM: Standby class on initial render === {% endcomment %}
+            <div class="ugc-feed__card{% if forloop.index0 == standby_zero_index %} is-active is-standby{% endif %}" data-index="{{ forloop.index0 }}" {{ block.shopify_attributes }}>
+              <div class="ugc-feed__card-video-wrapper">
+                {%- if video != blank -%}
+                  {{ video | video_tag: image_size: '600x', class: 'ugc-feed__video', autoplay: false, loop: true, muted: true, controls: false }}
+                {%- elsif video_url != blank -%}
+                  {%- if video_url.type == 'youtube' -%}
+                    <iframe class="ugc-feed__video" src="https://www.youtube.com/embed/{{ video_url.id }}?autoplay=0&mute=1&loop=1&playlist={{ video_url.id }}&controls=0&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media" allowfullscreen loading="lazy" title="UGC Video"></iframe>
+                  {%- elsif video_url.type == 'vimeo' -%}
+                    <iframe class="ugc-feed__video" src="https://player.vimeo.com/video/{{ video_url.id }}?autoplay=0&muted=1&loop=1&controls=0&playsinline=1" allow="autoplay; encrypted-media" allowfullscreen loading="lazy" title="UGC Video"></iframe>
+                  {%- endif -%}
+                {%- elsif poster != blank -%}
+                  {{ poster | image_url: width: 600 | image_tag: loading: 'lazy', class: 'ugc-feed__video', widths: '200, 400, 600' }}
+                {%- else -%}
+                  <div class="ugc-feed__video" style="background:#2a2320;display:flex;align-items:center;justify-content:center;">{{ 'lifestyle-1' | placeholder_svg_tag: 'placeholder-svg' }}</div>
+                {%- endif -%}
+                <div class="ugc-feed__video-controls">
+                  <button class="ugc-feed__btn-mute" type="button" aria-label="Toggle mute">
+                    <svg class="ugc-feed__icon-muted" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><polygon points="5 5.5 1 5.5 1 10.5 5 10.5 9 13.5 9 2.5"/><line x1="15" y1="4" x2="11" y2="12"/><line x1="11" y1="4" x2="15" y2="12"/></svg>
+                    <svg class="ugc-feed__icon-unmuted" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="display:none"><polygon points="5 5.5 1 5.5 1 10.5 5 10.5 9 13.5 9 2.5"/><path d="M11.5 5.5a3.5 3.5 0 0 1 0 5"/><path d="M13.5 3.5a6.5 6.5 0 0 1 0 9"/></svg>
+                  </button>
+                  <button class="ugc-feed__btn-play" type="button" aria-label="Toggle play">
+                    <svg class="ugc-feed__icon-play" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><polygon points="4 2 14 8 4 14"/></svg>
+                    <svg class="ugc-feed__icon-pause" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="13"/><line x1="11" y1="3" x2="11" y2="13"/></svg>
+                  </button>
+                </div>
+              </div>
+              {%- if product != blank -%}
+                <div class="ugc-feed__card-product">
+                  <a href="{{ product.url }}" class="ugc-feed__product-link">
+                    {%- if product.featured_image != blank -%}
+                      <img class="ugc-feed__product-image" src="{{ product.featured_image | image_url: width: 80 }}" alt="{{ product.featured_image.alt | escape }}" width="40" height="40" loading="lazy">
+                    {%- endif -%}
+                    <div>
+                      <p class="ugc-feed__product-title">{{ product.title }}</p>
+                      <p class="ugc-feed__product-price">{{ product.price | money }}</p>
+                    </div>
+                  </a>
+                  {%- if product.available -%}
+                    <button
+                      class="ugc-feed__atc-btn ugc-feed__atc-btn--{{ section.settings.atc_button_style }}"
+                      type="button"
+                      data-product-id="{{ variant_id }}"
+                    >
+                      <span data-add-to-cart-text>{{ atc_label }}</span>
+                      <div class="btn__loading-wrap"><div class="btn__loading-bar"></div></div>
+                    </button>
+                  {%- else -%}
+                    <a class="ugc-feed__atc-btn ugc-feed__atc-btn--{{ section.settings.atc_button_style }} btn" href="{{ product.url }}">View Product</a>
+                  {%- endif -%}
+                </div>
+              {%- endif -%}
+            </div>
+          {%- endfor -%}
+        </div>
+      </ugc-video-feed>
+
+      {%- if section.settings.show_arrows -%}
+        <button class="ugc-feed__nav ugc-feed__nav--next" type="button" aria-label="Next">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 2 12 8 6 14"/></svg>
+        </button>
+      {%- endif -%}
+    </div>
+  {%- else -%}
+    <div class="ugc-feed__placeholder page-width"><p>Add video cards in the Theme Editor to populate this section.</p></div>
+  {%- endif -%}
+</div>
+
+
+<script>
+(function () {
+  'use strict';
+  if (customElements.get('ugc-video-feed')) return;
+
+  class UGCVideoFeed extends HTMLElement {
+    connectedCallback() {
+      this.track = this.querySelector('.ugc-feed__track');
+      if (!this.track) return;
+      this.cards = Array.from(this.track.querySelectorAll('.ugc-feed__card'));
+      if (!this.cards.length) return;
+      this.wrapper = this.closest('.ugc-feed__track-wrapper');
+      this.prevBtn = this.wrapper ? this.wrapper.querySelector('.ugc-feed__nav--prev') : null;
+      this.nextBtn = this.wrapper ? this.wrapper.querySelector('.ugc-feed__nav--next') : null;
+      this.activeIndex = 0;
+      this._bindCards();
+      this._bindNav();
+      this._bindScroll();
+      this._bindDrag();
+      // === CHOMI CUSTOM START: UGC Standby JS Logic ===
+      const standbyAttr = this.track.getAttribute('data-standby-index');
+      this.standbyIndex = standbyAttr !== null ? parseInt(standbyAttr, 10) : 0;
+      if (isNaN(this.standbyIndex) || this.standbyIndex < 0 || this.standbyIndex >= this.cards.length) {
+        this.standbyIndex = 0;
+      }
+      requestAnimationFrame(() => {
+        this.activateCard(this.standbyIndex, true, 'auto');
+        this._applyStandby(this.standbyIndex);
+        this._updateNavState();
+      });
+      // === CHOMI CUSTOM END: UGC Standby JS Logic ===
+    }
+
+    _bindCards() {
+      this.cards.forEach((card, i) => {
+        card.addEventListener('click', (e) => {
+          /* Let native theme triggers, links, and control buttons handle their own clicks */
+          if (e.target.closest('[data-quick-shop-trigger]') || e.target.closest('.ugc-feed__btn-mute') || e.target.closest('.ugc-feed__btn-play') || e.target.closest('.ugc-feed__atc-btn') || e.target.closest('.ugc-feed__product-link')) return;
+          this.activateCard(i);
+        });
+        const muteBtn = card.querySelector('.ugc-feed__btn-mute');
+        if (muteBtn) muteBtn.addEventListener('click', (e) => { e.stopPropagation(); this._toggleMute(card); });
+        const playBtn = card.querySelector('.ugc-feed__btn-play');
+        if (playBtn) playBtn.addEventListener('click', (e) => { e.stopPropagation(); this._togglePlay(card); });
+        const atcBtn = card.querySelector('.ugc-feed__atc-btn');
+        if (atcBtn) atcBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); this._addToCart(atcBtn); });
+      });
+    }
+
+    async _addToCart(btn) {
+      if (btn.classList.contains('loading')) return;
+      btn.classList.add('loading');
+
+      const formData = new FormData();
+      formData.append('id', btn.dataset.productId);
+      formData.append('quantity', 1);
+      /* Native Shopify Section Rendering API Payload */
+      formData.append('sections', 'quick-cart,header');
+      formData.append('sections_url', window.location.pathname);
+
+      try {
+        const response = await fetch(window.Shopify.routes.root + 'cart/add.js', {
+          method: 'POST',
+          body: formData,
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/javascript' }
+        });
+        const data = await response.json();
+        if (data.sections) {
+          this._syncCartSections(data.sections);
+        }
+      } catch (err) {
+        console.error('ATC Error:', err);
+      } finally {
+        btn.classList.remove('loading');
+      }
+    }
+
+    _syncCartSections(sections) {
+      if (!sections) return;
+
+      const headerDoc = new DOMParser().parseFromString(sections['header'], 'text/html');
+      const newCount = headerDoc.querySelector('[data-js-cart-count]')?.innerHTML || '';
+      document.querySelectorAll('[data-js-cart-count]').forEach(el => el.innerHTML = newCount);
+
+      const drawerDoc = new DOMParser().parseFromString(sections['quick-cart'], 'text/html');
+      const drawer = document.querySelector('[data-section-type="quick-cart"]');
+      
+      if (drawer) {
+        const oldHeading = drawer.querySelector('.quick-cart__heading');
+        const newHeading = drawerDoc.querySelector('.quick-cart__heading');
+        if (oldHeading && newHeading) oldHeading.innerHTML = newHeading.innerHTML;
+
+        const oldForm = drawer.querySelector('.quick-cart__form');
+        const newForm = drawerDoc.querySelector('.quick-cart__form');
+        const emptyState = drawer.querySelector('.quick-cart__empty-state');
+
+        if (oldForm && newForm) {
+          const oldItems = oldForm.querySelector('.quick-cart__items');
+          const newItems = newForm.querySelector('.quick-cart__items');
+          if (oldItems && newItems) oldItems.innerHTML = newItems.innerHTML;
+
+          const oldFooter = oldForm.querySelector('.quick-cart__footer');
+          const newFooter = newForm.querySelector('.quick-cart__footer');
+          if (oldFooter && newFooter) oldFooter.innerHTML = newFooter.innerHTML;
+        } else if (!oldForm && newForm && emptyState) {
+          emptyState.replaceWith(newForm);
+        }
+
+        /* 
+         * Trigger native Stiletto drawer open logic:
+         * Clicking the header cart icon triggers r$1("quick-cart:open") in theme.js,
+         * which handles overlay attributes, CSS animations, and focus traps securely.
+         */
+        const cartIcon = document.querySelector('[data-js-cart-icon]');
+        if (cartIcon) cartIcon.click();
+      }
+    }
+
+    _bindNav() {
+      if (this.prevBtn) this.prevBtn.addEventListener('click', () => this._scrollBy(-1));
+      if (this.nextBtn) this.nextBtn.addEventListener('click', () => this._scrollBy(1));
+    }
+
+    _bindScroll() {
+      let t;
+      this.track.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(() => this._updateNavState(), 100); }, { passive: true });
+    }
+
+    /* ── Drag-to-scroll (mouse only, touch is native) ── */
+    _bindDrag() {
+      let isDown = false, startX = 0, scrollStart = 0, moved = false;
+      const track = this.track;
+      track.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        isDown = true; moved = false;
+        startX = e.pageX - track.offsetLeft;
+        scrollStart = track.scrollLeft;
+        /* Do NOT add is-dragging yet — wait for actual movement */
+      });
+      track.addEventListener('mouseleave', () => { if (isDown) { isDown = false; track.classList.remove('is-dragging'); } });
+      track.addEventListener('mouseup', (e) => {
+        if (!isDown) return;
+        isDown = false;
+        track.classList.remove('is-dragging');
+        /* Prevent click-through if user dragged */
+        if (moved) { e.preventDefault(); }
+      });
+      track.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - track.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        if (Math.abs(walk) > 8) {
+          if (!moved) track.classList.add('is-dragging');
+          moved = true;
+        }
+        track.scrollLeft = scrollStart - walk;
+      });
+      /* Prevent link clicks after drag */
+      track.addEventListener('click', (e) => {
+        if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
+      }, true);
+    }
+
+    activateCard(index, scroll, behavior = 'smooth') {
+      if (scroll === undefined) scroll = true;
+      const next = this.cards[index];
+      if (!next) return;
+      this.cards.forEach((c) => {
+        c.classList.remove('is-active');
+        const v = c.querySelector('video.ugc-feed__video');
+        if (v) { v.pause(); v.currentTime = 0; }
+        const ip = c.querySelector('.ugc-feed__icon-play');
+        const ipa = c.querySelector('.ugc-feed__icon-pause');
+        if (ip) ip.style.display = 'none';
+        if (ipa) ipa.style.display = '';
+      });
+      next.classList.add('is-active');
+      this.activeIndex = index;
+      // === CHOMI CUSTOM START: UGC Standby Dynamic Update ===
+      this._applyStandby(index);
+      // === CHOMI CUSTOM END: UGC Standby Dynamic Update ===
+      const video = next.querySelector('video.ugc-feed__video');
+      if (video) {
+        const p = video.play();
+        if (p !== undefined) p.catch(() => {});
+        const ip = next.querySelector('.ugc-feed__icon-play');
+        const ipa = next.querySelector('.ugc-feed__icon-pause');
+        if (ip) ip.style.display = 'none';
+        if (ipa) ipa.style.display = '';
+      }
+      if (scroll) {
+        const trackRect = this.track.getBoundingClientRect();
+        const nextRect = next.getBoundingClientRect();
+        const scrollTarget = this.track.scrollLeft + nextRect.left - trackRect.left - (trackRect.width / 2) + (nextRect.width / 2);
+        this.track.scrollTo({ left: scrollTarget, behavior: behavior });
+      }
+    }
+
+    // === CHOMI CUSTOM START: UGC Standby JS Logic ===
+    _applyStandby(activeIndex) {
+      this.cards.forEach((c) => c.classList.remove('is-standby'));
+      const target = this.cards[activeIndex];
+      if (target) target.classList.add('is-standby');
+    }
+    // === CHOMI CUSTOM END: UGC Standby JS Logic ===
+
+    _toggleMute(card) {
+      const v = card.querySelector('video.ugc-feed__video');
+      if (!v) return;
+      v.muted = !v.muted;
+      const im = card.querySelector('.ugc-feed__icon-muted');
+      const iu = card.querySelector('.ugc-feed__icon-unmuted');
+      if (v.muted) { if (im) im.style.display = ''; if (iu) iu.style.display = 'none'; }
+      else { if (im) im.style.display = 'none'; if (iu) iu.style.display = ''; }
+    }
+
+    _togglePlay(card) {
+      const v = card.querySelector('video.ugc-feed__video');
+      if (!v) return;
+      const ip = card.querySelector('.ugc-feed__icon-play');
+      const ipa = card.querySelector('.ugc-feed__icon-pause');
+      if (v.paused) { v.play().catch(() => {}); if (ip) ip.style.display = 'none'; if (ipa) ipa.style.display = ''; }
+      else { v.pause(); if (ip) ip.style.display = ''; if (ipa) ipa.style.display = 'none'; }
+    }
+
+    _scrollBy(direction) {
+      if (!this.cards.length) return;
+      const gap = parseInt(getComputedStyle(this.track).gap) || 12;
+      const cardWidth = this.cards[0].offsetWidth + gap;
+      this.track.scrollBy({ left: direction * cardWidth, behavior: 'smooth' });
+    }
+
+    _updateNavState() {
+      if (!this.prevBtn || !this.nextBtn) return;
+      const { scrollLeft, scrollWidth, clientWidth } = this.track;
+      this.prevBtn.disabled = scrollLeft <= 2;
+      this.nextBtn.disabled = scrollLeft + clientWidth >= scrollWidth - 2;
+    }
+  }
+
+  customElements.define('ugc-video-feed', UGCVideoFeed);
+})();
+</script>
+
+{% schema %}
+{
+  "name": "UGC Video Feed",
+  "tag": "section",
+  "class": "section",
+  "max_blocks": 12,
+  "settings": [
+    { "type": "header", "content": "Section heading" },
+    { "type": "inline_richtext", "id": "heading", "default": "Loved by the Community", "label": "Heading" },
+    { "type": "select", "id": "heading_size", "options": [{"value":"h2","label":"Small"},{"value":"h1","label":"Medium"},{"value":"h0","label":"Large"}], "default": "h1", "label": "Heading size" },
+
+    { "type": "header", "content": "Layout & slider" },
+    { "type": "select", "id": "layout", "options": [{"value":"wide","label":"Wide (full width)"},{"value":"boxed","label":"Boxed (page width)"}], "default": "wide", "label": "Layout width" },
+    { "type": "checkbox", "id": "show_arrows", "default": true, "label": "Show navigation arrows" },
+    { "type": "range", "id": "columns_desktop", "min": 3, "max": 6, "step": 1, "default": 4, "label": "Columns (desktop)" },
+    { "type": "select", "id": "columns_mobile", "options": [{"value":"1.2","label":"1.2 (peek)"},{"value":"1.5","label":"1.5"},{"value":"2","label":"2"},{"value":"2.2","label":"2.2 (peek)"}], "default": "1.2", "label": "Columns (mobile)" },
+    { "type": "range", "id": "slide_gap", "min": 4, "max": 32, "step": 2, "unit": "px", "default": 12, "label": "Gap between slides" },
+
+    { "type": "header", "content": "Card styling" },
+    { "type": "select", "id": "card_aspect_ratio", "options": [{"value":"9:16","label":"Portrait 9:16"},{"value":"3:4","label":"Portrait 3:4"},{"value":"4:5","label":"Portrait 4:5"},{"value":"1:1","label":"Square 1:1"}], "default": "9:16", "label": "Video aspect ratio" },
+    { "type": "range", "id": "card_border_radius", "min": 0, "max": 24, "step": 2, "unit": "px", "default": 8, "label": "Card border radius" },
+    { "type": "checkbox", "id": "card_shadow", "default": false, "label": "Show card shadow" },
+    { "type": "range", "id": "active_scale", "min": 100, "max": 115, "step": 1, "unit": "%", "default": 100, "label": "Active card scale", "info": "100% = no scale. Higher = bigger active card." },
+
+    { "type": "header", "content": "Product title typography" },
+    { "type": "font_picker", "id": "title_font", "default": "instrument_sans_n6", "label": "Title font" },
+    { "type": "range", "id": "title_font_size_desktop", "min": 1.0, "max": 2.0, "step": 0.1, "unit": "rem", "default": 1.3, "label": "Title size (desktop)" },
+    { "type": "range", "id": "title_font_size_mobile", "min": 1.0, "max": 1.8, "step": 0.1, "unit": "rem", "default": 1.2, "label": "Title size (mobile)" },
+    { "type": "color", "id": "title_color", "default": "#1a1615", "label": "Title color" },
+
+    { "type": "header", "content": "Price typography" },
+    { "type": "font_picker", "id": "price_font", "default": "instrument_sans_n4", "label": "Price font" },
+    { "type": "range", "id": "price_font_size_desktop", "min": 1.0, "max": 1.8, "step": 0.1, "unit": "rem", "default": 1.2, "label": "Price size (desktop)" },
+    { "type": "range", "id": "price_font_size_mobile", "min": 0.9, "max": 1.6, "step": 0.1, "unit": "rem", "default": 1.1, "label": "Price size (mobile)" },
+    { "type": "color", "id": "price_color", "default": "#7a6e68", "label": "Price color" },
+
+    { "type": "header", "content": "Add to cart button" },
+    { "type": "select", "id": "atc_button_style", "options": [{"value":"outline","label":"Outline"},{"value":"solid","label":"Solid"}], "default": "outline", "label": "Button style" },
+    { "type": "font_picker", "id": "atc_font", "default": "instrument_sans_n5", "label": "Button font" },
+    { "type": "range", "id": "atc_font_size", "min": 1.0, "max": 1.6, "step": 0.1, "unit": "rem", "default": 1.2, "label": "Button font size" },
+    { "type": "range", "id": "atc_border_radius", "min": 0, "max": 24, "step": 2, "unit": "px", "default": 4, "label": "Button border radius" },
+    { "type": "color", "id": "atc_text_color", "default": "#1a1615", "label": "Text color" },
+    { "type": "color", "id": "atc_bg_color", "default": "rgba(0,0,0,0)", "label": "Background color" },
+    { "type": "color", "id": "atc_border_color", "default": "#1a1615", "label": "Border color" },
+    { "type": "color", "id": "atc_text_color_hover", "default": "#ffffff", "label": "Hover text color" },
+    { "type": "color", "id": "atc_bg_color_hover", "default": "#1a1615", "label": "Hover background" },
+    { "type": "color", "id": "atc_border_color_hover", "default": "#1a1615", "label": "Hover border color" },
+
+    { "type": "header", "content": "Standby video" },
+    { "type": "range", "id": "standby_slide_index", "min": 1, "max": 10, "step": 1, "default": 2, "label": "Standby Video Index (Default Active)", "info": "Which video card is enlarged and active on page load. 1 = first card, 2 = second card (center), etc." },
+
+    { "type": "header", "content": "Section padding" },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Top padding", "default": 60 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 100, "step": 4, "unit": "px", "label": "Bottom padding", "default": 60 }
+  ],
+  "blocks": [
+    {
+      "type": "video_card",
+      "name": "Video Card",
+      "settings": [
+        { "type": "video", "id": "video", "label": "Video (Shopify hosted)" },
+        { "type": "video_url", "id": "video_url", "accept": ["youtube","vimeo"], "label": "External video URL", "info": "Used if no Shopify video selected" },
+        { "type": "image_picker", "id": "poster", "label": "Video poster image" },
+        { "type": "product", "id": "product", "label": "Linked product" },
+        { "type": "text", "id": "add_to_cart_label", "default": "Add to cart", "label": "Button label" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "UGC Video Feed",
+      "blocks": [
+        {"type":"video_card"},{"type":"video_card"},{"type":"video_card"},{"type":"video_card"},{"type":"video_card"}
+      ]
+    }
+  ]
+}
+{% endschema %}
+

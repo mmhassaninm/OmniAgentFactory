@@ -1,0 +1,153 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "type": "header",
+  "name": "t:groups.header_group.name",
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "blocks": {
+        "announcement-bar-1": {
+          "type": "announcement",
+          "disabled": true,
+          "settings": {
+            "title": "<p>Get an extra 10% off when you use the code \"KOREA\".</p>",
+            "title_mobile": "<p>Get an extra 10% off when you use the code \"KOREA\".</p>",
+            "link": ""
+          }
+        }
+      },
+      "block_order": [
+        "announcement-bar-1"
+      ],
+      "settings": {
+        "enable_sticky_announcement_bar": "desktop-and-mobile",
+        "autoplay_enabled": true,
+        "autoplay_delay": 4,
+        "color_background": "#f4e3e7",
+        "color_text": "#0b073d"
+      }
+    },
+    "header": {
+      "type": "header",
+      "blocks": {
+        "compact_meganav_9KAwJJ": {
+          "type": "compact_meganav",
+          "settings": {
+            "dropdown_parent_link": "Shop All",
+            "columns_width": 600,
+            "column_count": 2,
+            "show_column_borders": true,
+            "show_promo": true,
+            "promo_width": 440,
+            "promo_height": 250,
+            "secondary_position": "right",
+            "image": "shopify://shop_images/Silk_ribbons_and_202604081646.jpg",
+            "focal_point": "image_presentation",
+            "promo_text": "Value Set / Gifts",
+            "link": "shopify://collections/bundles",
+            "link_text": "Discover",
+            "text_position": "flex-start_flex-end",
+            "text_color": "#ffffff",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "",
+            "overlay_opacity": 30
+          }
+        },
+        "full_width_meganav_9td44C": {
+          "type": "full_width_meganav",
+          "settings": {
+            "dropdown_parent_link": "Skincare",
+            "column_count": 4,
+            "show_column_borders": true,
+            "show_promo": true,
+            "promo_width": 440,
+            "promo_height": 250,
+            "secondary_position": "right",
+            "image": "shopify://shop_images/Anua_skincare_products_202604081643.jpg",
+            "focal_point": "image_presentation",
+            "promo_text": "Skincare Routine",
+            "link": "shopify://collections/all",
+            "link_text": "Discover",
+            "text_position": "flex-start_flex-end",
+            "text_color": "#ffffff",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "#000000",
+            "overlay_opacity": 30
+          }
+        },
+        "compact_meganav_FMk4rV": {
+          "type": "compact_meganav",
+          "settings": {
+            "dropdown_parent_link": "Makeup",
+            "columns_width": 440,
+            "column_count": 2,
+            "show_column_borders": true,
+            "show_promo": true,
+            "promo_width": 440,
+            "promo_height": 250,
+            "secondary_position": "right",
+            "image": "shopify://shop_images/Cosmetic_palettes_and_202604081645.jpg",
+            "focal_point": "image_presentation",
+            "promo_text": "Swatches",
+            "link": "shopify://collections/all",
+            "link_text": "Discover",
+            "text_position": "flex-start_flex-end",
+            "text_color": "#ffffff",
+            "color_overlay": "#000000",
+            "color_overlay_gradient": "#000000",
+            "overlay_opacity": 30
+          }
+        },
+        "mobile_menu_images_XyRpCQ": {
+          "type": "mobile_menu_images",
+          "disabled": true,
+          "settings": {
+            "menu_name": "mm",
+            "aspect_ratio": "square",
+            "thumbnail_width": 60
+          }
+        }
+      },
+      "block_order": [
+        "compact_meganav_9KAwJJ",
+        "full_width_meganav_9td44C",
+        "compact_meganav_FMk4rV",
+        "mobile_menu_images_XyRpCQ"
+      ],
+      "settings": {
+        "layout": "logo-left_nav-left",
+        "enable_sticky_header": true,
+        "cart_icon": "cart",
+        "divider_width": "1px",
+        "enable_locale_selector": true,
+        "enable_country_selector": true,
+        "show_social_media": true,
+        "show_social_media_mobile": true,
+        "logo": "shopify://shop_images/imgi_1_opUJ6LtOEqihKe9IofX6JwcLG6QEhTsmQqtDka9m.png",
+        "logo_ar": "shopify://shop_images/imgi_1_CHOMI_-_AR_-_V01.png",
+        "logo_width": 180,
+        "mobile_logo_width": 70,
+        "menu": "mm",
+        "secondary_menu": "menu-secondary",
+        "featured_link_label": "",
+        "featured_link_color": "#db4827",
+        "enable_transparent_on_home": true,
+        "enable_transparent_template_list": "",
+        "color_text_transparent": "#0e2c29",
+        "color_count_transparent": "#f0ffd9"
+      }
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header"
+  ]
+}

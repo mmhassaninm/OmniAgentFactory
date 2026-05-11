@@ -1,0 +1,122 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "type": "footer",
+  "name": "t:groups.footer_group.name",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "blocks": {
+        "footer-0": {
+          "type": "text",
+          "settings": {
+            "desktop_width": 28,
+            "desktop_padding": 1,
+            "collapse_on_mobile": false,
+            "title": "",
+            "show_title_on_desktop": false,
+            "text": "<p>Chomi brings you handpicked Korean skincare & beauty essentials—authentic, fresh, and routine-ready.</p>",
+            "image_max_width": 110,
+            "image_placement": "above_text",
+            "show_social_icons": true,
+            "enable_follow_on_shop": false
+          }
+        },
+        "footer-1": {
+          "type": "spacer",
+          "settings": {
+            "desktop_width": 5
+          }
+        },
+        "footer-2": {
+          "type": "links",
+          "settings": {
+            "desktop_width": 20,
+            "desktop_padding": 3,
+            "collapse_on_mobile": true,
+            "title": "Shop",
+            "show_title_on_desktop": true,
+            "link_list": "footer"
+          }
+        },
+        "1f903548-8555-4e70-9aad-85237224dc7c": {
+          "type": "links",
+          "settings": {
+            "desktop_width": 20,
+            "desktop_padding": 4,
+            "collapse_on_mobile": true,
+            "title": "Company",
+            "show_title_on_desktop": true,
+            "link_list": "footer-company"
+          }
+        },
+        "links_9d9Hkc": {
+          "type": "links",
+          "disabled": true,
+          "settings": {
+            "desktop_width": 12,
+            "desktop_padding": 3,
+            "collapse_on_mobile": true,
+            "title": "Links",
+            "show_title_on_desktop": true,
+            "link_list": "footer"
+          }
+        },
+        "9e48388d-410b-4c04-a6d2-4fb578ee7c0f": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "desktop_width": 14,
+            "desktop_padding": 2,
+            "collapse_on_mobile": false,
+            "title": "Member of",
+            "show_title_on_desktop": true,
+            "text": "",
+            "image_max_width": 110,
+            "image_placement": "above_text",
+            "show_social_icons": false,
+            "enable_follow_on_shop": false
+          }
+        },
+        "footer-4": {
+          "type": "newsletter",
+          "settings": {
+            "desktop_width": 25,
+            "desktop_padding": 0,
+            "collapse_on_mobile": false,
+            "title": "SIgn up and Save 5%",
+            "show_title_on_desktop": true,
+            "text": "<p>Be the first to hear about new products, exclusive sales, and news.</p>",
+            "show_social_icons": false,
+            "enable_follow_on_shop": false
+          }
+        }
+      },
+      "block_order": [
+        "footer-0",
+        "footer-1",
+        "footer-2",
+        "1f903548-8555-4e70-9aad-85237224dc7c",
+        "links_9d9Hkc",
+        "9e48388d-410b-4c04-a6d2-4fb578ee7c0f",
+        "footer-4"
+      ],
+      "settings": {
+        "enable_locale_selector": true,
+        "enable_country_selector": true,
+        "show_payment_icons": true,
+        "additional_copyright_text": ""
+      }
+    }
+  },
+  "order": [
+    "footer"
+  ]
+}
