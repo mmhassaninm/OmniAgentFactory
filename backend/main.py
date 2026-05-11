@@ -261,6 +261,78 @@ async def request_timeout_middleware(request: Request, call_next):
         )
 
 
+@app.middleware("http")
+async def observability_middleware(request: Request, call_next):
+    """Capture request metrics for observability."""
+    import time
+    from middleware.observability import record_request
+
+    start_time = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+
+    try:
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000
+        record_request(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=response.status_code,
+            duration_ms=duration_ms,
+            client_ip=client_ip
+        )
+        return response
+    except Exception as e:
+        duration_ms = (time.time() - start_time) * 1000
+        record_request(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=500,
+            duration_ms=duration_ms,
+            error=str(e)[:100],
+            client_ip=client_ip
+        )
+        raise
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Apply rate limiting to public endpoints."""
+    from middleware.rate_limiter import check_rate_limit, get_client_ip
+    from fastapi.responses import JSONResponse
+
+    # Exempt internal/health endpoints
+    exempt_paths = ["/health", "/docs", "/openapi.json", "/favicon.ico"]
+    if any(request.url.path.startswith(path) for path in exempt_paths):
+        return await call_next(request)
+
+    # Determine endpoint tier for rate limiting
+    if "/api/chat" in request.url.path:
+        tier = "chat"
+    elif "/api/models" in request.url.path or "/api/providers" in request.url.path:
+        tier = "models"
+    elif "/api/files" in request.url.path:
+        tier = "files"
+    else:
+        tier = "default"
+
+    client_ip = get_client_ip(request)
+
+    if not check_rate_limit(client_ip, tier):
+        logger.warning("Rate limit exceeded for %s on %s tier", client_ip, tier)
+        return JSONResponse(
+            status_code=429,
+            content={
+                "status": "error",
+                "code": "RATE_LIMIT",
+                "message": f"Rate limit exceeded for {tier} endpoints",
+                "details": {"tier": tier, "limit_type": tier},
+                "timestamp": None
+            }
+        )
+
+    return await call_next(request)
+
+
 # Add CORS Middleware
 # FIX: Removed wildcard "*" — only allow specific dev/prod origins
 import os
@@ -390,6 +462,22 @@ try:
     logger.info("✓ Shopify Factory router loaded")
 except Exception as e:
     logger.warning("Shopify Factory router failed to load: %s", e)
+
+# ── System Health Check API ───────────────────────────────────────────────────
+try:
+    from api.health import router as health_router
+    app.include_router(health_router, prefix="/api/health", tags=["Health"])
+    logger.info("✓ System Health Check API registered")
+except Exception as e:
+    logger.warning("System Health Check API failed to load: %s", e)
+
+# ── System Metrics API ────────────────────────────────────────────────────────
+try:
+    from api.metrics import router as metrics_router
+    app.include_router(metrics_router, prefix="/api/metrics", tags=["Metrics"])
+    logger.info("✓ System Metrics API registered")
+except Exception as e:
+    logger.warning("System Metrics API failed to load: %s", e)
 
 # ── Autonomous Evolution Registry API ─────────────────────────────────────────
 try:

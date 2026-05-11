@@ -114,7 +114,21 @@ DETACHED_FLAGS = 0
 if sys.platform == "win32":
     DETACHED_FLAGS = subprocess.CREATE_NO_WINDOW
 
+_LOG_MAX_BYTES = 20 * 1024 * 1024  # 20 MB per log file
+
+def _rotate_log(path: str):
+    """Truncate log file if it exceeds the size limit."""
+    try:
+        if os.path.exists(path) and os.path.getsize(path) > _LOG_MAX_BYTES:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(f"[{datetime.now().isoformat()}] Log rotated (exceeded {_LOG_MAX_BYTES // (1024*1024)} MB)\n")
+            log_message(f"[LAUNCHER] Rotated log: {os.path.basename(path)}")
+    except Exception:
+        pass
+
 def launch_process(cmd: list, cwd: str, out_log: str, err_log: str, shell: bool = False):
+    _rotate_log(out_log)
+    _rotate_log(err_log)
     out = open(out_log, "a", encoding="utf-8")
     err = open(err_log, "a", encoding="utf-8")
     return subprocess.Popen(
@@ -264,15 +278,33 @@ def _graceful_shutdown(icon, item=None):
     # Exit the application
     os._exit(0)
 
-def _open_dashboard(icon, item):
-    """Open browser to factory dashboard."""
+def _open_browser(url: str):
     import webbrowser
-    webbrowser.open("http://localhost:5173/factory")
+    webbrowser.open(url)
+
+def _open_dashboard(icon, item):
+    _open_browser("http://localhost:5173/factory")
 
 def _open_shopify_factory(icon, item):
-    """Open browser to Shopify theme factory."""
-    import webbrowser
-    webbrowser.open("http://localhost:5173/shopify")
+    _open_browser("http://localhost:5173/shopify")
+
+def _open_settings(icon, item):
+    _open_browser("http://localhost:5173/settings")
+
+def _open_dev_loop(icon, item):
+    _open_browser("http://localhost:5173/dev-loop")
+
+def _open_money_agent(icon, item):
+    _open_browser("http://localhost:5173/money-agent")
+
+def _open_models_hub(icon, item):
+    _open_browser("http://localhost:5173/models")
+
+def _open_evolution(icon, item):
+    _open_browser("http://localhost:5173/evolution")
+
+def _open_key_vault(icon, item):
+    _open_browser("http://localhost:5173/settings/keys")
 
 def _start_shopify_swarm(icon, item):
     """Start the Shopify theme generation swarm via API."""
@@ -287,47 +319,118 @@ def _start_shopify_swarm(icon, item):
         )
         with urllib.request.urlopen(req, timeout=5) as response:
             if response.status == 200:
-                icon.notify("Shopify Swarm Started", "Success")
+                icon.notify("Shopify Swarm Started", "OmniBot")
                 log_message("[TRAY] Shopify Swarm started via API")
             else:
-                icon.notify("Failed to start Shopify Swarm", "Error")
+                icon.notify("Failed to start Shopify Swarm", "OmniBot")
     except Exception as e:
-        icon.notify(f"Error starting Shopify Swarm: {e}", "Error")
+        icon.notify(f"Could not reach backend — is it running?", "OmniBot")
         log_message(f"[TRAY] Error starting Shopify Swarm: {e}")
 
 def _show_status(icon, item):
-    """Show current status in a notification."""
-    running = sum(1 for p in _processes if p.poll() is None)
-    icon.notify(
-        f"OmniBot Factory\n{running}/{len(_processes)} services running",
-        "Status"
-    )
+    """Show backend + frontend health in a notification."""
+    import urllib.request
+    running_procs = sum(1 for p in _processes if p.poll() is None)
+
+    backend_ok = False
+    try:
+        req = urllib.request.Request("http://localhost:3001/api/health", headers={"User-Agent": "OmniBot-Tray/1.0"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            backend_ok = r.status == 200
+    except Exception:
+        pass
+
+    frontend_ok = False
+    try:
+        req = urllib.request.Request("http://localhost:5173", headers={"User-Agent": "OmniBot-Tray/1.0"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            frontend_ok = r.status in (200, 302)
+    except Exception:
+        pass
+
+    lines = [
+        f"Processes: {running_procs}/{len(_processes)} running",
+        f"Backend (3001): {'✓ Online' if backend_ok else '✗ Offline'}",
+        f"Frontend (5173): {'✓ Online' if frontend_ok else '✗ Offline'}",
+    ]
+    icon.notify("\n".join(lines), "OmniBot Status")
+    log_message(f"[TRAY] Status check: backend={'ok' if backend_ok else 'down'}, frontend={'ok' if frontend_ok else 'down'}")
+
+def _restart_backend(icon, item):
+    """Terminate and relaunch only the backend process."""
+    log_message("[TRAY] Restarting backend...")
+    if _processes:
+        try:
+            backend_proc = _processes[0]
+            if backend_proc.poll() is None:
+                backend_proc.terminate()
+                try:
+                    backend_proc.wait(timeout=5)
+                except Exception:
+                    backend_proc.kill()
+        except Exception as e:
+            log_message(f"[TRAY] Error stopping backend: {e}")
+        _processes[0] = launch_backend()
+        icon.notify("Backend restarting — wait ~10s then refresh browser", "OmniBot")
+        log_message("[TRAY] Backend restarted (new PID: %s)" % _processes[0].pid)
+    else:
+        icon.notify("No managed processes to restart", "OmniBot")
+
+def _open_logs_folder(icon, item):
+    """Open project logs folder in Windows Explorer."""
+    import subprocess
+    logs_dir = os.path.join(PROJECT_ROOT, "Project_Docs", "Logs")
+    os.makedirs(logs_dir, exist_ok=True)
+    subprocess.Popen(["explorer", logs_dir])
+    log_message("[TRAY] Opened logs folder")
+
+def _open_project_folder(icon, item):
+    """Open project root in Windows Explorer."""
+    import subprocess
+    subprocess.Popen(["explorer", PROJECT_ROOT])
 
 def start_tray_icon():
     """Start system tray icon in background thread."""
     global _tray_icon
-    
+
     image = _create_tray_image()
-    
+
     menu = pystray.Menu(
         pystray.MenuItem("OmniBot Factory", None, enabled=False),
         pystray.Menu.SEPARATOR,
+
+        # ── Quick navigation ───────────────────────────────────────────
         pystray.MenuItem("📊 Factory Dashboard", _open_dashboard, default=True),
         pystray.MenuItem("🏪 Shopify Factory", _open_shopify_factory),
+        pystray.MenuItem("💰 Money Agent", _open_money_agent),
+        pystray.MenuItem("🔁 Dev Loop", _open_dev_loop),
+        pystray.MenuItem("🧬 Evolution", _open_evolution),
+        pystray.MenuItem("🤖 Models Hub", _open_models_hub),
+        pystray.MenuItem("🔐 Key Vault", _open_key_vault),
+        pystray.MenuItem("⚙️ Settings", _open_settings),
+        pystray.Menu.SEPARATOR,
+
+        # ── Actions ────────────────────────────────────────────────────
         pystray.MenuItem("▶️ Start Shopify Swarm", _start_shopify_swarm),
+        pystray.MenuItem("🔄 Restart Backend", _restart_backend),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Show Status", _show_status),
+
+        # ── System ─────────────────────────────────────────────────────
+        pystray.MenuItem("📋 Show Status", _show_status),
+        pystray.MenuItem("📁 Open Logs Folder", _open_logs_folder),
+        pystray.MenuItem("📂 Open Project Folder", _open_project_folder),
         pystray.Menu.SEPARATOR,
+
         pystray.MenuItem("Exit", _graceful_shutdown),
     )
-    
+
     _tray_icon = pystray.Icon(
         name="OmniBot",
         icon=image,
-        title="OmniBot Factory",
+        title="OmniBot Factory — Running",
         menu=menu
     )
-    
+
     # Run tray in its own thread — NEVER block main thread
     tray_thread = threading.Thread(target=_tray_icon.run, daemon=False)
     tray_thread.start()

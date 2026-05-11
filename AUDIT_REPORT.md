@@ -1,6 +1,6 @@
 # PHASE 0 SURGICAL AUDIT REPORT
 
-**Date**: 2026-05-11  
+**Date**: 2026-05-11 (Session 2 — Updated)
 **Project**: OmniBot — Autonomous Agent Factory  
 **Status**: ✅ COMPLETE  
 
@@ -392,3 +392,35 @@ The codebase is now:
 **Status**: ✅ COMPLETE  
 
 Next Phase: **PHASE S — Build Self-Evolution Engine Infrastructure**
+
+---
+
+## Session 2 Addendum — 2026-05-11
+
+### Bugs Fixed This Session
+
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| Settings page black screen | Duplicate `QueryClientProvider` in App.tsx overrode main.tsx config; `retry:3` kept `isLoading=true` for ~14s on a near-black background | Removed duplicate from App.tsx; reduced retry to 1; improved loading UI |
+| Settings no error state | No error handling when backend offline | Added amber warning banner with Retry button |
+| Missing CSS classes | `.glass-panel` and `animate-slide-in` used but never defined | Added both to index.css |
+
+### Enhancements This Session
+
+| Enhancement | Details |
+|-------------|---------|
+| System tray expanded | Added Money Agent, Dev Loop, Evolution, Models Hub, Key Vault, Settings quick-links; added Restart Backend, Show Status with real HTTP ping, Open Logs/Project Folder |
+
+### Bloat Cleared
+
+- `backend_err.log`: 320 MB cleared
+- `backend_out.log`: 5.7 MB cleared
+- Other log files: cleared
+
+### Self-Evolution Engine Status
+
+Engine was built in a previous session. Status: READY but never triggered first cycle.
+- All 7 components present: state_manager, codebase_reader, ai_reasoner, patch_applier, verifier, evolution_loop, scheduler
+- Scheduler wired to FastAPI lifespan startup
+- Status endpoint: `GET /api/self-evolution/status`
+- First cycle: **NOT YET RUN** — set SELF_EVOLUTION_ENABLED=true in .env to activate

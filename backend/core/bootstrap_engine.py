@@ -150,8 +150,8 @@ class BootstrapEngine:
             for route in app.routes:
                 if hasattr(route, "methods") and hasattr(route, "path"):
                     endpoints.append(f"{list(route.methods)[0]} {route.path}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to extract FastAPI endpoints from main.app: %s", e)
             
         capability_map = {
             "files": files[:200],  # cap to prevent payload size explosion
@@ -267,7 +267,8 @@ Return strictly a JSON array of objects with these exact keys:
             )
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
             exit_code = proc.returncode
-        except Exception:
+        except Exception as e:
+            logger.warning("Verification command failed for task: %s", e)
             exit_code = 1
             
         final_sig = {

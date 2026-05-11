@@ -170,8 +170,8 @@ async def run_agent_loop(
             args = {}
             try:
                 args = json.loads(tc["arguments"])
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Failed to parse tool arguments for %s: %s", tc.get("name", "unknown"), e)
             call_id = tc.get("id") or f"call_{iteration}"
             icon = TOOL_ICONS.get(tc["name"], "🔧")
             parsed_calls.append((tc, args, call_id, icon))

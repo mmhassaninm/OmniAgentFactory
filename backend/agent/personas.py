@@ -5,7 +5,10 @@ Four specialized system-prompt personas that override AGENT_SYSTEM in loop.py
 when a persona is selected. Each persona emphasizes different tools and reasoning styles.
 """
 import os
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 SOULS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "souls")
 
@@ -15,8 +18,8 @@ def _load_soul(name: str, fallback: str) -> str:
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 return f.read().strip()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Failed to load soul file %s: %s", path, e)
     return fallback
 
 PERSONAS: dict[str, dict] = {

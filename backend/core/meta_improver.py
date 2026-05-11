@@ -236,7 +236,8 @@ class MetaImprover:
                 {"performance_score": {"$exists": True}},
             ).sort("performance_score", -1).limit(limit).to_list(limit)
             return [s.get("commit_message", "") for s in top if s.get("commit_message")]
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to fetch top performing prompts: %s", e)
             return []
 
     async def _get_worst_performing_prompts(self, db, limit: int = 5) -> list:
@@ -249,7 +250,8 @@ class MetaImprover:
             ]
             worst = await db.prompt_autopsies.aggregate(pipeline).to_list(limit)
             return [f"{w['_id']} ({w['count']} times): {w.get('example', '')}" for w in worst]
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to fetch worst performing prompts: %s", e)
             return []
 
     async def _propose_new_template(
@@ -299,8 +301,8 @@ class MetaImprover:
             template = await db.prompt_templates.find_one({"status": "active"})
             if template:
                 return template.get("template_text", _DEFAULT_TEMPLATE)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to fetch current template text: %s", e)
         return _DEFAULT_TEMPLATE
 
     async def _get_current_prompt_version(self, db) -> str:
@@ -309,8 +311,8 @@ class MetaImprover:
             template = await db.prompt_templates.find_one({"status": "active"})
             if template:
                 return str(template.get("_id", "v1"))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Failed to fetch current prompt version: %s", e)
         return "default"
 
     async def _compute_recent_avg_improvement(self, db) -> float:
@@ -322,7 +324,8 @@ class MetaImprover:
             if not records:
                 return 0.0
             return sum(r.get("score_delta", 0.0) for r in records) / len(records)
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to compute recent average improvement: %s", e)
             return 0.0
 
     def get_status(self) -> dict:

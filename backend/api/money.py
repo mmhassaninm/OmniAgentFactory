@@ -6,7 +6,14 @@ import asyncio
 import logging
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
+
+from utils.validators import (
+    validate_email,
+    validate_positive_int,
+    validate_percentage,
+    ValidationError,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -19,6 +26,29 @@ class InvoiceRequest(BaseModel):
     amount: float
     description: str
     currency: str = "USD"
+
+    @validator("client_email")
+    def validate_client_email(cls, v):
+        try:
+            validate_email(v)
+        except ValidationError as e:
+            raise ValueError(e.message)
+        return v
+
+    @validator("amount")
+    def validate_amount(cls, v):
+        if v <= 0:
+            raise ValueError("Amount must be positive")
+        if v > 1_000_000:
+            raise ValueError("Amount must be less than $1,000,000")
+        return v
+
+    @validator("currency")
+    def validate_currency(cls, v):
+        valid_currencies = {"USD", "EUR", "GBP", "JPY", "CAD", "AUD"}
+        if v.upper() not in valid_currencies:
+            raise ValueError(f"Currency must be one of: {', '.join(valid_currencies)}")
+        return v.upper()
 
 
 # ── Status & config ───────────────────────────────────────────────────────────
@@ -59,6 +89,15 @@ async def get_paypal_balance():
 @router.get("/payments")
 async def get_recent_payments(days: int = 7):
     """Return recent PayPal payments received."""
+    try:
+        if days < 1 or days > 365:
+            raise ValueError("Days must be between 1 and 365")
+        validate_positive_int(days, "days")
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     from services.paypal_service import get_paypal_service
     return {"days": days, "payments": await get_paypal_service().get_recent_payments(days)}
 

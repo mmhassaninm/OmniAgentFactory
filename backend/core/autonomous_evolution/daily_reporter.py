@@ -157,6 +157,6 @@ def _load_json(path: Path) -> dict:
     try:
         if path.exists():
             return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Failed to load JSON from %s: %s", path, e)
     return {}

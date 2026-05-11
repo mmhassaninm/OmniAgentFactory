@@ -14,12 +14,12 @@ These files/folders are scheduled for complete deletion to pivot to the standalo
 
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import MainLayout from './components/MainLayout'
 import { LanguageProvider } from './i18n/LanguageContext'
 import { PreLoader } from './components/PreLoader'
 
 // Lazy load all page components for route-based code-splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Factory = lazy(() => import('./pages/Factory'))
 const AgentDetail = lazy(() => import('./pages/AgentDetail'))
 const AgentChat = lazy(() => import('./pages/AgentChat'))
@@ -35,18 +35,16 @@ const EvolutionRegistry = lazy(() => import('./pages/EvolutionRegistry'))
 // Simple loading fallback
 const PageLoader = () => <div className="flex items-center justify-center h-screen"><div className="text-xl text-[#475569]">Loading...</div></div>
 
-const queryClient = new QueryClient()
-
 export default function App() {
   return (
     <LanguageProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <PreLoader>
-            <Routes>
+      <BrowserRouter>
+        <PreLoader>
+          <Routes>
               {/* Main Layout containing Sidebar + Content */}
               <Route element={<MainLayout />}>
-                <Route path="/" element={<Navigate to="/factory" replace />} />
+                <Route path="/" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
+                <Route path="/dashboard" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
                 <Route path="/factory" element={<Suspense fallback={<PageLoader />}><Factory /></Suspense>} />
 
                 <Route path="/dev-loop" element={<Suspense fallback={<PageLoader />}><DevLoopDashboard /></Suspense>} />
@@ -76,10 +74,9 @@ export default function App() {
                 <Route path="/hub" element={<Suspense fallback={<PageLoader />}><ModelHub /></Suspense>} />
                 <Route path="/vault" element={<Suspense fallback={<PageLoader />}><KeyVault /></Suspense>} />
               </Route>
-            </Routes>
-          </PreLoader>
-        </BrowserRouter>
-      </QueryClientProvider>
+          </Routes>
+        </PreLoader>
+      </BrowserRouter>
     </LanguageProvider>
   )
 }

@@ -26,6 +26,7 @@ from core.factory import get_agent_factory
 from core.checkpoint import get_version_history, get_all_snapshots
 from utils.thought_logger import get_recent_thoughts
 from utils.budget import get_budget_governor
+from utils.validators import validate_agent_name, validate_agent_goal, validate_agent_id, ValidationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -82,6 +83,12 @@ def _sanitize_code(code: str) -> str:
 @router.post("")
 async def create_agent(req: CreateAgentRequest):
     """Create a new agent from a template."""
+    try:
+        validate_agent_name(req.name)
+        validate_agent_goal(req.goal)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     factory = get_agent_factory()
     agent = await factory.create_agent(
         name=req.name,
@@ -103,6 +110,11 @@ async def list_agents():
 @router.get("/{agent_id}")
 async def get_agent(agent_id: str):
     """Get full agent detail with enriched analytics fields."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     from core.database import get_db
 
     factory = get_agent_factory()
@@ -121,7 +133,8 @@ async def get_agent(agent_id: str):
     # Version history from checkpoints (up to 50)
     try:
         agent["version_history"] = await get_version_history(agent_id, limit=50)
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to load version history for agent %s: %s", agent_id, e)
         agent["version_history"] = []
 
     # Thought summary, cycle counts, cascade stats — one pass over thoughts collection
@@ -174,7 +187,8 @@ async def get_agent(agent_id: str):
         agent["total_tokens_used"] = (
             agent["budget"].get("tokens_today", 0) if agent.get("budget") else 0
         )
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to calculate total tokens for agent %s: %s", agent_id, e)
         agent["total_tokens_used"] = 0
 
     # Parse catalog JSON (stored as string in some cases)
@@ -187,7 +201,8 @@ async def get_agent(agent_id: str):
             agent["catalog_parsed"] = catalog
         else:
             agent["catalog_parsed"] = None
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to parse catalog for agent %s: %s", agent_id, e)
         agent["catalog_parsed"] = agent.get("catalog")
 
     return agent
@@ -196,14 +211,25 @@ async def get_agent(agent_id: str):
 @router.put("/{agent_id}")
 async def update_agent(agent_id: str, req: UpdateAgentRequest):
     """Update agent configuration."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     factory = get_agent_factory()
 
     # Build updates dict (only non-None fields)
     updates = {}
-    if req.name is not None:
-        updates["name"] = req.name
-    if req.goal is not None:
-        updates["goal"] = req.goal
+    try:
+        if req.name is not None:
+            validate_agent_name(req.name)
+            updates["name"] = req.name
+        if req.goal is not None:
+            validate_agent_goal(req.goal)
+            updates["goal"] = req.goal
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     if req.config is not None:
         updates["config"] = req.config
     if req.evolve_interval_seconds is not None:
@@ -221,6 +247,11 @@ async def update_agent(agent_id: str, req: UpdateAgentRequest):
 @router.delete("/{agent_id}")
 async def delete_agent(agent_id: str):
     """Delete an agent and all associated data."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     factory = get_agent_factory()
     success = await factory.delete_agent(agent_id)
     if not success:
@@ -231,6 +262,15 @@ async def delete_agent(agent_id: str):
 @router.get("/{agent_id}/thoughts")
 async def get_thoughts(agent_id: str, limit: int = 50, phase: Optional[str] = None):
     """Get recent thoughts for an agent."""
+    try:
+        validate_agent_id(agent_id)
+        if limit < 1 or limit > 500:
+            raise ValueError("Limit must be between 1 and 500")
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     thoughts = await get_recent_thoughts(agent_id, limit=limit, phase=phase)
     return {"thoughts": thoughts, "count": len(thoughts)}
 
@@ -238,6 +278,15 @@ async def get_thoughts(agent_id: str, limit: int = 50, phase: Optional[str] = No
 @router.get("/{agent_id}/versions")
 async def get_versions(agent_id: str, limit: int = 10):
     """Get version history for an agent."""
+    try:
+        validate_agent_id(agent_id)
+        if limit < 1 or limit > 100:
+            raise ValueError("Limit must be between 1 and 100")
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     versions = await get_version_history(agent_id, limit=limit)
     return {"versions": versions, "count": len(versions)}
 
@@ -245,6 +294,15 @@ async def get_versions(agent_id: str, limit: int = 10):
 @router.get("/{agent_id}/snapshots")
 async def get_snapshots(agent_id: str, limit: int = 50):
     """Get all snapshots (including failed) for debugging."""
+    try:
+        validate_agent_id(agent_id)
+        if limit < 1 or limit > 500:
+            raise ValueError("Limit must be between 1 and 500")
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     snapshots = await get_all_snapshots(agent_id, limit=limit)
     return {"snapshots": snapshots, "count": len(snapshots)}
 
@@ -252,6 +310,11 @@ async def get_snapshots(agent_id: str, limit: int = 50):
 @router.get("/{agent_id}/catalog")
 async def get_catalog(agent_id: str):
     """Get the auto-generated catalog for an agent."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     factory = get_agent_factory()
     agent = await factory.get_agent(agent_id)
     if not agent:
@@ -270,6 +333,11 @@ async def get_catalog(agent_id: str):
 @router.post("/{agent_id}/catalog/regenerate")
 async def regenerate_catalog(agent_id: str):
     """Force regeneration of agent catalog."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     factory = get_agent_factory()
     catalog = await factory.generate_catalog(agent_id)
     if not catalog:
@@ -296,8 +364,8 @@ def _extract_behavior_description(code: str) -> str:
                     func_doc = ast.get_docstring(node)
                     if func_doc:
                         return func_doc
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Failed to parse agent code for behavior description: %s", e)
 
     # Fallback: extract comments or first few lines of functions
     lines = code.splitlines()

@@ -126,7 +126,7 @@ export default function Settings() {
     }
   })
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError: isKeysError } = useQuery({
     queryKey: ['settings-keys'],
     queryFn: () => fetchJson('/api/factory/settings/keys'),
   })
@@ -239,10 +239,13 @@ export default function Settings() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#05070a]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-4xl animate-spin text-accent-primary">⚙</div>
-          <p className="text-sm text-text-muted font-mono animate-pulse">{t('settings.loading_vault')}</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-[#060a12]">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-full border-2 border-[#00d4ff] border-t-transparent animate-spin" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-[#f0f4f8] font-mono">{t('settings.loading_vault')}</p>
+          <p className="text-xs text-[#64748b] mt-1">Connecting to backend...</p>
         </div>
       </div>
     )
@@ -753,15 +756,33 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-[#030508] p-4 sm:p-6 lg:p-8 text-text-primary">
+    <div className="min-h-screen bg-[#060a12] p-4 sm:p-6 lg:p-8 text-[#f0f4f8]">
       {toast && (
-        <div className="fixed top-6 right-6 z-50 animate-slide-in shadow-[0_4px_25px_rgba(0,0,0,0.5)]">
+        <div className="fixed top-6 right-6 z-50 shadow-[0_4px_25px_rgba(0,0,0,0.5)]">
           <div className={`px-4 py-3 rounded-xl border font-medium text-sm flex items-center gap-2 ${
             toast.startsWith('✓')
               ? 'bg-[#064e3b]/90 border-[#059669] text-emerald-300'
               : 'bg-[#991b1b]/90 border-[#ef4444] text-red-200'
           }`}>
             <span>{toast}</span>
+          </div>
+        </div>
+      )}
+
+      {isKeysError && (
+        <div className="max-w-4xl mx-auto mb-6">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-amber-300 text-sm">
+            <span className="text-lg shrink-0">⚠️</span>
+            <div>
+              <span className="font-semibold">Backend unreachable</span>
+              <span className="text-amber-400/70 ml-2 text-xs">Settings data could not be loaded. Start the backend and refresh.</span>
+            </div>
+            <button
+              onClick={() => qc.invalidateQueries({ queryKey: ['settings-keys'] })}
+              className="ml-auto px-3 py-1 rounded-lg text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all"
+            >
+              Retry
+            </button>
           </div>
         </div>
       )}

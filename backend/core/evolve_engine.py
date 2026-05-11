@@ -457,8 +457,8 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 if failure_lessons:
                     collective_memories = (collective_memories or []) + failure_lessons
                     await log_thought(agent_id, f"[GHOST_LESSONS] Injecting {len(failure_lessons)} failure lessons from ghost agents", phase="draft")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to fetch ghost lessons for agent %s: %s", agent_id, e)
 
             # Fetch autopsy hints from previous failed cycles
             autopsy_hints = await get_autopsy_hints(db, agent_id)
@@ -483,15 +483,15 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 meta = get_meta_improver()
                 if meta.should_use_new_prompt():
                     active_template = meta.get_ab_candidate_template()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to get meta_improver template for agent %s: %s", agent_id, e)
             if not active_template:
                 try:
                     from core.prompt_evolver import get_prompt_evolver
                     evolver = get_prompt_evolver()
                     active_template, used_candidate_template = evolver.get_active_template(return_meta=True)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to get prompt_evolver template for agent %s: %s", agent_id, e)
 
             improvement_prompt = build_improvement_prompt(
                 agent,

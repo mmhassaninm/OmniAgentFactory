@@ -147,8 +147,8 @@ async def process_dead_agent(db, agent_id: str) -> Optional[dict]:
                         "source_goal": agent.get("goal", ""),
                     })
                     lessons_stored += 1
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Failed to store lesson for agent %s: %s", agent_id, e)
 
         # Step 3: Create ghost record
         ghost_record = {
@@ -284,5 +284,6 @@ async def get_failure_lessons_for_goal(db, goal: str, limit: int = 3) -> list[st
             ).sort("times_helped", -1).limit(limit).to_list(limit)
 
         return [l.get("discovery", "") for l in lessons if l.get("discovery")]
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to fetch failure lessons for goal '%s': %s", goal, e)
         return []

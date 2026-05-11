@@ -139,8 +139,8 @@ class BaseAgent:
                             test_cases=test_cases,
                         )
                         old_result = await old_agent.run(case.get("input"))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Failed to run old agent code for comparison: %s", e)
 
                 # 3. Grade output quality
                 case_score = 0.1 # base floor for running/attempting

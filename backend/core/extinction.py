@@ -69,8 +69,8 @@ async def trigger_extinction_event(db, evolution_manager=None) -> dict:
                 from core.evolve_engine import StopMode
                 if agent.get("id") in getattr(evolution_manager, "_tasks", {}):
                     await evolution_manager.stop_evolution(agent["id"], StopMode.HARD_STOP)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to stop evolution for extinct agent %s: %s", agent.get("id"), e)
 
     # Log the extinction event
     await db.extinction_events.insert_one({

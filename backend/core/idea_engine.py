@@ -64,8 +64,8 @@ async def generate_ideas(cycle_results: dict) -> List[dict]:
             if match:
                 try:
                     ideas = json.loads(match.group(0))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to parse extracted JSON from raw output: %s", e)
 
         validated_ideas = []
         for item in ideas:

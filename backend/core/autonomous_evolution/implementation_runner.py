@@ -330,8 +330,8 @@ class ImplementationRunner:
             if EXECUTION_HISTORY.exists():
                 try:
                     history = json.loads(EXECUTION_HISTORY.read_text(encoding="utf-8"))
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Failed to load execution history: %s", e)
             entry = {
                 "id": item_id,
                 "type": item_type,

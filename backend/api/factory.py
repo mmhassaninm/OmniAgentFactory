@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from core.evolve_engine import get_evolution_manager, StopMode
 from core.model_router import get_model_router
 from core.config import get_settings
+from utils.validators import validate_agent_id, ValidationError
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -31,6 +32,11 @@ class FixRequest(BaseModel):
 @router.post("/agents/{agent_id}/control")
 async def control_agent(agent_id: str, req: ControlRequest):
     """Kill Switch — control an agent's evolution with 3 modes."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     try:
         mode = StopMode(req.mode)
     except ValueError:
@@ -51,6 +57,11 @@ async def control_agent(agent_id: str, req: ControlRequest):
 @router.post("/agents/{agent_id}/evolve")
 async def start_evolution(agent_id: str):
     """Start the evolution loop for an agent."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     # Verify agent exists
     from core.factory import get_agent_factory
     factory = get_agent_factory()
@@ -73,6 +84,11 @@ async def start_evolution(agent_id: str):
 @router.post("/agents/{agent_id}/resume")
 async def resume_agent(agent_id: str):
     """Resume a paused or stopped agent."""
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     manager = get_evolution_manager()
     success = await manager.resume_evolution(agent_id)
 
@@ -88,6 +104,11 @@ async def fix_agent(agent_id: str, req: FixRequest):
     Inject a priority fix instruction into an agent's config.
     The evolution engine will use this as a priority directive.
     """
+    try:
+        validate_agent_id(agent_id)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+
     from core.database import get_db
     from utils.thought_logger import log_thought
 

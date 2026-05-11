@@ -257,8 +257,8 @@ Output only the email body, no subject line, no placeholder brackets."""
                 from tools.browser_tool import get_browser_tool
                 browser = await get_browser_tool()
                 client_email = await browser.find_contact_email(item["opportunity"].get("url", ""))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to find contact email for opportunity %s: %s", item["opportunity"].get("url"), e)
 
         if not client_email:
             logger.warning("[MoneyAgent] No contact email found for item %s", item_id)

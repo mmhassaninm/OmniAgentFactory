@@ -160,8 +160,8 @@ class VerdictCache:
                         age = now - timestamp
                         if age > timedelta(hours=VERDICT_TTL_HOURS):
                             expired_ids.append(all_verdicts["ids"][i])
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Failed to parse verdict timestamp: %s", e)
 
             # Remove expired verdicts
             if len(all_verdicts["ids"]) > MAX_CACHED_VERDICTS or expired_ids:
