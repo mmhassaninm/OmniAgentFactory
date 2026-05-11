@@ -183,7 +183,9 @@ Based on impact + feasibility, execution order:
 
 ---
 
-## 🔄 Phase 2: New Issues Discovered — 2026-05-11 (Current Session)
+## 🔄 Phase 2: Dual-Axis Discovery — 2026-05-11 (Current Session)
+
+### AXIS 1: HORIZONTAL DISCOVERY (Completely New Issues)
 
 ### 🔴 CRITICAL — Frontend Bundle Size Optimization
 *   **Description:** Vite build reports 660KB main JavaScript chunk (184KB gzipped). Recommendation to use dynamic imports for code-splitting.
