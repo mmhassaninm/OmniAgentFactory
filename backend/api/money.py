@@ -4,8 +4,9 @@ Exposes agent status, PayPal data, earnings, pitch approval, and invoice creatio
 """
 import asyncio
 import logging
+import hashlib
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Header
 from pydantic import BaseModel, validator
 
 from utils.validators import (
@@ -14,9 +15,15 @@ from utils.validators import (
     validate_percentage,
     ValidationError,
 )
+from utils.error_response import http_exception, ErrorCode
+from utils.query_optimizer import get_query_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Get the query cache instance for request deduplication
+_query_cache = get_query_cache()
+_IDEMPOTENCY_KEY_HEADER = "X-Idempotency-Key"
 
 
 # ── Request models ────────────────────────────────────────────────────────────
@@ -94,23 +101,53 @@ async def get_recent_payments(days: int = 7):
             raise ValueError("Days must be between 1 and 365")
         validate_positive_int(days, "days")
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "days"})
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise http_exception(str(e), 400, ErrorCode.BAD_REQUEST, {"field": "days"})
 
     from services.paypal_service import get_paypal_service
     return {"days": days, "payments": await get_paypal_service().get_recent_payments(days)}
 
 
 @router.post("/invoice")
-async def create_invoice(req: InvoiceRequest):
-    """Create and send a PayPal invoice to a client."""
+async def create_invoice(
+    req: InvoiceRequest,
+    idempotency_key: str = Header(None, alias=_IDEMPOTENCY_KEY_HEADER)
+):
+    """Create and send a PayPal invoice to a client.
+
+    Supports idempotency via X-Idempotency-Key header to prevent duplicate invoices.
+    Returns cached result if same idempotency key is used within 24 hours.
+    """
+    # Check if idempotency key was provided and result is cached
+    if idempotency_key:
+        cache_key = f"invoice_idempotency:{idempotency_key}"
+        cached_result = _query_cache.get(cache_key)
+        if cached_result is not None:
+            logger.info("Returning cached invoice result for idempotency key: %s", idempotency_key)
+            return cached_result
+
     from services.paypal_service import get_paypal_service
     result = await get_paypal_service().create_invoice(
         req.client_email, req.amount, req.description, req.currency
     )
     if "error" in result and result.get("invoice_id") is None:
-        raise HTTPException(status_code=502, detail=result["error"])
+        raise http_exception(
+            result["error"],
+            502,
+            ErrorCode.EXTERNAL_SERVICE_ERROR,
+            {"service": "paypal", "error": result["error"]}
+        )
+
+    # Cache successful result with 24-hour TTL if idempotency key was provided
+    if idempotency_key:
+        try:
+            cache_key = f"invoice_idempotency:{idempotency_key}"
+            _query_cache.set(cache_key, result, ttl_seconds=86400)  # 24 hours
+            logger.debug("Cached invoice result for idempotency key: %s", idempotency_key)
+        except Exception as e:
+            logger.warning("Failed to cache invoice result: %s", e)
+
     return result
 
 

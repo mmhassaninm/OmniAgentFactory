@@ -102,6 +102,12 @@ class Settings:
         self.enable_dev_loop: bool = os.getenv("ENABLE_DEV_LOOP", "true").lower() == "true"
         self.dev_loop_interval_minutes: int = int(os.getenv("DEV_LOOP_INTERVAL_MINUTES", "60"))
 
+        # ── Shopify Theme Factory ───────────────
+        self.shopify_store_url: str = os.getenv("SHOPIFY_STORE_URL", "").strip()
+        self.shopify_access_token: str = os.getenv("SHOPIFY_ACCESS_TOKEN", "").strip()
+        self.shopify_api_version: str = os.getenv("SHOPIFY_API_VERSION", "2025-01").strip()
+
+
     @property
     def ENABLE_DEV_LOOP(self) -> bool:
         return self.enable_dev_loop

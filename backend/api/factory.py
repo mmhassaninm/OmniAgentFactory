@@ -17,6 +17,7 @@ from core.evolve_engine import get_evolution_manager, StopMode
 from core.model_router import get_model_router
 from core.config import get_settings
 from utils.validators import validate_agent_id, ValidationError
+from utils.error_response import http_exception, ErrorCode
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,21 +36,23 @@ async def control_agent(agent_id: str, req: ControlRequest):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     try:
         mode = StopMode(req.mode)
     except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid mode: {req.mode}. Must be: hard_stop, soft_stop, or pause",
+        raise http_exception(
+            f"Invalid mode: {req.mode}. Must be: hard_stop, soft_stop, or pause",
+            400,
+            ErrorCode.BAD_REQUEST,
+            {"valid_modes": ["hard_stop", "soft_stop", "pause"]}
         )
 
     manager = get_evolution_manager()
     success = await manager.stop_evolution(agent_id, mode)
 
     if not success:
-        raise HTTPException(status_code=404, detail="Agent not found or not evolving")
+        raise http_exception("Agent not found or not evolving", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
 
     return {"status": "ok", "agent_id": agent_id, "mode": mode.value}
 
@@ -60,22 +63,24 @@ async def start_evolution(agent_id: str):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     # Verify agent exists
     from core.factory import get_agent_factory
     factory = get_agent_factory()
     agent = await factory.get_agent(agent_id)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise http_exception("Agent not found", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
 
     manager = get_evolution_manager()
     success = await manager.start_evolution(agent_id)
 
     if not success:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Cannot start: concurrent limit reached ({manager.active_count}/{manager._get_max_concurrent()})",
+        raise http_exception(
+            f"Concurrent evolution limit reached ({manager.active_count}/{manager._get_max_concurrent()})",
+            429,
+            ErrorCode.RATE_LIMIT,
+            {"active": manager.active_count, "max": manager._get_max_concurrent()}
         )
 
     return {"status": "evolving", "agent_id": agent_id}
@@ -87,13 +92,13 @@ async def resume_agent(agent_id: str):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     manager = get_evolution_manager()
     success = await manager.resume_evolution(agent_id)
 
     if not success:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise http_exception("Agent not found", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
 
     return {"status": "resumed", "agent_id": agent_id}
 
@@ -107,7 +112,7 @@ async def fix_agent(agent_id: str, req: FixRequest):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     from core.database import get_db
     from utils.thought_logger import log_thought
@@ -124,7 +129,7 @@ async def fix_agent(agent_id: str, req: FixRequest):
     )
 
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise http_exception("Agent not found", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
 
     await log_thought(
         agent_id,
@@ -166,21 +171,41 @@ async def model_health():
 
 
 @router.get("/activity")
-async def factory_activity(limit: int = 50):
+async def factory_activity(skip: int = 0, limit: int = 50):
     """Return the most recent thoughts across all agents — pre-loads the Live Activity Feed."""
     from core.database import get_db
+    try:
+        if skip < 0:
+            raise ValueError("Skip must be non-negative")
+        if limit < 1 or limit > 200:
+            raise ValueError("Limit must be between 1 and 200")
+    except ValueError as e:
+        raise http_exception(str(e), 400, ErrorCode.BAD_REQUEST, {"field": "skip" if skip < 0 else "limit"})
+
     db = get_db()
     try:
-        cursor = db.thoughts.find({}, {"_id": 0}).sort("timestamp", -1).limit(min(limit, 200))
+        # Get total count
+        total_count = await db.thoughts.count_documents({})
+
+        # Fetch paginated events
+        cursor = db.thoughts.find({}, {"_id": 0}).sort("timestamp", -1).skip(skip).limit(limit)
         events = []
         async for t in cursor:
             if isinstance(t.get("timestamp"), object) and hasattr(t["timestamp"], "isoformat"):
                 t["timestamp"] = t["timestamp"].isoformat()
             events.append(t)
-        return {"events": events}
+
+        return {
+            "events": events,
+            "count": len(events),
+            "total": total_count,
+            "skip": skip,
+            "limit": limit,
+            "has_next": (skip + limit) < total_count
+        }
     except Exception as e:
         logger.error("Failed to fetch factory activity: %s", e)
-        return {"events": []}
+        return {"events": [], "count": 0, "total": 0, "error": str(e)}
 
 
 @router.get("/mirror")

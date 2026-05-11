@@ -27,9 +27,14 @@ from core.checkpoint import get_version_history, get_all_snapshots
 from utils.thought_logger import get_recent_thoughts
 from utils.budget import get_budget_governor
 from utils.validators import validate_agent_name, validate_agent_goal, validate_agent_id, ValidationError
+from utils.error_response import http_exception, ErrorCode
+from utils.query_optimizer import get_query_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# Get the query cache instance
+_query_cache = get_query_cache()
 
 
 # ── Request/Response Models ─────────────────────────────────────────────────
@@ -87,7 +92,7 @@ async def create_agent(req: CreateAgentRequest):
         validate_agent_name(req.name)
         validate_agent_goal(req.goal)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": e.field})
 
     factory = get_agent_factory()
     agent = await factory.create_agent(
@@ -96,15 +101,69 @@ async def create_agent(req: CreateAgentRequest):
         template=req.template,
         config=req.config,
     )
+
+    # Invalidate list caches when new agent is created
+    try:
+        _query_cache.invalidate_pattern("agents_list:*")
+        _query_cache.invalidate("agents_total_count")
+    except Exception as e:
+        logger.debug("Cache invalidation failed: %s", e)
+
     return {"status": "created", "agent": agent.to_dict()}
 
 
 @router.get("")
-async def list_agents():
-    """List all agents."""
-    factory = get_agent_factory()
-    agents = await factory.list_agents()
-    return {"agents": agents, "count": len(agents)}
+async def list_agents(skip: int = 0, limit: int = 50):
+    """List all agents with pagination."""
+    try:
+        if skip < 0:
+            raise ValueError("Skip must be non-negative")
+        if limit < 1 or limit > 500:
+            raise ValueError("Limit must be between 1 and 500")
+    except ValueError as e:
+        raise http_exception(str(e), 400, ErrorCode.BAD_REQUEST, {"field": "skip" if skip < 0 else "limit"})
+
+    # Check cache for count (TTL: 30 seconds for count)
+    count_cache_key = "agents_total_count"
+    total_count = _query_cache.get(count_cache_key)
+
+    db = get_db()
+    # If not cached, fetch total count
+    if total_count is None:
+        total_count = await db.agents.count_documents({})
+        try:
+            _query_cache.set(count_cache_key, total_count, ttl_seconds=30)
+        except Exception as e:
+            logger.debug("Cache set failed for agent count: %s", e)
+
+    # Check cache for this pagination slice (TTL: 60 seconds for list pages)
+    list_cache_key = f"agents_list:{skip}:{limit}"
+    cached_result = _query_cache.get(list_cache_key)
+    if cached_result is not None:
+        return cached_result
+
+    # Fetch paginated agents
+    agents = []
+    async for doc in db.agents.find({}).sort("created_at", -1).skip(skip).limit(limit):
+        doc["_id"] = str(doc["_id"])
+        agents.append(doc)
+
+    result = {
+        "agents": agents,
+        "count": len(agents),
+        "total": total_count,
+        "skip": skip,
+        "limit": limit,
+        "has_next": (skip + limit) < total_count
+    }
+
+    # Cache the paginated result
+    try:
+        _query_cache.set(list_cache_key, result, ttl_seconds=60)
+    except Exception as e:
+        logger.debug("Cache set failed for agent list: %s", e)
+
+    return result
 
 
 @router.get("/{agent_id}")
@@ -113,14 +172,20 @@ async def get_agent(agent_id: str):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
+
+    # Check cache first (TTL: 60 seconds for agent data)
+    cache_key = f"agent_detail:{agent_id}"
+    cached_agent = _query_cache.get(cache_key)
+    if cached_agent is not None:
+        return cached_agent
 
     from core.database import get_db
 
     factory = get_agent_factory()
     agent = await factory.get_agent(agent_id)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise http_exception("Agent not found", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
 
     # Daily budget and token usage
     try:
@@ -205,6 +270,12 @@ async def get_agent(agent_id: str):
         logger.warning("Failed to parse catalog for agent %s: %s", agent_id, e)
         agent["catalog_parsed"] = agent.get("catalog")
 
+    # Cache the enriched agent data for 60 seconds
+    try:
+        _query_cache.set(cache_key, agent, ttl_seconds=60)
+    except Exception as e:
+        logger.debug("Cache set failed for agent %s: %s", agent_id, e)
+
     return agent
 
 
@@ -214,7 +285,7 @@ async def update_agent(agent_id: str, req: UpdateAgentRequest):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     factory = get_agent_factory()
 
@@ -228,7 +299,7 @@ async def update_agent(agent_id: str, req: UpdateAgentRequest):
             validate_agent_goal(req.goal)
             updates["goal"] = req.goal
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": e.field})
 
     if req.config is not None:
         updates["config"] = req.config
@@ -236,11 +307,18 @@ async def update_agent(agent_id: str, req: UpdateAgentRequest):
         updates["evolve_interval_seconds"] = req.evolve_interval_seconds
 
     if not updates:
-        raise HTTPException(status_code=400, detail="No updates provided")
+        raise http_exception("No updates provided", 400, ErrorCode.BAD_REQUEST, {})
 
     success = await factory.update_agent(agent_id, updates)
     if not success:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise http_exception("Agent not found", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
+
+    # Invalidate cache for this agent
+    try:
+        _query_cache.invalidate(f"agent_detail:{agent_id}")
+    except Exception as e:
+        logger.debug("Cache invalidation failed: %s", e)
+
     return {"status": "updated", "agent_id": agent_id}
 
 
@@ -250,12 +328,21 @@ async def delete_agent(agent_id: str):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     factory = get_agent_factory()
     success = await factory.delete_agent(agent_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise http_exception("Agent not found", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
+
+    # Invalidate caches for this agent and list
+    try:
+        _query_cache.invalidate(f"agent_detail:{agent_id}")
+        _query_cache.invalidate_pattern("agents_list:*")
+        _query_cache.invalidate("agents_total_count")
+    except Exception as e:
+        logger.debug("Cache invalidation failed: %s", e)
+
     return {"status": "deleted", "agent_id": agent_id}
 
 
@@ -267,12 +354,26 @@ async def get_thoughts(agent_id: str, limit: int = 50, phase: Optional[str] = No
         if limit < 1 or limit > 500:
             raise ValueError("Limit must be between 1 and 500")
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise http_exception(str(e), 400, ErrorCode.BAD_REQUEST, {"field": "limit"})
+
+    # Check cache for thoughts (TTL: 30 seconds for recent thoughts)
+    thoughts_cache_key = f"thoughts:{agent_id}:{limit}:{phase or 'all'}"
+    cached_result = _query_cache.get(thoughts_cache_key)
+    if cached_result is not None:
+        return cached_result
 
     thoughts = await get_recent_thoughts(agent_id, limit=limit, phase=phase)
-    return {"thoughts": thoughts, "count": len(thoughts)}
+    result = {"thoughts": thoughts, "count": len(thoughts)}
+
+    # Cache the result
+    try:
+        _query_cache.set(thoughts_cache_key, result, ttl_seconds=30)
+    except Exception as e:
+        logger.debug("Cache set failed for thoughts: %s", e)
+
+    return result
 
 
 @router.get("/{agent_id}/versions")
@@ -283,12 +384,26 @@ async def get_versions(agent_id: str, limit: int = 10):
         if limit < 1 or limit > 100:
             raise ValueError("Limit must be between 1 and 100")
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise http_exception(str(e), 400, ErrorCode.BAD_REQUEST, {"field": "limit"})
+
+    # Check cache for versions (TTL: 120 seconds for version history)
+    versions_cache_key = f"versions:{agent_id}:{limit}"
+    cached_result = _query_cache.get(versions_cache_key)
+    if cached_result is not None:
+        return cached_result
 
     versions = await get_version_history(agent_id, limit=limit)
-    return {"versions": versions, "count": len(versions)}
+    result = {"versions": versions, "count": len(versions)}
+
+    # Cache the result
+    try:
+        _query_cache.set(versions_cache_key, result, ttl_seconds=120)
+    except Exception as e:
+        logger.debug("Cache set failed for versions: %s", e)
+
+    return result
 
 
 @router.get("/{agent_id}/snapshots")
@@ -299,12 +414,26 @@ async def get_snapshots(agent_id: str, limit: int = 50):
         if limit < 1 or limit > 500:
             raise ValueError("Limit must be between 1 and 500")
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise http_exception(str(e), 400, ErrorCode.BAD_REQUEST, {"field": "limit"})
+
+    # Check cache for snapshots (TTL: 60 seconds for snapshot data)
+    snapshots_cache_key = f"snapshots:{agent_id}:{limit}"
+    cached_result = _query_cache.get(snapshots_cache_key)
+    if cached_result is not None:
+        return cached_result
 
     snapshots = await get_all_snapshots(agent_id, limit=limit)
-    return {"snapshots": snapshots, "count": len(snapshots)}
+    result = {"snapshots": snapshots, "count": len(snapshots)}
+
+    # Cache the result
+    try:
+        _query_cache.set(snapshots_cache_key, result, ttl_seconds=60)
+    except Exception as e:
+        logger.debug("Cache set failed for snapshots: %s", e)
+
+    return result
 
 
 @router.get("/{agent_id}/catalog")
@@ -313,19 +442,19 @@ async def get_catalog(agent_id: str):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     factory = get_agent_factory()
     agent = await factory.get_agent(agent_id)
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise http_exception("Agent not found", 404, ErrorCode.NOT_FOUND, {"agent_id": agent_id})
 
     catalog = agent.get("catalog")
     if not catalog:
         # Generate on first request
         catalog = await factory.generate_catalog(agent_id)
         if not catalog:
-            raise HTTPException(status_code=500, detail="Catalog generation failed")
+            raise http_exception("Catalog generation failed", 500, ErrorCode.INTERNAL_ERROR, {"agent_id": agent_id})
 
     return catalog
 
@@ -336,12 +465,12 @@ async def regenerate_catalog(agent_id: str):
     try:
         validate_agent_id(agent_id)
     except ValidationError as e:
-        raise HTTPException(status_code=400, detail=e.message)
+        raise http_exception(e.message, 400, ErrorCode.VALIDATION_ERROR, {"field": "agent_id"})
 
     factory = get_agent_factory()
     catalog = await factory.generate_catalog(agent_id)
     if not catalog:
-        raise HTTPException(status_code=500, detail="Catalog generation failed")
+        raise http_exception("Catalog generation failed", 500, ErrorCode.INTERNAL_ERROR, {"agent_id": agent_id})
     return catalog
 
 

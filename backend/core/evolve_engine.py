@@ -381,6 +381,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
     Runs continuously until stop_event is set.
     """
     from core.database import get_db
+    import time
 
     while not stop_event.is_set():
         try:
@@ -427,7 +428,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 await asyncio.sleep(300)  # Wait 5 minutes
                 continue
 
-            # Mark agent as evolving
+            # Mark agent as evolving and capture cycle start time
             await _mongo_retry(
                 agent_id,
                 lambda: db.agents.update_one(
@@ -435,6 +436,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     {"$set": {"status": AgentStatus.EVOLVING.value}},
                 ),
             )
+            cycle_start_time = time.time()
 
             await log_thought(agent_id, f"Starting evolution cycle (current: v{agent.version}, score: {agent.current_score:.2f})", phase="evolve")
 
@@ -644,8 +646,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
 
                 # Record evolution telemetry for successful cycle
                 try:
-                    import time
-                    cycle_duration = time.time() - cycle_start_time if 'cycle_start_time' in locals() else 0.0
+                    cycle_duration = time.time() - cycle_start_time
                     record_evolution_cycle(
                         cycle_num=new_version,
                         agent_id=agent_id,
@@ -765,6 +766,22 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     await record_cycle(db, agent_id, tokens_used, score_before_cycle, score, committed=False)
                 except Exception as e:
                     logger.debug("ROI record failed: %s", e)
+
+                # Record evolution telemetry for failed cycle
+                try:
+                    cycle_duration = time.time() - cycle_start_time
+                    record_evolution_cycle(
+                        cycle_num=agent.version,  # Use current version as cycle num (not incremented since commit failed)
+                        agent_id=agent_id,
+                        success=False,
+                        duration_seconds=cycle_duration,
+                        tokens_consumed=tokens_used,
+                        patches_applied=0,  # No patches applied on failure
+                        improvement_direction="degrading" if (score - score_before_cycle) < 0 else "stable",
+                        error=f"Rollback: {reason}"
+                    )
+                except Exception as e:
+                    logger.debug("Evolution telemetry record failed: %s", e)
 
                 # Notify meta improver of failed cycle
                 try:

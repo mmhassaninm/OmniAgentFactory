@@ -23,21 +23,23 @@ HEADERS = {
 
 class ImageFetcher:
 
-    def __init__(self, output_dir: Path):
+    def __init__(self, output_dir: Path, unsplash_key: Optional[str] = None):
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.unsplash_key = unsplash_key or os.getenv("UNSPLASH_ACCESS_KEY", "")
 
     def fetch_unsplash(self, query: str, width: int = 1200, height: int = 800) -> Optional[bytes]:
         """Download an image from Unsplash matching the query."""
-        if not UNSPLASH_KEY:
+        if not self.unsplash_key:
             return None
         try:
             params = {
                 "query": query,
                 "per_page": 1,
                 "orientation": "landscape",
-                "client_id": UNSPLASH_KEY,
+                "client_id": self.unsplash_key,
             }
+
             resp = requests.get(UNSPLASH_API, params=params, headers=HEADERS, timeout=10)
             data = resp.json()
             results = data.get("results", [])

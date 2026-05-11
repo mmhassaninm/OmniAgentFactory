@@ -185,13 +185,30 @@ async def lifespan(app: FastAPI):
         _shopify_engine = get_swarm_engine()
         _shopify_engine.set_broadcast(ws_manager.broadcast_to_shopify)
         app.state.shopify_engine = _shopify_engine
-        if os.getenv("SHOPIFY_SWARM_AUTOSTART", "false").lower() == "true":
+        
+        # Check database autostart first, fallback to env variable
+        autostart = False
+        try:
+            if db is not None:
+                settings_doc = await db.shopify_settings.find_one({"_id": "global"})
+                if settings_doc and "swarm_autostart" in settings_doc:
+                    autostart = bool(settings_doc["swarm_autostart"])
+                else:
+                    autostart = os.getenv("SHOPIFY_SWARM_AUTOSTART", "false").lower() == "true"
+            else:
+                autostart = os.getenv("SHOPIFY_SWARM_AUTOSTART", "false").lower() == "true"
+        except Exception as e:
+            logger.warning("Could not check MongoDB shopify_settings autostart: %s", e)
+            autostart = os.getenv("SHOPIFY_SWARM_AUTOSTART", "false").lower() == "true"
+
+        if autostart:
             _shopify_engine.start(db)
             logger.info("✓ Shopify Swarm Engine started (AUTOSTART)")
         else:
             logger.info("✓ Shopify Swarm Engine initialized (start via POST /api/shopify/start)")
     except Exception as e:
         logger.warning("Shopify Swarm Engine failed to initialize: %s", e)
+
 
     # ── Self-Evolution Engine (Phase S) ─────────────────────────────────
     try:
@@ -232,14 +249,26 @@ app = FastAPI(title="OmniBot Agent Factory", version="2.0.0", lifespan=lifespan)
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info("→ %s %s", request.method, request.url.path)
+async def log_requests_with_correlation_id(request: Request, call_next):
+    """Log requests with correlation ID for distributed tracing."""
+    import uuid
+
+    # Get or generate correlation ID
+    correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
+
+    # Store in request state for access in handlers
+    request.state.correlation_id = correlation_id
+
+    logger.info("→ [%s] %s %s", correlation_id, request.method, request.url.path)
     try:
         response = await call_next(request)
     except Exception as exc:
-        logger.error("✗ %s %s — unhandled error: %s", request.method, request.url.path, exc)
+        logger.error("✗ [%s] %s %s — unhandled error: %s", correlation_id, request.method, request.url.path, exc)
         raise
-    logger.info("← %s %s %s", request.method, request.url.path, response.status_code)
+
+    # Add correlation ID to response headers
+    response.headers["X-Correlation-ID"] = correlation_id
+    logger.info("← [%s] %s %s %s", correlation_id, request.method, request.url.path, response.status_code)
     return response
 
 

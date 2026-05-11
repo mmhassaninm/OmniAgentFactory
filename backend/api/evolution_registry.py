@@ -5,6 +5,8 @@ Provides read/write access to ideas and problems registries
 from fastapi import APIRouter, HTTPException, Request
 from typing import Optional
 
+from core.evolution_telemetry import get_telemetry
+
 router = APIRouter(prefix="/api/evolution", tags=["Evolution Registry"])
 
 
@@ -217,3 +219,66 @@ async def get_diagnostics(request: Request):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Diagnostics failed: {str(e)}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ── Evolution Telemetry Endpoints ──────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.get("/telemetry/system")
+async def get_system_telemetry():
+    """Get overall system evolution metrics."""
+    try:
+        telemetry = get_telemetry()
+        return telemetry.get_system_metrics()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get telemetry: {str(e)}")
+
+
+@router.get("/telemetry/agents/{agent_id}")
+async def get_agent_telemetry(agent_id: str):
+    """Get evolution metrics for a specific agent."""
+    try:
+        telemetry = get_telemetry()
+        return telemetry.get_agent_metrics(agent_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get agent telemetry: {str(e)}")
+
+
+@router.get("/telemetry/agents/{agent_id}/trend")
+async def get_agent_trend(agent_id: str, window_size: int = 10):
+    """Get improvement trend for an agent (recent cycles)."""
+    try:
+        if window_size < 1 or window_size > 50:
+            raise ValueError("Window size must be between 1 and 50")
+        telemetry = get_telemetry()
+        return telemetry.get_improvement_trend(agent_id, window_size=window_size)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get trend: {str(e)}")
+
+
+@router.get("/telemetry/cycles")
+async def get_recent_cycles(limit: int = 20):
+    """Get recent evolution cycles."""
+    try:
+        if limit < 1 or limit > 100:
+            raise ValueError("Limit must be between 1 and 100")
+        telemetry = get_telemetry()
+        return {"cycles": telemetry.get_recent_cycles(limit=limit), "count": limit}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get cycles: {str(e)}")
+
+
+@router.get("/telemetry/summary")
+async def get_telemetry_summary():
+    """Get markdown summary of evolution telemetry."""
+    try:
+        telemetry = get_telemetry()
+        summary = telemetry.export_summary()
+        return {"summary": summary}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export summary: {str(e)}")

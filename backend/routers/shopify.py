@@ -19,25 +19,42 @@ from pydantic import BaseModel
 from core.database import get_db
 from shopify.swarm_engine import get_swarm_engine
 from shopify.models import get_all_themes, get_theme_versions, get_latest_market_research
+from services.encryption import encrypt, decrypt
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-SETTINGS_PATH = Path(__file__).parent.parent / "settings.json"
 OUTPUT_DIR = Path(__file__).parent.parent / "shopify" / "output" / "themes"
 
 
-def _load_settings() -> dict:
-    if SETTINGS_PATH.exists():
-        return json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
-    return {}
+async def _get_shopify_creds_async() -> tuple:
+    db = get_db()
+    store_url = ""
+    admin_token = ""
+    api_version = "2025-01"  # Default API version
 
+    if db is not None:
+        try:
+            s = await db.shopify_settings.find_one({"_id": "global"}) or {}
+            store_url = s.get("store_url", "")
+            admin_token_enc = s.get("admin_token", "")
+            if admin_token_enc:
+                admin_token = decrypt(admin_token_enc)
+            api_version = s.get("api_version") or "2025-01"
+        except Exception as e:
+            logger.warning("Failed to load shopify credentials from DB: %s", e)
 
-def _get_shopify_creds() -> tuple:
-    s = _load_settings().get("shopify", {})
-    url   = s.get("store_url")   or os.getenv("SHOPIFY_STORE_URL", "")
-    token = s.get("admin_token") or os.getenv("SHOPIFY_ADMIN_TOKEN", "")
-    return url.strip(), token.strip()
+    # Fallback to env/config
+    from core.config import get_settings
+    cfg = get_settings()
+    if not store_url:
+        store_url = cfg.shopify_store_url or ""
+    if not admin_token:
+        admin_token = cfg.shopify_access_token or ""
+    if not api_version or api_version == "2024-01":
+        api_version = cfg.shopify_api_version or "2025-01"
+
+    return store_url.strip(), admin_token.strip(), api_version.strip()
 
 
 class ShopifySettingsBody(BaseModel):
@@ -171,7 +188,7 @@ async def get_market_report():
 @router.post("/deploy/{theme_id}/{version}")
 async def deploy_theme(theme_id: str, version: str):
     """Upload a theme ZIP to a configured Shopify store via Admin API."""
-    store_url, admin_token = _get_shopify_creds()
+    store_url, admin_token, api_version = await _get_shopify_creds_async()
     if not store_url or not admin_token:
         raise HTTPException(
             status_code=400,
@@ -195,7 +212,7 @@ async def deploy_theme(theme_id: str, version: str):
 
     # Normalise store URL (strip https:// if present so we can build URLs consistently)
     clean_url = store_url.removeprefix("https://").removeprefix("http://").rstrip("/")
-    base = f"https://{clean_url}/admin/api/2024-01"
+    base = f"https://{clean_url}/admin/api/{api_version}"
     headers = {"X-Shopify-Access-Token": admin_token, "Content-Type": "application/json"}
 
     async with httpx.AsyncClient(timeout=120) as client:
@@ -239,47 +256,94 @@ async def deploy_theme(theme_id: str, version: str):
 
 @router.get("/settings")
 async def get_shopify_settings():
-    """Load Shopify settings from settings.json."""
-    s = _load_settings().get("shopify", {})
+    """Load Shopify settings from MongoDB."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+
+    s = await db.shopify_settings.find_one({"_id": "global"}) or {}
+
+    from core.config import get_settings
+    cfg = get_settings()
+
+    store_url = s.get("store_url") or cfg.shopify_store_url or ""
+    admin_token_enc = s.get("admin_token")
+    if admin_token_enc:
+        admin_token = decrypt(admin_token_enc)
+    else:
+        admin_token = cfg.shopify_access_token or ""
+
+    unsplash_key_enc = s.get("unsplash_access_key")
+    if unsplash_key_enc:
+        unsplash_key = decrypt(unsplash_key_enc)
+    else:
+        unsplash_key = os.getenv("UNSPLASH_ACCESS_KEY", "").strip()
+
+    swarm_autostart = s.get("swarm_autostart")
+    if swarm_autostart is None:
+        swarm_autostart = os.getenv("SHOPIFY_SWARM_AUTOSTART", "false").lower() == "true"
+
     return {
-        "store_url":           s.get("store_url", ""),
-        "admin_token":         "***" if s.get("admin_token") else "",
-        "unsplash_access_key": "***" if s.get("unsplash_access_key") else "",
-        "swarm_autostart":     s.get("swarm_autostart", False),
+        "store_url":           store_url,
+        "admin_token":         "***" if admin_token else "",
+        "unsplash_access_key": "***" if unsplash_key else "",
+        "swarm_autostart":     swarm_autostart,
         "output_folder":       str(OUTPUT_DIR),
     }
 
 
 @router.post("/settings")
 async def save_shopify_settings(body: ShopifySettingsBody):
-    """Persist Shopify settings to settings.json."""
-    all_settings = _load_settings()
-    existing = all_settings.get("shopify", {})
-    merged = {**existing}
-    if body.store_url:
-        merged["store_url"] = body.store_url
+    """Persist Shopify settings to MongoDB with AES-256 (AESGCM) encryption."""
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database not connected")
+
+    existing = await db.shopify_settings.find_one({"_id": "global"}) or {}
+
+    # Only update and encrypt keys if they are set to non-masked values
+    admin_token = existing.get("admin_token", "")
     if body.admin_token and body.admin_token != "***":
-        merged["admin_token"] = body.admin_token
+        admin_token = encrypt(body.admin_token)
+
+    unsplash_access_key = existing.get("unsplash_access_key", "")
     if body.unsplash_access_key and body.unsplash_access_key != "***":
-        merged["unsplash_access_key"] = body.unsplash_access_key
-    merged["swarm_autostart"] = body.swarm_autostart
-    all_settings["shopify"] = merged
-    SETTINGS_PATH.write_text(json.dumps(all_settings, indent=2), encoding="utf-8")
+        unsplash_access_key = encrypt(body.unsplash_access_key)
+
+    store_url = body.store_url if body.store_url else existing.get("store_url", "")
+
+    await db.shopify_settings.update_one(
+        {"_id": "global"},
+        {
+            "$set": {
+                "store_url": store_url,
+                "admin_token": admin_token,
+                "unsplash_access_key": unsplash_access_key,
+                "swarm_autostart": body.swarm_autostart,
+                "api_version": "2025-01"
+            }
+        },
+        upsert=True
+    )
     return {"ok": True}
 
 
 @router.post("/settings/test")
 async def test_shopify_connection():
-    """Validate the configured Shopify Admin API token."""
-    store_url, admin_token = _get_shopify_creds()
+    """Validate the configured Shopify Admin API connection using GET /admin/api/2025-01/shop.json"""
+    store_url, admin_token, api_version = await _get_shopify_creds_async()
     if not store_url or not admin_token:
         return {"ok": False, "error": "Store URL or Admin Token not configured"}
+
     clean_url = store_url.removeprefix("https://").removeprefix("http://").rstrip("/")
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(
-                f"https://{clean_url}/admin/api/2024-01/shop.json",
-                headers={"X-Shopify-Access-Token": admin_token},
+                f"https://{clean_url}/admin/api/{api_version}/shop.json",
+                headers={
+                    "X-Shopify-Access-Token": admin_token,
+                    "Content-Type": "application/json"
+                },
             )
         if r.status_code == 200:
             return {"ok": True, "shop_name": r.json()["shop"]["name"]}

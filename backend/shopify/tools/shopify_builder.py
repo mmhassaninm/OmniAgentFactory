@@ -123,8 +123,25 @@ class ShopifyBuilder:
         image_queries = content_pkg.get("image_queries", [])
         if image_queries:
             assets_dir = theme_dir / "assets"
-            fetcher = ImageFetcher(assets_dir)
+            
+            # Query MongoDB for decrypted unsplash key
+            unsplash_key = ""
+            try:
+                from core.database import get_db
+                from services.encryption import decrypt
+                db = get_db()
+                if db is not None:
+                    settings_doc = await db.shopify_settings.find_one({"_id": "global"})
+                    if settings_doc:
+                        enc_key = settings_doc.get("unsplash_access_key", "")
+                        if enc_key:
+                            unsplash_key = decrypt(enc_key)
+            except Exception as e:
+                logger.warning("Failed to load Unsplash key from shopify_settings collection: %s", e)
+                
+            fetcher = ImageFetcher(assets_dir, unsplash_key=unsplash_key)
             fetcher.download_demo_images(image_queries)
+
 
         # 5. Validate
         result = self.validator.validate(theme_dir)
