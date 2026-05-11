@@ -1,9 +1,11 @@
 import os
 import httpx
 import asyncio
+import logging
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://127.0.0.1:1234/v1/models")
@@ -61,12 +63,13 @@ async def swap_model(request: SwapRequest):
                     print(f"[OmniBot] 🔄 Unloading: {loaded_id}", flush=True)
                     for url in [
                         f"{LM_STUDIO_BASE}/api/v0/model/unload", # Singular 'model'
-                        f"{LM_STUDIO_BASE}/api/v0/models/unload", 
+                        f"{LM_STUDIO_BASE}/api/v0/models/unload",
                         f"{LM_STUDIO_BASE}/v1/models/unload"
                     ]:
                         try:
                             await client.post(url, json={"model": loaded_id}, timeout=2.0)
-                        except: pass
+                        except Exception as e:
+                            logger.debug("Model unload failed for %s at %s: %s", loaded_id, url, e)
             
             # 3. Force load if not active
             if new_model and new_model not in loaded_models:
@@ -96,7 +99,8 @@ async def auto_ignition(yield_callback=None) -> str:
             loaded = [m["id"] for m in res.json().get("data", []) if m["id"] != 'text-embedding-bge-m3']
             if len(loaded) > 0:
                 return loaded[0]
-        except: pass
+        except Exception as e:
+            logger.debug("Failed to check loaded models: %s", e)
         
     if yield_callback: 
         await yield_callback("⚠️ VRAM IS EMPTY! Initiating Auto-Ignition Sequence...")
@@ -110,7 +114,8 @@ async def auto_ignition(yield_callback=None) -> str:
             if res.status_code == 200:
                 data = res.json().get("data", [])
                 available = [m["id"] for m in data]
-        except: pass
+        except Exception as e:
+            logger.debug("Failed to fetch available models: %s", e)
         
     if not available:
         msg = "❌ Auto-Ignition Failed: No downloaded models found in LM Studio."

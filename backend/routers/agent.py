@@ -1,8 +1,11 @@
 import json
+import logging
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 
 from services.providers import provider_registry
 from agent.loop import run_agent_loop
@@ -35,7 +38,8 @@ async def agent_run(body: AgentRunRequest):
             if body.provider:
                 try:
                     provider = provider_registry.get(body.provider)
-                except Exception:
+                except Exception as e:
+                    logger.warning("Provider %s not found, using active: %s", body.provider, e)
                     provider = provider_registry.get_active()
             else:
                 provider = provider_registry.get_active()
@@ -47,8 +51,8 @@ async def agent_run(body: AgentRunRequest):
                 try:
                     provider_registry.set_active(pname)
                     provider = provider_registry.get_active()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Failed to set active provider to %s: %s", pname, e)
                 yield f"event: status\ndata: {json.dumps({'message': f'🤖 AutoDetect: {model} via {pname}'})}\n\n"
 
             async for chunk in run_agent_loop(

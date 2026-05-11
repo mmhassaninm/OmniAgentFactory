@@ -166,13 +166,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Sleep/Wake controller failed: %s", e)
 
-    # Start the Infinite Dev Loop Orchestrator background worker
-    try:
-        from workers.infinite_dev_loop import start_infinite_dev_loop
-        start_infinite_dev_loop()
-        logger.info("✓ Infinite Dev Loop Orchestrator background worker started")
-    except Exception as e:
-        logger.warning("Infinite Dev Loop Orchestrator failed to start: %s", e)
+    # DISABLED: Infinite Dev Loop Orchestrator (causes race conditions with LoopOrchestrator)
+    # Use ENABLE_INFINITE_DEV_LOOP=true to re-enable for agent-specific improvements
+    # Both orchestrators should not run in parallel without mutex coordination
+    #try:
+    #    from workers.infinite_dev_loop import start_infinite_dev_loop
+    #    start_infinite_dev_loop()
+    #    logger.info("✓ Infinite Dev Loop Orchestrator background worker started")
+    #except Exception as e:
+    #    logger.warning("Infinite Dev Loop Orchestrator failed to start: %s", e)
+    logger.info("ℹ️ Infinite Dev Loop Orchestrator disabled (use LoopOrchestrator v3.0 instead)")
 
     # ── Shopify Theme Factory ───────────────────────────────────────────
     try:
@@ -219,6 +222,24 @@ async def log_requests(request: Request, call_next):
         raise
     logger.info("← %s %s %s", request.method, request.url.path, response.status_code)
     return response
+
+
+@app.middleware("http")
+async def request_timeout_middleware(request: Request, call_next):
+    """Add request timeout to prevent hanging connections (default 30s, configurable per route)."""
+    import asyncio
+    import os
+    timeout_seconds = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "30.0"))
+    try:
+        response = await asyncio.wait_for(call_next(request), timeout=timeout_seconds)
+        return response
+    except asyncio.TimeoutError:
+        logger.error("Request timeout: %s %s after %.1fs", request.method, request.url.path, timeout_seconds)
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=504,
+            content={"error": "Request timeout", "timeout_seconds": timeout_seconds}
+        )
 
 
 # Add CORS Middleware

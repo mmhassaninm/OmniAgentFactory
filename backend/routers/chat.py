@@ -1,11 +1,14 @@
 import os
 import json
 import asyncio
+import logging
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from typing import AsyncGenerator
+
+logger = logging.getLogger(__name__)
 
 from services.search_engine import search_duckduckgo
 from services.action_executor import list_files, read_file, run_command, write_draft, web_scraper
@@ -295,8 +298,8 @@ async def chat_handler(request: Request, body: ChatRequest):
                 args = {}
                 try:
                     args = json.loads(tc["arguments"])
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("Failed to parse tool arguments for %s: %s", tc.get("name", "unknown"), e)
 
                 call_id = tc.get("id") or "call_123"
                 icon = TOOL_ICONS.get(tc["name"], "🔧")
