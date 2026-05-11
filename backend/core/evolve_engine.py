@@ -37,6 +37,7 @@ from core.hivemind import get_hivemind
 from core.prompt_autopsy import analyze_failure, get_autopsy_hints
 from core.swarm import Orchestrator
 from core.roi_tracker import record_cycle, estimate_tokens_in_response
+from core.evolution_telemetry import record_evolution_cycle
 from utils.thought_logger import log_thought
 from utils.budget import get_budget_governor
 
@@ -640,6 +641,22 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     await record_cycle(db, agent_id, tokens_used, score_before_cycle, score, committed=True)
                 except Exception as e:
                     logger.debug("ROI record failed: %s", e)
+
+                # Record evolution telemetry for successful cycle
+                try:
+                    import time
+                    cycle_duration = time.time() - cycle_start_time if 'cycle_start_time' in locals() else 0.0
+                    record_evolution_cycle(
+                        cycle_num=new_version,
+                        agent_id=agent_id,
+                        success=True,
+                        duration_seconds=cycle_duration,
+                        tokens_consumed=tokens_used,
+                        patches_applied=1,  # Each commit = 1 patch
+                        improvement_direction="improving" if (score - score_before_cycle) > 0 else "stable"
+                    )
+                except Exception as e:
+                    logger.debug("Evolution telemetry record failed: %s", e)
 
                 # Notify meta improver of successful cycle
                 try:
