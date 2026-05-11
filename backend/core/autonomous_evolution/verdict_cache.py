@@ -25,6 +25,8 @@ class VerdictCache:
         """Initialize cache with optional ChromaDB client."""
         self.chroma_client = chroma_client
         self.collection = None
+        self.hits = 0
+        self.misses = 0
         self._init_collection()
 
     def _init_collection(self):
@@ -49,12 +51,24 @@ class VerdictCache:
             logger.warning(f"VerdictCache initialization failed: {e}")
             self.collection = None
 
+    def get_stats(self) -> Dict[str, Any]:
+        """Return cache hit rate metrics."""
+        total = self.hits + self.misses
+        hit_rate = (self.hits / total) if total > 0 else 0.0
+        return {
+            "hits": self.hits,
+            "misses": self.misses,
+            "total_queries": total,
+            "hit_rate": round(hit_rate, 4)
+        }
+
     async def get_cached_verdict(self, proposal: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         Check if a similar proposal exists and return cached verdict.
         Returns (cached_verdict, similarity_score) or (None, 0.0) if not found.
         """
         if self.collection is None:
+            self.misses += 1
             return None
 
         try:
@@ -69,24 +83,29 @@ class VerdictCache:
             )
 
             if not results or not results["ids"] or not results["ids"][0]:
+                self.misses += 1
                 return None
 
             # Check similarity score
             distances = results["distances"][0]
             if not distances:
+                self.misses += 1
                 return None
 
             similarity = 1 - distances[0]  # ChromaDB returns distances, convert to similarity
             if similarity < CACHE_SIMILARITY_THRESHOLD:
+                self.misses += 1
                 return None
 
             # Retrieve cached verdict
             verdict_doc = results["metadatas"][0][0]
             logger.info(f"✓ Verdict cache HIT (similarity: {similarity:.2f})")
+            self.hits += 1
             return verdict_doc
 
         except Exception as e:
             logger.debug(f"Verdict cache lookup failed: {e}")
+            self.misses += 1
             return None
 
     async def cache_verdict(self, proposal: Dict[str, Any], verdict: Dict[str, Any]) -> bool:

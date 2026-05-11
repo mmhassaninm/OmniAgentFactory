@@ -18,7 +18,7 @@ TOOL_TIMEOUTS = {
     "search_for_clients": 45,
     "find_contact_email": 15,
     "fill_contact_form": 25,
-    "run_python": 8,
+    "run_python": 15,
     "calculator": 5,
     "get_datetime": 3,
     "code_interpreter": 10,
@@ -47,9 +47,21 @@ TOOL_TIMEOUTS = {
     "desktop_open_url": 5,
 }
 
-def get_tool_timeout(tool_name: str) -> int:
-    """Get timeout for a specific tool, with fallback to default."""
-    return TOOL_TIMEOUTS.get(tool_name, 10)
+def get_tool_timeout(tool_name: str, arguments: dict = None) -> int:
+    """Get timeout for a specific tool, with fallback to default and adaptive scaling."""
+    base_timeout = TOOL_TIMEOUTS.get(tool_name, 10)
+    if tool_name == "run_python" and arguments:
+        code = arguments.get("code", "")
+        # Scale timeout up if code contains loops or heavy imports
+        complexity = 0
+        if "for " in code or "while " in code:
+            complexity += 5
+        if "import " in code:
+            complexity += 3
+        if "class " in code:
+            complexity += 2
+        return base_timeout + complexity
+    return base_timeout
 _pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="omni_tool")
 _LOG_FILE = Path(__file__).parent.parent / "logs" / "tools_log.jsonl"
 
@@ -185,7 +197,7 @@ def _log(tool_name: str, arguments: dict, result: ToolResult) -> None:
 
 def execute_tool(tool_name: str, arguments: dict) -> ToolResult:
     t0 = time.monotonic()
-    timeout_secs = get_tool_timeout(tool_name)
+    timeout_secs = get_tool_timeout(tool_name, arguments)
     try:
         future = _pool.submit(_dispatch, tool_name, arguments)
         output = future.result(timeout=timeout_secs)

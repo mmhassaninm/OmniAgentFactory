@@ -206,6 +206,16 @@ async def lifespan(app: FastAPI):
             logger.info("✓ Shopify Swarm Engine started (AUTOSTART)")
         else:
             logger.info("✓ Shopify Swarm Engine initialized (start via POST /api/shopify/start)")
+            
+        # ── Shopify Autonomous Manager ──────────────────────────────────────
+        try:
+            from shopify.autonomous_manager import get_autonomous_manager
+            _auto_mgr = get_autonomous_manager()
+            _auto_mgr.start()
+            app.state.shopify_autonomous_manager = _auto_mgr
+            logger.info("✓ Shopify Autonomous Manager started (Continuous Loop active)")
+        except Exception as e:
+            logger.warning("Shopify Autonomous Manager failed to start: %s", e)
     except Exception as e:
         logger.warning("Shopify Swarm Engine failed to initialize: %s", e)
 
@@ -234,6 +244,11 @@ async def lifespan(app: FastAPI):
 
     # ── Shutdown ────────────────────────────────────────────────────────
     logger.info("OmniBot backend shutting down")
+    try:
+        from shopify.autonomous_manager import get_autonomous_manager
+        get_autonomous_manager().stop()
+    except Exception:
+        pass
     try:
         from core.scheduler import get_night_scheduler
         get_night_scheduler().stop()

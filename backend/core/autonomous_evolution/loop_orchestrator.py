@@ -101,6 +101,45 @@ class LoopOrchestrator:
             return
 
         try:
+            # ── Execute pending manually approved ideas from registry ─────────────────
+            try:
+                manual_cursor = self.registry.ideas_col.find({"status": "approved_manually"})
+                manual_ideas = await manual_cursor.to_list(length=10)
+                if manual_ideas:
+                    logger.info("Found %d pending manually approved ideas to execute!", len(manual_ideas))
+                    for idea in manual_ideas:
+                        idea_id = idea.get("id")
+                        logger.info("Executing manually approved idea: %s", idea_id)
+                        try:
+                            if self.runner:
+                                # Update status to "implementing" to avoid race conditions
+                                await self.registry.ideas_col.update_one(
+                                    {"id": idea_id},
+                                    {"$set": {"status": "implementing"}}
+                                )
+                                result = await self.runner.execute_idea(idea_id, idea)
+                                status_res = result.get("status", "success")
+                                if status_res == "success":
+                                    await self.registry.mark_idea_implemented(
+                                        idea_id,
+                                        files_changed=result.get("files_changed", []),
+                                        outcome=result.get("summary", "Implemented successfully")
+                                    )
+                                    logger.info("Manually approved idea %s implemented successfully", idea_id)
+                                else:
+                                    await self.registry.mark_idea_rejected(
+                                        idea_id,
+                                        "Implementation failed: " + result.get("summary", "Unknown error")
+                                    )
+                            else:
+                                logger.warning("Implementation runner not configured, skipping manual idea %s", idea_id)
+                        except Exception as inner_e:
+                            await self.registry.mark_idea_rejected(idea_id, f"Implementation failed: {inner_e}")
+                            logger.error("Manually approved idea %s failed: %s", idea_id, inner_e)
+            except Exception as e:
+                logger.error("Failed to query/execute manually approved ideas: %s", e)
+
+            # ── Main automated idea research loop ─────────────────────────────────────
             ideas = await self.idea_engine.research_and_generate()
             if not ideas:
                 logger.info("No new ideas generated this cycle")

@@ -197,12 +197,18 @@ async def get_diagnostics(request: Request):
         implemented_count = await registry.ideas_col.count_documents({"status": "implemented"})
         failed_count = await registry.ideas_col.count_documents({"status": "rejected"})
 
+        # Get verdict cache stats
+        verdict_cache_stats = None
+        if orch.agent_council and getattr(orch.agent_council, "verdict_cache", None):
+            verdict_cache_stats = orch.agent_council.verdict_cache.get_stats()
+
         return {
             "loop_active": orch.running,
             "loop_paused": orch.paused,
             "cycle_count": orch.cycle_count,
             "components_ready": components,
             "all_components_ready": all(components.values()),
+            "verdict_cache_stats": verdict_cache_stats,
             "database_stats": {
                 "total_ideas": ideas_count,
                 "total_problems": problems_count,

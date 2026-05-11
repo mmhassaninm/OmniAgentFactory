@@ -1,6 +1,7 @@
 import asyncio
 import re
 import time
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -9,6 +10,8 @@ from pydantic import BaseModel
 from models.database import db
 from models.settings import update_settings
 from services.providers import provider_registry
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -64,7 +67,8 @@ async def get_all_models():
         try:
             available = await provider.is_available()
             models = await provider.list_models() if available else []
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to fetch models for provider {name}: {e}")
             available, models = False, []
         return {
             "name": name,

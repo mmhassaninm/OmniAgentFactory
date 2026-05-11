@@ -18,7 +18,10 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
-import fcntl
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 import os
 
 logger = logging.getLogger(__name__)
@@ -70,16 +73,23 @@ class StateManager:
     def save_state(self, state: Dict[str, Any]) -> bool:
         """Save state to file with file locking."""
         try:
-            # Use file locking to prevent concurrent writes
-            with open(self._lock_file, "w") as lock:
-                try:
-                    fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-                    with open(self.state_file, "w") as f:
-                        json.dump(state, f, indent=2)
-                    logger.debug("State saved: iteration %d", state.get("iteration", 0))
-                    return True
-                finally:
-                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+            if fcntl is not None:
+                # Use file locking to prevent concurrent writes on Unix/Linux
+                with open(self._lock_file, "w") as lock:
+                    try:
+                        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+                        with open(self.state_file, "w") as f:
+                            json.dump(state, f, indent=2)
+                        logger.debug("State saved: iteration %d", state.get("iteration", 0))
+                        return True
+                    finally:
+                        fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+            else:
+                # Windows fallback (concurrency handled by single-threaded asyncio event loop)
+                with open(self.state_file, "w") as f:
+                    json.dump(state, f, indent=2)
+                logger.debug("State saved on Windows: iteration %d (no fcntl)", state.get("iteration", 0))
+                return True
         except Exception as e:
             logger.error("Failed to save state: %s", e)
             return False

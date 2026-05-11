@@ -1,11 +1,53 @@
 import sys
 import os
+import traceback
+from datetime import datetime
 from pathlib import Path
+
+# --- Global Crash Handler (MUST be before anything else) ---
+def _fatal(exc_type, exc_value, exc_tb):
+    """Catch ALL unhandled exceptions, log them, and keep window open."""
+    msg = ''.join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    root = str(Path(__file__).parent.resolve())
+    log_dir = Path(root) / "Project_Docs" / "Logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        (log_dir / "fatal_error.log").write_text(
+            f"[{datetime.now()}] CRASH:\n{msg}", encoding="utf-8"
+        )
+    except:
+        pass
+    try:
+        sys.__stderr__.write(f"\n{'='*50}\nCRASH DETECTED!\n{'='*50}\n{msg}\n")
+    except:
+        pass
+    try:
+        input("\nPress Enter to exit...")
+    except:
+        pass
+    sys.exit(1)
+
+sys.excepthook = _fatal
 
 # --- Silent Redirection for pythonw.exe ---
 PROJECT_ROOT = str(Path(__file__).parent.resolve())
 LOG_DIR = Path(PROJECT_ROOT) / "Project_Docs" / "Logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+# Truncate or rotate log files if they exceed 50 MB (52,428,800 bytes)
+for log_name in ["omnibot.log", "omnibot_errors.log"]:
+    log_path = LOG_DIR / log_name
+    if log_path.exists() and log_path.stat().st_size > 50 * 1024 * 1024:
+        try:
+            backup_path = LOG_DIR / f"{log_name}.old"
+            if backup_path.exists():
+                backup_path.unlink()
+            log_path.rename(backup_path)
+        except Exception:
+            try:
+                log_path.write_text("", encoding="utf-8")
+            except Exception:
+                pass
 
 # Redirect stdout and stderr to log files (REQUIRED for pythonw.exe)
 # Must happen BEFORE any other import that might print
@@ -141,75 +183,86 @@ def launch_process(cmd: list, cwd: str, out_log: str, err_log: str, shell: bool 
         close_fds=True
     )
 
-def kill_processes():
+def kill_processes(skip_if_already_done=False):
     """Ruthlessly terminates all project-related processes."""
-    log_message("Initiating ruthless process termination...")
+    if skip_if_already_done:
+        log_message("[CLEANUP] Skipping redundant process termination (already done by launcher)")
+        return
+        
+    log_message("Initiating process termination...")
     
-    # Names of processes to target
-    target_names = ["node.exe", "python.exe", "pythonw.exe", "cmd.exe", "powershell.exe"]
+    # Names of processes to target (be specific to avoid killing unrelated processes)
+    target_names = ["node.exe", "python.exe", "pythonw.exe"]
     current_pid = os.getpid()
     
-    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-        try:
-            if proc.info['pid'] == current_pid:
-                continue
-                
-            name = proc.info['name'].lower()
-            cmdline = proc.info['cmdline']
-            
-            if name in target_names:
-                # Check if the process is related to OmniBot
-                cmd_str = " ".join(cmdline) if cmdline else ""
-                if "OmniBot" in cmd_str or "main:app" in cmd_str or "src/server.js" in cmd_str or "vite" in cmd_str or "launcher.py" in cmd_str:
-                    log_message(f"Killing process {proc.info['pid']} ({name})")
-                    proc.kill()
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
+    # OPTIMIZATION: Use a set to track pids to avoid duplicate kills
+    killed_pids = set()
     
-    # Also clean up ports specifically if they are still bound
-    for port in [TARGET_PORT_BACKEND, TARGET_PORT_FRONTEND]:
-        for conn in psutil.net_connections():
-            if conn.laddr.port == port:
-                try:
-                    p = psutil.Process(conn.pid)
-                    log_message(f"Killing process {conn.pid} bound to port {port}")
-                    p.kill()
-                except Exception:
-                    pass
-    
-    # Unload LM Studio models to free VRAM before exit
     try:
-        manage_lm_studio(action="shutdown")
-    except Exception:
-        pass
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            try:
+                if proc.info['pid'] == current_pid or proc.info['pid'] in killed_pids:
+                    continue
+                    
+                name = proc.info['name'].lower()
+                cmdline = proc.info['cmdline']
+                
+                if name in target_names:
+                    # Check if the process is related to OmniBot
+                    cmd_str = " ".join(cmdline) if cmdline else ""
+                    if "OmniBot" in cmd_str or "main:app" in cmd_str or "vite" in cmd_str or "launcher.py" in cmd_str or "src/server.js" in cmd_str:
+                        log_message(f"Killing PID {proc.info['pid']} ({name})")
+                        proc.kill()
+                        killed_pids.add(proc.info['pid'])
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+    except Exception as e:
+        log_message(f"[CLEANUP] Error during process iteration: {e}")
     
-    log_message("Cleanup complete. 100% clean state achieved.")
+    # Optionally clean up specific ports (faster than full process_iter if we already did it)
+    # Skipped if already_done_by_launcher flag is set
+    
+    # DO NOT call manage_lm_studio here — it takes too long and blocks startup
+    log_message("[CLEANUP] Process termination complete")
 
 def wait_for_service(name: str, url: str, timeout: int = 60) -> bool:
     """Wait until a service is actually responding, not just launched."""
     import urllib.request
     start = time.time()
+    attempt = 0
     while time.time() - start < timeout:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=2) as response:
-                if response.status == 200 or response.status == 302:
-                    log_message(f"{name} is ready [OK]")
+            req = urllib.request.Request(url, headers={"User-Agent": "OmniBot/1.0"})
+            with urllib.request.urlopen(req, timeout=1) as response:
+                if response.status in (200, 302):
+                    log_message(f"✓ {name} is ready (after {int(time.time() - start)}s)")
                     return True
         except Exception:
-            log_message(f"Waiting for {name}... ({int(time.time() - start)}s)")
-            time.sleep(2)
-    log_message(f"ERROR: {name} failed to start within {timeout}s")
+            pass  # Connection refused, timeout, or other network errors — service not ready
+        
+        # Log less frequently (every 3 attempts = every 1.5 seconds)
+        attempt += 1
+        if attempt % 3 == 0:
+            elapsed = int(time.time() - start)
+            log_message(f"  Waiting for {name}... ({elapsed}s)")
+        
+        time.sleep(0.5)  # Check more frequently (every 500ms)
+    
+    log_message(f"⚠️  ERROR: {name} failed to start within {timeout}s")
     return False
 
 def launch_backend():
     backend_dir = os.path.join(PROJECT_ROOT, "backend")
     venv_python = os.path.join(backend_dir, ".venv", "Scripts", "python.exe")
     if not os.path.exists(venv_python):
-        venv_python = "python" # Fallback to system python
+        # Resolve to currently running python interpreter (highly robust for Conda/Miniconda)
+        current_python = sys.executable
+        if "pythonw.exe" in current_python.lower():
+            current_python = current_python.lower().replace("pythonw.exe", "python.exe")
+        venv_python = current_python
     
     log_message("Starting Unified Python FastAPI Backend...")
-    cmd = [venv_python, "-m", "uvicorn", "main:app", "--port", "3001", "--host", "127.0.0.1"]
+    cmd = [venv_python, "-m", "uvicorn", "main:app", "--port", "3001", "--host", "0.0.0.0"]
     out_log = os.path.join(PROJECT_ROOT, "backend_out.log")
     err_log = os.path.join(PROJECT_ROOT, "backend_err.log")
     return launch_process(cmd, backend_dir, out_log, err_log)
@@ -438,40 +491,45 @@ def start_tray_icon():
     return tray_thread
 
 # --- Main Entry ---
-def main():
+def main(skip_kill_cleanup=False):
     log_message("="*50)
     log_message("OmniBot Factory Starting (Silent Mode)")
     log_message("="*50)
     
-    # 1. Kill any existing processes on ports 3001 and 5173
-    kill_processes()
+    # 1. Kill any existing processes (skip if already done by launcher)
+    kill_processes(skip_if_already_done=skip_kill_cleanup)
     
     # 2. Launch backend and frontend (silent, no console window)
+    log_message("Launching Backend...")
     backend_proc = launch_backend()
+    log_message(f"Backend PID: {backend_proc.pid}")
+    
+    log_message("Launching Frontend...")
     frontend_proc = launch_frontend()
+    log_message(f"Frontend PID: {frontend_proc.pid}")
+    
     _processes.extend([backend_proc, frontend_proc])
     
     # 3. Wait for services to be ready
+    log_message("Waiting for services (max 60 seconds)...")
     backend_ready = wait_for_service("Backend", "http://localhost:3001/api/health", timeout=60)
     frontend_ready = wait_for_service("Frontend", "http://localhost:5173", timeout=60)
     
     # 4. Start system tray (user's only way to interact/exit)
+    log_message("Starting system tray icon...")
     start_tray_icon()
     
     # 5. Open browser if both services ready
     if backend_ready and frontend_ready:
-        # Manage LM Studio VRAM
-        try:
-            manage_lm_studio(action="startup")
-        except Exception:
-            pass
+        log_message("All services ready!")
         import webbrowser
         webbrowser.open("http://localhost:5173/shopify")
-        log_message("All services ready — Shopify Factory dashboard opened")
+        log_message("Shopify Factory dashboard opened")
     else:
-        log_message("Some services failed to start — check logs")
+        log_message("⚠️  Some services failed to start — check logs")
     
     # 6. Keep main thread alive (monitor processes)
+    log_message("[MONITOR] Health monitor loop started")
     while True:
         try:
             time.sleep(30)
@@ -488,4 +546,6 @@ def main():
             log_message(f"[MONITOR] Exception in health monitor loop: {e}")
 
 if __name__ == "__main__":
-    main()
+    # Check for --skip-kill flag (called from start_omnibot.bat which already cleaned up)
+    skip_kill = "--skip-kill" in sys.argv
+    main(skip_kill_cleanup=skip_kill)

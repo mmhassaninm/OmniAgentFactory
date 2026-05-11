@@ -38,6 +38,14 @@ async def connect_db(max_retries: int = 10, retry_delay: float = 10.0) -> AsyncI
 
             # Create indexes
             await _setup_indexes(_db)
+            
+            # Run schema migrations
+            try:
+                from migrations.runner import run_migrations
+                await run_migrations(_db)
+            except Exception as e:
+                logger.warning("[Database] Schema migration runner skipped or failed: %s", e)
+                
             return _db
 
         except Exception as e:
@@ -48,19 +56,9 @@ async def connect_db(max_retries: int = 10, retry_delay: float = 10.0) -> AsyncI
             if attempt < max_retries:
                 await asyncio.sleep(retry_delay)
 
-    # If we exhaust retries, keep trying forever
-    logger.error("MongoDB connection failed after %d retries — entering infinite retry", max_retries)
-    while True:
-        try:
-            _client = AsyncIOMotorClient(settings.mongodb_uri, serverSelectionTimeoutMS=5000)
-            await _client.admin.command("ping")
-            _db = _client[settings.mongodb_db]
-            logger.info("MongoDB connected after extended retry")
-            await _setup_indexes(_db)
-            return _db
-        except Exception as e:
-            logger.warning("MongoDB infinite retry attempt failed: %s, retrying in %fs", e, retry_delay)
-            await asyncio.sleep(retry_delay)
+    # If we exhaust retries, raise an exception so caller handles fallback gracefully
+    logger.error("MongoDB connection failed after %d retries", max_retries)
+    raise ConnectionError(f"Could not connect to MongoDB after {max_retries} attempts.")
 
 
 async def _setup_indexes(db: AsyncIOMotorDatabase):

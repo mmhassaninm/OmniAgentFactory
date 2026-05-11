@@ -48,7 +48,7 @@ def error_response(
         "code": code,
         "message": message,
         "details": details or {},
-        "timestamp": timestamp or datetime.utcnow().isoformat() + "Z",
+        "timestamp": timestamp or datetime.now().isoformat() + "Z",
     }
 
 

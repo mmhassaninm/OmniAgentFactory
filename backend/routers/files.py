@@ -8,6 +8,7 @@ DELETE /api/files/delete - Delete file safely
 import os
 import pathlib
 from fastapi import APIRouter, Query, HTTPException
+from utils.error_response import validation_error, forbidden_error, not_found_error, http_exception
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -28,7 +29,7 @@ def validate_safe_path(project_root: pathlib.Path, relative_path: str) -> pathli
     and prevents directory traversal attacks.
     """
     if ".." in relative_path or relative_path.startswith("/") or relative_path.startswith("\\"):
-        raise HTTPException(status_code=400, detail="Invalid path structure")
+        raise validation_error("Invalid path structure")
         
     # Combine and resolve absolute paths
     abs_root = project_root.resolve()
@@ -36,7 +37,7 @@ def validate_safe_path(project_root: pathlib.Path, relative_path: str) -> pathli
     
     # Path traversal guard: target_path must be inside or equal to abs_root
     if abs_root not in target_path.parents and abs_root != target_path:
-         raise HTTPException(status_code=403, detail="Access denied: Path traversal detected")
+         raise forbidden_error("Access denied: Path traversal detected")
          
     return target_path
 
@@ -51,10 +52,10 @@ async def list_files(path: str = Query("")):
         target_path = validate_safe_path(project_root, path) if path else project_root
 
         if not target_path.exists():
-            raise HTTPException(status_code=44, detail="Path not found")
+            raise not_found_error("Path", path)
 
         if not target_path.is_dir():
-            raise HTTPException(status_code=400, detail="Path is not a directory")
+            raise validation_error("Path is not a directory")
 
         files = []
         try:
@@ -68,14 +69,14 @@ async def list_files(path: str = Query("")):
                     "path": str(item.relative_to(project_root)).replace("\\", "/")
                 })
         except PermissionError:
-            raise HTTPException(status_code=403, detail="Permission denied")
+            raise forbidden_error("Permission denied")
 
         return files
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise http_exception(str(e))
 
 @router.get("/read")
 async def read_file_content(path: str = Query(...)):
@@ -87,18 +88,18 @@ async def read_file_content(path: str = Query(...)):
         target_path = validate_safe_path(project_root, path)
         
         if not target_path.exists() or not target_path.is_file():
-            raise HTTPException(status_code=404, detail="File not found or is a directory")
+            raise not_found_error("File", path)
             
         try:
             content = target_path.read_text(encoding="utf-8")
             return {"path": path, "content": content}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to read file: {str(e)}")
+            raise http_exception(f"Failed to read file: {str(e)}")
             
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise http_exception(str(e))
 
 @router.post("/write")
 async def write_file_content(req: WriteFileRequest):
@@ -110,7 +111,7 @@ async def write_file_content(req: WriteFileRequest):
         target_path = validate_safe_path(project_root, req.path)
         
         if target_path.exists() and not req.overwrite:
-            raise HTTPException(status_code=400, detail="File already exists and overwrite is disabled")
+            raise validation_error("File already exists and overwrite is disabled")
             
         # Create parent directories dynamically if they do not exist
         target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -119,12 +120,12 @@ async def write_file_content(req: WriteFileRequest):
             target_path.write_text(req.content, encoding="utf-8")
             return {"status": "success", "path": req.path, "bytes_written": len(req.content)}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to write file: {str(e)}")
+            raise http_exception(f"Failed to write file: {str(e)}")
             
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise http_exception(str(e))
 
 @router.delete("/delete")
 async def delete_file(path: str = Query(...)):
@@ -136,15 +137,15 @@ async def delete_file(path: str = Query(...)):
         target_path = validate_safe_path(project_root, path)
         
         if not target_path.exists() or not target_path.is_file():
-            raise HTTPException(status_code=404, detail="File not found or is a directory")
+            raise not_found_error("File", path)
             
         try:
             target_path.unlink()
             return {"status": "success", "message": f"Deleted file: {path}"}
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
+            raise http_exception(f"Failed to delete file: {str(e)}")
             
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise http_exception(str(e))
