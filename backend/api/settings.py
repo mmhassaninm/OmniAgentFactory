@@ -449,10 +449,23 @@ async def get_provider_health():
     from core.model_router import get_model_router
     try:
         router_instance = get_model_router()
-        health_dict = await router_instance.check_provider_health()
-        return list(health_dict.values())
+        health_status = router_instance.get_health_status()
+        # Transform health status into response format
+        health_list = []
+        for provider, status_info in health_status.items():
+            health_list.append({
+                "provider": provider,
+                "status": status_info.get("status", "unconfigured"),
+                "latency_ms": 0,
+                "keys_active": status_info.get("available_keys", 0),
+                "keys_exhausted": 0,
+                "last_checked": datetime.now().isoformat()
+            })
+        return health_list
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to check provider health: {str(e)}")
+        logger.error("Failed to get provider health: %s", e)
+        # Return empty health list on error (don't crash Settings page)
+        return []
 
 
 @router.post("/reload-router")

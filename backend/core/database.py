@@ -58,7 +58,8 @@ async def connect_db(max_retries: int = 10, retry_delay: float = 10.0) -> AsyncI
             logger.info("MongoDB connected after extended retry")
             await _setup_indexes(_db)
             return _db
-        except Exception:
+        except Exception as e:
+            logger.warning("MongoDB infinite retry attempt failed: %s, retrying in %fs", e, retry_delay)
             await asyncio.sleep(retry_delay)
 
 
@@ -98,6 +99,21 @@ async def _setup_indexes(db: AsyncIOMotorDatabase):
     await make_index(db.checkpoints, [("agent_id", 1), ("version", -1)])
     await make_index(db.agent_conversations, [("agent_id", 1), ("timestamp", -1)])
 
+    # Evolution system indexes
+    await make_index(db.evolution_ideas, "status")
+    await make_index(db.evolution_ideas, [("created_at", -1)])
+    await make_index(db.evolution_ideas, [("status", 1), ("priority", -1)])
+    await make_index(db.evolution_problems, "status")
+    await make_index(db.evolution_problems, [("severity", -1), ("created_at", -1)])
+    await make_index(db.autonomous_log, [("cycle", -1)])
+    await make_index(db.autonomous_log, [("timestamp", -1)])
+
+    # Shopify theme factory indexes
+    await make_index(db.shopify_lessons, "pattern")
+    await make_index(db.shopify_lessons, [("times_applied", -1)])
+    await make_index(db.evolution_paths, [("agent_id", 1), ("direction", 1)], unique=True)
+    await make_index(db.evolution_ratchets, "agent_id")
+
     logger.info("MongoDB indexes verified for all collections")
 
 
@@ -115,7 +131,8 @@ async def check_db_health() -> bool:
     try:
         await _client.admin.command("ping")
         return True
-    except Exception:
+    except Exception as e:
+        logger.debug("MongoDB health check failed: %s", e)
         return False
 
 

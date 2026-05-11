@@ -44,7 +44,8 @@ async def run_chat_test():
                                 print(f"\033[96m[STATUS]\033[0m {data['message']}")
                             elif "token" in data:
                                 print(data["token"], end="", flush=True)
-                        except: pass
+                        except json.JSONDecodeError:
+                            pass
                 print("\n\n[TEST] ✅ Stream Complete.")
         except httpx.ConnectError:
             print("❌ Backend is offline. Could not connect to port 3001.")

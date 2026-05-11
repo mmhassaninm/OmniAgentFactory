@@ -12,7 +12,7 @@ async def wait_for_server():
                 if r.status_code == 200:
                     print(f"Health OK: {r.json()}")
                     return True
-            except:
+            except (httpx.RequestError, httpx.HTTPError, asyncio.TimeoutError):
                 pass
             await asyncio.sleep(1)
     return False
