@@ -142,6 +142,68 @@ This file tracks all discovered problems, missing components, and new features f
 
 ---
 
+## 🔄 Phase 2: Session 1 (2026-05-11) — Dual-Axis Discovery & Engine Health
+
+### AXIS 1: HORIZONTAL DISCOVERY (Completely New Issues)
+
+#### 🟢 MEDIUM — Remaining Bare Exception Handlers
+*   **Description:** Code scan found 2 remaining `except:` or `except Exception:` clauses without logging.
+*   **Impact:** Low (from 50+ down to 2 — good progress). Still makes debugging harder.
+*   **Fix:** Add proper logging to remaining 2 cases.
+*   **Status:** `[ pending ]`
+
+#### 🟢 MEDIUM — TODO Comments Requiring Review
+*   **Description:** Found 10 TODO/FIXME/XXX comments scattered in codebase.
+*   **Impact:** Low (not critical), but indicates incomplete work/design decisions.
+*   **Fix:** Review each TODO; either implement or remove; convert blocking ones to Evolve_plan.md items.
+*   **Status:** `[ pending ]`
+
+#### 🟡 HIGH — Code Complexity: 100+ Long Functions (>100 lines)
+*   **Description:** Many functions exceed 100 lines, reducing readability and testability.
+*   **Impact:** Medium (harder to understand, test, and maintain); no functional impact yet.
+*   **Fix:** Refactor longest functions into smaller, single-responsibility functions.
+*   **Priority:** Start with backend/core/autonomous_evolution/* and backend/core/evolve_engine.py (core evolution logic).
+*   **Status:** `[ pending ]`
+
+### AXIS 2: VERTICAL DEVELOPMENT (Enhancements to Existing Systems)
+
+#### UPGRADE-013: Self-Evolution Engine First Successful Cycle
+*   **Description:** Engine is built but hasn't run yet. Perform first test cycle to verify end-to-end operation.
+*   **Benefit:** Confirms all 7 components (state, reader, reasoner, applier, verifier, loop, scheduler) work together.
+*   **Approach:** Manually trigger one cycle via backend code OR wait for scheduler to fire at EVOLUTION_INTERVAL_HOURS.
+*   **Status:** `[ pending ]` — Ready for testing
+
+#### UPGRADE-014: MongoDB Query Performance — Add Indexes
+*   **Description:** Identify frequently-queried collections (agents, thoughts, autonomous_log, evolution_ideas, evolution_problems) and add indexes on commonly-filtered fields.
+*   **Benefit:** Faster queries, lower database load, better user experience.
+*   **Current State:** No explicit indexes defined.
+*   **Status:** `[ pending ]` — Requires profiling actual queries
+
+#### UPGRADE-015: Frontend Bundle Further Optimization
+*   **Description:** Current build: 660KB main → 306KB after code-splitting. Further optimizations: lazy-load heavy libraries (chart libs, syntax highlighters), tree-shaking, compression.
+*   **Benefit:** Sub-300KB main bundle target; faster initial load on mobile.
+*   **Status:** `[ pending ]` — Requires webpack/vite analysis
+
+#### UPGRADE-016: Increase Test Coverage
+*   **Description:** Only 2 test files in backend/tests/. Need comprehensive tests for:
+   - StateManager (file locking, state persistence)
+   - CodebaseReader (token budgeting, file prioritization)
+   - Verifier (syntax check, rollback behavior)
+   - EvolutionLoop (end-to-end cycle)
+*   **Benefit:** Confidence in core self-evolution logic; catch regressions early.
+*   **Status:** `[ pending ]` — New test suite needed
+
+### AXIS 3: SELF-EVOLUTION ENGINE HEALTH CHECK
+
+#### Engine Status: ✅ READY (Not yet run)
+*   **Iteration:** 0 (never run)
+*   **State File:** Does not exist yet (will be created on first cycle)
+*   **Cycle Reports:** None (will appear after first run)
+*   **Health:** ✅ HEALTHY (all components compile, scheduler ready to start)
+*   **Next Action:** Wait for scheduler to run OR manually trigger test cycle
+
+---
+
 ## 🎯 Priority Matrix: What to Execute First
 
 Based on impact + feasibility, execution order:
