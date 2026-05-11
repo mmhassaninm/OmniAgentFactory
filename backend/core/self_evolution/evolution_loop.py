@@ -89,6 +89,7 @@ class EvolutionLoop:
                 cycle_result["error"] = "AI reasoner failed or returned no patches"
                 logger.error(cycle_result["error"])
                 self.state_mgr.record_result(False, "AI reasoning failed")
+                self._write_cycle_report(cycle_result)
                 return cycle_result
 
             patches = patches_response.get("patches", [])
@@ -99,6 +100,7 @@ class EvolutionLoop:
                 logger.info("No patches generated (may be at completion or no pending items)")
                 cycle_result["error"] = "No patches generated"
                 self.state_mgr.record_result(False, f"No patches for {item_id}")
+                self._write_cycle_report(cycle_result)
                 return cycle_result
 
             logger.info("✓ Generated %d patches for %s", len(patches), item_id)
@@ -166,6 +168,8 @@ class EvolutionLoop:
             logger.error("Cycle %d crashed: %s", cycle_result.get("iteration", "?"), e)
             cycle_result["error"] = str(e)
             self.state_mgr.record_result(False, f"Cycle crashed: {str(e)}")
+            cycle_result["timestamp"] = datetime.now().isoformat()
+            self._write_cycle_report(cycle_result)
             return cycle_result
 
     def _write_cycle_report(self, cycle_result: Dict[str, Any]) -> bool:

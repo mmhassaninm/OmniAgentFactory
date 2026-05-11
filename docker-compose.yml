@@ -49,6 +49,7 @@ services:
       - CHROMA_PORT=8000
     volumes:
       - ./backend:/app
+      - ./:/project
       - backend_cache:/root/.cache
     depends_on:
       mongo:

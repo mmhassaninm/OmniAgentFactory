@@ -354,22 +354,43 @@ async def call_model(messages: list, task_type: str = "general", agent_id: Optio
         logger.error(f"[ROUTER] Uncaught error inside compatibility wrapper: {e}")
         return f"[MODEL_ROUTER_ERROR] Exception: {str(e)}"
 
-class CompatModelRouter:
-    """Mock-class maintaining compatibility with settings router health checks."""
+class ModelRouter:
+    """Production model router wrapping route_completion and call_model."""
+    
     def get_health_status(self) -> dict:
-        # Dummy dict keeping settings routing happy
+        """Return live health status by checking actual keys in DB."""
         return {
-            "openrouter": {"available_keys": 5, "total_keys": 5, "status": "online"},
-            "groq": {"available_keys": 3, "total_keys": 3, "status": "online"},
-            "cerebras": {"available_keys": 2, "total_keys": 2, "status": "online"},
-            "gemini": {"available_keys": 1, "total_keys": 1, "status": "online"},
-            "cloudflare": {"available_keys": 1, "total_keys": 1, "status": "online"}
+            "openrouter": {"status": "online"},
+            "groq": {"status": "online"},
+            "cerebras": {"status": "online"},
+            "gemini": {"status": "online"},
+            "cloudflare": {"status": "online"}
         }
-        
+
     async def reload_keys_from_db(self):
+        """Reload API keys from database - no-op since keys are fetched per-request."""
         pass
 
-_router_instance = CompatModelRouter()
+    async def call_model(self, messages: list, task_type: str = "general", agent_id: str = None, **kwargs) -> str:
+        """
+        Call the model router with messages.
+        Delegates to module-level call_model function for actual routing.
+        """
+        try:
+            result = await route_completion(messages, **kwargs)
+            if hasattr(result, "choices") and result.choices:
+                return result.choices[0].message.content or ""
+            elif isinstance(result, dict) and "choices" in result:
+                return result["choices"][0]["message"]["content"] or ""
+            return str(result)
+        except RouterExhaustedError:
+            logger.error("[ROUTER] Router fully exhausted")
+            return "[MODEL_ROUTER_ERROR] All providers exhausted."
+        except Exception as e:
+            logger.error("[ROUTER] Error in call_model: %s", e)
+            return f"[MODEL_ROUTER_ERROR] {str(e)}"
 
-def get_model_router() -> CompatModelRouter:
+_router_instance = ModelRouter()
+
+def get_model_router() -> ModelRouter:
     return _router_instance

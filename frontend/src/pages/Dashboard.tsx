@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang } from '../i18n/LanguageContext'
+import { apiCall } from '../api'
 import {
   Zap, Cpu, Database, GitBranch, Activity, AlertCircle, CheckCircle2,
   AlertTriangle, Clock, TrendingUp, Grid3x3, Layers, Server, Smartphone,
@@ -57,55 +58,52 @@ export default function Dashboard() {
   // Fetch factory status
   const { data: factoryStatus } = useQuery<FactoryStatus>({
     queryKey: ['factory-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/factory/status')
-      if (!res.ok) throw new Error('Failed to fetch factory status')
-      return res.json()
-    },
+    queryFn: () => apiCall('/api/factory/status'),
     refetchInterval: 5000,
+    retry: 1,
   })
 
   // Fetch provider health
   const { data: providerHealth } = useQuery<ProviderHealth[]>({
     queryKey: ['provider-health'],
-    queryFn: async () => {
-      const res = await fetch('/api/factory/settings/provider-health')
-      if (!res.ok) throw new Error('Failed to fetch provider health')
-      return res.json()
-    },
+    queryFn: () => apiCall('/api/factory/settings/provider-health'),
     refetchInterval: 30000,
+    retry: 1,
   })
 
   // Fetch Shopify status
   const { data: shopifyStatus } = useQuery<ShopifyStatus>({
     queryKey: ['shopify-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/shopify/status')
-      if (!res.ok) throw new Error('Failed to fetch Shopify status')
-      return res.json()
-    },
+    queryFn: () => apiCall('/api/shopify/status'),
     refetchInterval: 10000,
+    retry: 1,
   })
 
   // Fetch Money Agent status and earnings
   const { data: moneyStatus } = useQuery<MoneyAgentStatus>({
     queryKey: ['money-agent-status'],
     queryFn: async () => {
-      const res = await fetch('/api/money/status')
-      if (!res.ok) return { agent_mode: 'offline', paypal_configured: false, pending_pitches: 0, pending_emails: 0 }
-      return res.json()
+      try {
+        return await apiCall('/api/money/status')
+      } catch {
+        return { agent_mode: 'offline', paypal_configured: false, pending_pitches: 0, pending_emails: 0 }
+      }
     },
     refetchInterval: 10000,
+    retry: 1,
   })
 
   const { data: moneyEarnings } = useQuery({
     queryKey: ['money-earnings'],
     queryFn: async () => {
-      const res = await fetch('/api/money/earnings')
-      if (!res.ok) return { today: 0, week: 0, month: 0, pitches_sent_week: 0 }
-      return res.json()
+      try {
+        return await apiCall('/api/money/earnings')
+      } catch {
+        return { today: 0, week: 0, month: 0, pitches_sent_week: 0 }
+      }
     },
     refetchInterval: 30000,
+    retry: 1,
   })
 
   const daysSinceStart = Math.floor(

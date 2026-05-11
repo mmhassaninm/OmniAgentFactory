@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useLang } from '../i18n/LanguageContext'
+import { apiCall, getApiUrl } from '../api'
 
 interface KeyDef {
   env_name: string
@@ -30,16 +31,9 @@ interface ConstitutionRule {
   immutable: boolean
 }
 
-async function fetchJson(url: string, options?: RequestInit) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(err.detail || res.statusText)
-  }
-  return res.json()
+// Use proper API client that routes through backend
+async function fetchJson(endpoint: string, options?: RequestInit) {
+  return apiCall(endpoint, options)
 }
 
 const KEY_META: Record<string, { placeholder: string }> = {

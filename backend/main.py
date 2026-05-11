@@ -228,7 +228,8 @@ async def lifespan(app: FastAPI):
             from core.model_router import get_model_router
 
             router = get_model_router()
-            scheduler = get_evolution_scheduler(router, root_path=".")
+            ev_root = "/project" if os.path.exists("/project") else "."
+            scheduler = get_evolution_scheduler(router, root_path=ev_root)
             scheduler.start()
             app.state.evolution_scheduler = scheduler
             logger.info("🧬 SELF-EVOLUTION ENGINE (Phase S) — ACTIVE")
