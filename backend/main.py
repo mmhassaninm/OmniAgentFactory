@@ -193,6 +193,25 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Shopify Swarm Engine failed to initialize: %s", e)
 
+    # ── Self-Evolution Engine (Phase S) ─────────────────────────────────
+    try:
+        import os
+        if os.getenv("SELF_EVOLUTION_ENABLED", "true").lower() == "true" and db is not None:
+            from core.self_evolution.scheduler import get_evolution_scheduler
+            from core.model_router import get_model_router
+
+            router = get_model_router()
+            scheduler = get_evolution_scheduler(router, root_path=".")
+            scheduler.start()
+            app.state.evolution_scheduler = scheduler
+            logger.info("🧬 SELF-EVOLUTION ENGINE (Phase S) — ACTIVE")
+            logger.info("   Scheduler: autonomous code improvement loop running every %d hours",
+                       int(os.getenv("EVOLUTION_INTERVAL_HOURS", "6")))
+        else:
+            logger.info("ℹ️ Self-Evolution disabled (set SELF_EVOLUTION_ENABLED=true to enable)")
+    except Exception as e:
+        logger.warning("Self-Evolution Engine failed to start: %s", e)
+
     logger.info("═══ OmniBot Agent Factory — ONLINE ═══")
     yield
 
@@ -439,6 +458,55 @@ async def get_router_status():
     except Exception as e:
         logger.error(f"Error in GET /api/router/status: {e}")
         return {"error": str(e)}
+
+
+@app.get("/api/self-evolution/status")
+async def self_evolution_status():
+    """Get self-evolution engine status and recent cycle history."""
+    try:
+        from core.self_evolution.state_manager import get_state_manager
+        import json
+        from pathlib import Path
+        import os
+
+        manager = get_state_manager()
+        state = manager.load_state()
+
+        # Get recent cycle reports
+        reports_dir = Path("autonomous_logs/cycle_reports")
+        recent_cycles = []
+
+        if reports_dir.exists():
+            # Get last 5 cycle reports
+            cycle_files = sorted(reports_dir.glob("cycle_*.json"), reverse=True)[:5]
+            for cycle_file in cycle_files:
+                try:
+                    with open(cycle_file, "r") as f:
+                        cycle_data = json.load(f)
+                        recent_cycles.append(cycle_data)
+                except Exception:
+                    pass
+
+        return {
+            "enabled": os.getenv("SELF_EVOLUTION_ENABLED", "true").lower() == "true",
+            "current_iteration": state.get("iteration", 0),
+            "last_run": state.get("last_run"),
+            "total_improvements_applied": state.get("total_improvements", 0),
+            "total_errors": state.get("total_errors", 0),
+            "interval_hours": int(os.getenv("EVOLUTION_INTERVAL_HOURS", "6")),
+            "budget_consumed_this_cycle": state.get("budget_consumed_this_cycle", 0),
+            "recent_cycles": recent_cycles,
+        }
+
+    except Exception as e:
+        logger.error("Failed to get self-evolution status: %s", e)
+        return {
+            "error": str(e),
+            "enabled": False,
+            "current_iteration": 0,
+            "total_improvements_applied": 0,
+            "recent_cycles": [],
+        }
 
 
 @app.get("/api/health")
