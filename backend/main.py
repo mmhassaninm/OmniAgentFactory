@@ -77,8 +77,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Telegram Commander failed: %s", e)
 
-    # 5b. Initialize Money Agent
+    # 5b. Initialize Money Agent and Hydrate Cache
     try:
+        if db is not None:
+            from core.money_roi_tracker import load_from_db
+            await load_from_db(db)
+            logger.info("✓ Money ROI Tracker cache hydrated from database")
+
         settings = get_settings()
         if settings.agent_mode in ("human_in_loop", "supervised", "review_only"):
             from agent.money_agent_loop import get_money_agent
@@ -86,7 +91,7 @@ async def lifespan(app: FastAPI):
             app.state.money_agent = _money_agent
             logger.info("✓ Money Agent initialized (mode: %s)", settings.agent_mode)
     except Exception as e:
-        logger.warning("Money Agent init failed: %s", e)
+        logger.warning("Money Agent / ROI init failed: %s", e)
 
     # 5. Initialize Prompt Evolver (Phase 7: Self-Rewriting Prompt Templates)
     try:

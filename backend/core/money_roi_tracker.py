@@ -162,3 +162,43 @@ def recent_opportunities(limit: int = 20) -> list[dict]:
 
 def get_all_pitches() -> list[dict]:
     return list(_pitches.values())
+
+
+async def load_from_db(db) -> None:
+    """Load existing money ROI history from MongoDB to hydrate the in-memory cache."""
+    global _opportunities, _pitches, _deals
+    if db is None:
+        return
+    try:
+        # Clear in-memory cache first to avoid duplicates
+        _opportunities.clear()
+        _pitches.clear()
+        _deals.clear()
+
+        # Load opportunities
+        async for doc in db.money_roi.find({"type": "opportunity"}):
+            doc.pop("_id", None)
+            doc.pop("type", None)
+            _opportunities.append(doc)
+
+        # Load pitches
+        async for doc in db.money_roi.find({"type": "pitch"}):
+            doc.pop("_id", None)
+            doc.pop("type", None)
+            pitch_id = doc.get("pitch_id")
+            if pitch_id:
+                _pitches[pitch_id] = doc
+
+        # Load deals
+        async for doc in db.money_roi.find({"type": "deal"}):
+            doc.pop("_id", None)
+            doc.pop("type", None)
+            _deals.append(doc)
+
+        logger.info(
+            "[MoneyROI] Hydrated from MongoDB: %d opportunities, %d pitches, %d deals",
+            len(_opportunities), len(_pitches), len(_deals)
+        )
+    except Exception as e:
+        logger.error("[MoneyROI] Failed to hydrate cache from DB: %s", e)
+

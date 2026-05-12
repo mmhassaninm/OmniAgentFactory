@@ -66,6 +66,18 @@ class EvolutionScheduler:
     async def _loop(self):
         """Main scheduler loop."""
         try:
+            # 5-second warm-up sleep on start to let backend systems initialize fully
+            await asyncio.sleep(5)
+
+            # Optional run-on-startup config
+            run_on_start = os.getenv("EVOLUTION_RUN_ON_STARTUP", "true").lower() == "true"
+            if run_on_start and self._running:
+                logger.info("🔄 Starting initial startup evolution cycle...")
+                try:
+                    await self._run_cycle()
+                except Exception as e:
+                    logger.error("Initial startup cycle failed: %s", e)
+
             while self._running:
                 try:
                     # Calculate wait time in seconds
