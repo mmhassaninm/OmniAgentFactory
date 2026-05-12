@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import EarningsDashboard from '../components/EarningsDashboard'
+import BrowserViewer from '../components/BrowserViewer'
 import { BASE_URL } from '../config'
 
 interface PendingItem {
@@ -164,8 +165,11 @@ export default function MoneyAgentPage() {
         {/* Two-column layout on wide screens */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
-          {/* Left: dashboard widget */}
-          <EarningsDashboard />
+          {/* Left: dashboard widget and live browser streaming view */}
+          <div className="space-y-6">
+            <EarningsDashboard />
+            <BrowserViewer />
+          </div>
 
           {/* Right: pending approvals */}
           <div className="space-y-4">

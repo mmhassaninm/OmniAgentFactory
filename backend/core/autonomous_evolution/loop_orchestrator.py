@@ -63,6 +63,10 @@ class LoopOrchestrator:
                 if self.cycle_count % 6 == 0:
                     await self._registry_review()
 
+                # Every 12 cycles: run dev loop cycle (agent statistics and reflection)
+                if self.cycle_count % 12 == 0:
+                    await self._dev_loop_phase()
+
                 # Generate daily report periodically
                 if self.cycle_count % DAILY_REPORT_EVERY_N_CYCLES == 0:
                     await self._generate_daily_report()
@@ -273,6 +277,15 @@ class LoopOrchestrator:
                 logger.info("Daily report written: %s", report_path)
         except Exception as e:
             logger.error("Daily report failed: %s", e)
+
+    async def _dev_loop_phase(self):
+        """Periodic dev loop metrics/reflection phase."""
+        logger.info("━━━ CYCLE %d: AGENT DEV LOOP METRICS PHASE ━━━", self.cycle_count)
+        try:
+            from workers.infinite_dev_loop import run_dev_loop_cycle
+            await run_dev_loop_cycle()
+        except Exception as e:
+            logger.error("Failed to run agent dev loop metrics phase: %s", e)
 
     def pause(self):
         """Pause the loop (remains running but skips cycles)."""

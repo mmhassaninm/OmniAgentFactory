@@ -1,13 +1,10 @@
-"""
-Centralized error logging for OmniBot.
-Logs all exceptions to ERROR_LOG.md in project root.
-"""
-
 import traceback
+import logging
 from datetime import datetime
 from pathlib import Path
 
 ERROR_LOG_PATH = Path("ERROR_LOG.md")
+logger = logging.getLogger("utils.error_log")
 
 
 def log_error(context: str, error: Exception, agent_id: str = None, extra_info: dict = None):
@@ -25,6 +22,19 @@ def log_error(context: str, error: Exception, agent_id: str = None, extra_info: 
     tb = traceback.format_exc()
     error_type = type(error).__name__
     error_msg = str(error)
+
+    # Propagate the error to standard logging stream so that JSONFormatter captures it
+    logger.error(
+        f"[ERROR_LOG] {context}: {error_msg}",
+        exc_info=error,
+        extra={
+            "agent_id": agent_id,
+            "error_type": error_type,
+            "traceback": tb,
+            "extra_info": extra_info
+        }
+    )
+
 
     with open(ERROR_LOG_PATH, "a", encoding="utf-8") as f:
         f.write(f"\n---\n")

@@ -112,6 +112,10 @@ async def _setup_indexes(db: AsyncIOMotorDatabase):
     await make_index(db.evolution_paths, [("agent_id", 1), ("direction", 1)], unique=True)
     await make_index(db.evolution_ratchets, "agent_id")
 
+    # Dev loop history indexes
+    await make_index(db.dev_loop_history, "cycle_id", unique=True)
+    await make_index(db.dev_loop_history, [("timestamp", -1)])
+
     logger.info("MongoDB indexes verified for all collections")
 
 

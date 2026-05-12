@@ -21,9 +21,14 @@ from typing import Dict, Any, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 # -- Path resolution (this file is at backend/core/autonomous_evolution/)
+import os
 _HERE = Path(__file__).resolve()
-PROJECT_ROOT = _HERE.parent.parent.parent.parent   # NexusOS/
-BACKEND_ROOT = _HERE.parent.parent.parent          # NexusOS/backend/
+if os.path.exists("/.dockerenv") or os.getenv("RUNNING_IN_DOCKER") == "true":
+    PROJECT_ROOT = Path("/project").resolve()          # Mounted as ./:/project in docker-compose.yml
+    BACKEND_ROOT = PROJECT_ROOT / "backend"            # Standardize /project/backend as BACKEND_ROOT inside container
+else:
+    PROJECT_ROOT = _HERE.parent.parent.parent.parent   # NexusOS/
+    BACKEND_ROOT = _HERE.parent.parent.parent          # NexusOS/backend/
 AUTONOMOUS_LOGS = PROJECT_ROOT / "autonomous_logs"
 EXECUTION_HISTORY = AUTONOMOUS_LOGS / "EXECUTION_HISTORY.json"
 

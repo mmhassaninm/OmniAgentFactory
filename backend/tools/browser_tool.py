@@ -50,6 +50,23 @@ class BrowserTool:
         if self._playwright:
             await self._playwright.stop()
 
+    async def _broadcast_telemetry(self, page, action_name: str, details: str):
+        """Capture screenshot and broadcast frame and logs over WebSockets in the background."""
+        try:
+            import base64
+            import asyncio
+            from api.browser_session import browser_session_mgr
+            
+            # Capture JPEG screenshot at 65% quality for ultra-fast websocket transmission
+            img_bytes = await page.screenshot(type="jpeg", quality=65)
+            b64_str = base64.b64encode(img_bytes).decode("utf-8")
+            
+            # Broadcast frame and log message to WebSocket clients
+            asyncio.create_task(browser_session_mgr.broadcast_frame(b64_str))
+            asyncio.create_task(browser_session_mgr.broadcast_log(f"[{action_name}] {details}"))
+        except Exception as e:
+            logger.debug("Failed to broadcast telemetry: %s", e)
+
     # ── Existing methods (unchanged) ─────────────────────────────────────────
 
     async def search_web(self, query: str) -> str:
@@ -82,6 +99,7 @@ class BrowserTool:
             page = await self._browser.new_page()
             await page.goto(url, timeout=15000)
             await page.wait_for_timeout(1000)
+            await self._broadcast_telemetry(page, "GET_PAGE", f"Fetched content of {url}")
             content = await page.inner_text("body")
             await page.close()
             return content[:5000]
@@ -94,6 +112,7 @@ class BrowserTool:
         try:
             page = await self._browser.new_page()
             await page.goto(url, timeout=15000)
+            await self._broadcast_telemetry(page, "SCREENSHOT", f"Captured full screenshot for {url}")
             await page.screenshot(path=path, full_page=True)
             await page.close()
             return path
@@ -149,6 +168,7 @@ class BrowserTool:
             page = await self._browser.new_page()
             await page.goto(f"https://{url}" if not url.startswith("http") else url, timeout=12000)
             await page.wait_for_timeout(1000)
+            await self._broadcast_telemetry(page, "FIND_EMAIL", f"Searching for contact emails on {url}")
 
             # Look for mailto: links on the current page
             hrefs = await page.eval_on_selector_all("a[href^='mailto:']", "els => els.map(e => e.href)")
@@ -205,6 +225,7 @@ class BrowserTool:
                     except Exception:
                         pass
 
+            await self._broadcast_telemetry(page, "FORM_FILL", f"Filled contact form details at {url}: {filled}")
             await page.screenshot(path=screenshot_path, full_page=False)
             # Keep page open (visible) for human to submit
             logger.info("[BrowserTool] Form filled at %s — waiting for human to submit", url)

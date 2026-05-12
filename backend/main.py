@@ -246,6 +246,11 @@ async def lifespan(app: FastAPI):
     # ── Shutdown ────────────────────────────────────────────────────────
     logger.info("OmniBot backend shutting down")
     try:
+        from core.self_evolution.scheduler import stop_evolution_scheduler
+        stop_evolution_scheduler()
+    except Exception:
+        pass
+    try:
         from shopify.autonomous_manager import get_autonomous_manager
         get_autonomous_manager().stop()
     except Exception:
@@ -456,12 +461,22 @@ from api.factory import router as factory_control_router
 from api.websocket import router as websocket_router
 from api.settings import router as factory_settings_router
 from api.dev_loop import router as dev_loop_router
+from api.browser_session import router as browser_session_router
 
 app.include_router(factory_agents_router, prefix="/api/factory/agents", tags=["Factory Agents"])
 app.include_router(factory_control_router, prefix="/api/factory", tags=["Factory Control"])
 app.include_router(factory_settings_router, prefix="/api/factory/settings", tags=["Factory Settings"])
 app.include_router(dev_loop_router, prefix="/api/dev-loop", tags=["Dev Loop"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
+app.include_router(browser_session_router, prefix="/ws/browser", tags=["Browser Telemetry WS"])
+
+# ── Free AI Model Access Router ──────────────────────────────────────────────
+try:
+    from api.ai_provider_status import router as free_ai_router
+    app.include_router(free_ai_router, prefix="/api/free-ai", tags=["Free AI Model Status"])
+    logger.info("✓ Free AI Model Status router registered")
+except Exception as e:
+    logger.warning("Free AI Model Status router failed to load: %s", e)
 
 # ── Money Agent Router ───────────────────────────────────────────────────────
 try:

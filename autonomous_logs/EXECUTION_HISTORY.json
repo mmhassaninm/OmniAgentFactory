@@ -2,7 +2,64 @@
   "_meta": {
     "description": "سجل تفصيلي لكل عملية تنفيذ — timeline كامل",
     "created_at": "2026-05-10",
-    "version": "1.0"
+    "version": "1.0",
+    "total": 6,
+    "last_updated": "2026-05-12T00:02:10.775895+00:00"
   },
-  "executions": []
+  "executions": [
+    {
+      "id": "PROB-001",
+      "type": "problem",
+      "title": "Unused Imports in Multiple Files",
+      "status": "no_op",
+      "files_changed": [],
+      "notes": "No files changed (all skipped)",
+      "timestamp": "2026-05-11T23:35:20.988836+00:00"
+    },
+    {
+      "id": "PROB-002",
+      "type": "problem",
+      "title": "Large Function in benchmarker.py",
+      "status": "no_op",
+      "files_changed": [],
+      "notes": "No files changed (all skipped)",
+      "timestamp": "2026-05-11T23:36:05.752893+00:00"
+    },
+    {
+      "id": "PROB-003",
+      "type": "problem",
+      "title": "Missing Async Error Handling in checkpoint.py",
+      "status": "no_op",
+      "files_changed": [],
+      "notes": "No files changed (all skipped)",
+      "timestamp": "2026-05-11T23:37:04.570727+00:00"
+    },
+    {
+      "id": "PROB-004",
+      "type": "problem",
+      "title": "Inadequate Logging in LoopOrchestrator",
+      "status": "no_op",
+      "files_changed": [],
+      "notes": "No files changed (all skipped)",
+      "timestamp": "2026-05-12T00:00:05.194313+00:00"
+    },
+    {
+      "id": "PROB-005",
+      "type": "problem",
+      "title": "Potential Race Condition in Infinite Dev Loop",
+      "status": "no_op",
+      "files_changed": [],
+      "notes": "No files changed (all skipped)",
+      "timestamp": "2026-05-12T00:01:04.854719+00:00"
+    },
+    {
+      "id": "PROB-006",
+      "type": "problem",
+      "title": "Lack of Input Validation in Security Directive",
+      "status": "no_op",
+      "files_changed": [],
+      "notes": "No files changed (all skipped)",
+      "timestamp": "2026-05-12T00:02:10.775776+00:00"
+    }
+  ]
 }

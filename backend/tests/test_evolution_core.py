@@ -223,7 +223,15 @@ class TestEvolutionIntegration:
 
     def test_log_files_creation(self):
         """Test that autonomous_logs files are created correctly."""
-        logs_dir = Path(__file__).parent.parent.parent / "autonomous_logs"
+        import os
+        if os.path.exists("/project/autonomous_logs"):
+            logs_dir = Path("/project/autonomous_logs")
+        else:
+            here = Path(__file__).resolve()
+            if (here.parent.parent / "autonomous_logs").exists():
+                logs_dir = here.parent.parent / "autonomous_logs"
+            else:
+                logs_dir = here.parent.parent.parent / "autonomous_logs"
         assert logs_dir.exists(), "autonomous_logs directory should exist"
 
         expected_files = ["IDEAS_LOG.json", "PROBLEMS_LOG.json", "EXECUTION_HISTORY.json"]

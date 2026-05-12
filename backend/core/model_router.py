@@ -313,6 +313,54 @@ async def route_completion(messages: list, **kwargs) -> Any:
                     await _record_success_stats(4, provider, model)
                     return result
 
+    # ━━━ TIER 4.5: Keyless Resilient Free G4F Providers fallback ━━━
+    logger.info("[ROUTER] Cascade Failover — Tier 4.5 (Keyless Resilient G4F fallback)")
+    try:
+        from api.ai_provider_status import free_ai_provider
+    except ImportError:
+        try:
+            from ai_provider import G4FProvider
+            free_ai_provider = G4FProvider()
+        except ImportError:
+            free_ai_provider = None
+
+    if free_ai_provider is not None:
+        try:
+            logger.info("[ROUTER] [T4.5] Attempting keyless Resilient G4F Provider")
+            response_dataclass = None
+            
+            # Try with gpt-4o-mini first, fall back to gpt-3.5-turbo on error
+            for model_to_use in ["gpt-4o-mini", "gpt-3.5-turbo"]:
+                try:
+                    response_dataclass = await free_ai_provider.chat_async(messages, model=model_to_use)
+                    if response_dataclass.success and response_dataclass.content:
+                        break
+                except Exception as inner_e:
+                    logger.debug(f"[ROUTER] [T4.5] Model {model_to_use} failed: {inner_e}")
+                    
+            if response_dataclass and response_dataclass.success and response_dataclass.content:
+                class MockChoiceMessage:
+                    def __init__(self, content):
+                        self.content = content
+                        self.role = "assistant"
+
+                class MockChoice:
+                    def __init__(self, content):
+                        self.message = MockChoiceMessage(content)
+                        self.finish_reason = "stop"
+
+                class MockResponse:
+                    def __init__(self, content):
+                        self.choices = [MockChoice(content)]
+                        self.created = int(time_module.time())
+                        self.model = f"g4f/{response_dataclass.provider}"
+
+                logger.info(f"[ROUTER] [T4.5] Success! G4F Provider used: {response_dataclass.provider}")
+                await _record_success_stats(4.5, f"g4f-{response_dataclass.provider}", response_dataclass.model)
+                return MockResponse(response_dataclass.content)
+        except Exception as e:
+            logger.warning(f"[ROUTER] [T4.5] G4F fallback failed: {e}")
+
     # ━━━ TIER 5: Last resort - Local Ollama models ━━━
     logger.info("[ROUTER] Cascade Failover — Tier 5 (Local Ollama offline models)")
     t5_models = [
@@ -359,13 +407,27 @@ class ModelRouter:
     
     def get_health_status(self) -> dict:
         """Return live health status by checking actual keys in DB."""
-        return {
+        status = {
             "openrouter": {"status": "online"},
             "groq": {"status": "online"},
             "cerebras": {"status": "online"},
             "gemini": {"status": "online"},
-            "cloudflare": {"status": "online"}
+            "cloudflare": {"status": "online"},
+            "g4f_keyless": {"status": "offline", "providers": []}
         }
+        try:
+            from api.ai_provider_status import free_ai_provider
+            report = free_ai_provider.get_providers_report()
+            active_count = sum(1 for row in report if row["status"] == "ACTIVE")
+            status["g4f_keyless"] = {
+                "status": "online" if active_count > 0 else "degraded",
+                "active_providers_count": active_count,
+                "total_providers_count": len(report),
+                "providers": report
+            }
+        except Exception:
+            pass
+        return status
 
     async def reload_keys_from_db(self):
         """Reload API keys from database - no-op since keys are fetched per-request."""

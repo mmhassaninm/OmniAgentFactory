@@ -47,6 +47,12 @@ google-api-python-client        # Gmail / Google APIs
 google-auth-httplib2
 google-auth-oauthlib
 
+# ── Free AI Reverse Proxy ─────────────────
+g4f>=0.3.3.0
+tenacity>=8.2.0
+pyyaml>=6.0
+
+
 # ── Desktop Control (Windows Host Only - excluded from Docker) ──────
 # pyautogui>=0.9.54               # mouse/keyboard automation (Windows only)
 # pynput>=1.7.6                   # alternative for keyboard control (Windows only)
