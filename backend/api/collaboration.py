@@ -27,6 +27,7 @@ class BrainstormRequest(BaseModel):
 SEED_CONVERSATIONS = [
     {
         "id": "session_seed_1",
+        "is_seed": True,
         "title": "Implementing Smart Telegram Notifications (Telegram Smart Alerts)",
         "status": "COMPLETED",
         "created_at": "2026-05-11T20:15:30Z",
@@ -71,6 +72,7 @@ SEED_CONVERSATIONS = [
     },
     {
         "id": "session_seed_2",
+        "is_seed": True,
         "title": "Docker Path Traversal and Absolute Path Safety Hardening",
         "status": "COMPLETED",
         "created_at": "2026-05-11T22:30:00Z",
@@ -118,6 +120,7 @@ SEED_CONVERSATIONS = [
 SEED_ACHIEVEMENTS = [
     {
         "id": "ach_1",
+        "is_seed": True,
         "title": "Self-Evolution Bootloader Deployed",
         "description": "Fitted the fast-loading Self-Evolution Bootloader to analyze, evaluate, and flag codebase optimizations within 5 seconds of backend startup.",
         "icon": "zap",
@@ -126,6 +129,7 @@ SEED_ACHIEVEMENTS = [
     },
     {
         "id": "ach_2",
+        "is_seed": True,
         "title": "PayPal Interactive Sandbox Integration",
         "description": "Prevented mock transaction fallbacks by building a fully interactive sandbox simulation for payment webhooks, displaying dynamic balances and virtual transactions.",
         "icon": "credit-card",
@@ -134,6 +138,7 @@ SEED_ACHIEVEMENTS = [
     },
     {
         "id": "ach_3",
+        "is_seed": True,
         "title": "70% Reduction in Semantic LLM Cost",
         "description": "Integrated a Semantic Verdict Cache powered by ChromaDB to filter and skip repetitive agent decisions on identical codebase states.",
         "icon": "database",
@@ -142,6 +147,7 @@ SEED_ACHIEVEMENTS = [
     },
     {
         "id": "ach_4",
+        "is_seed": True,
         "title": "Secure Docker File-Writing Sandbox",
         "description": "Hardened the absolute path resolution logic to allow safe automated file commits inside the developer containers without exposing host system folders.",
         "icon": "shield-check",
@@ -151,9 +157,9 @@ SEED_ACHIEVEMENTS = [
 ]
 
 SEED_FOCUS = [
-    {"topic": "Scraping Upwork/Freelancer API streams for SaaS opportunities", "status": "ACTIVE_DEBATE"},
-    {"topic": "Self-healing critical startup runtime database failures", "status": "RESEARCHING"},
-    {"topic": "Continuous prompt refinement and template drift protection", "status": "MONITORING"}
+    {"topic": "Scraping Upwork/Freelancer API streams for SaaS opportunities", "status": "ACTIVE_DEBATE", "is_seed": True},
+    {"topic": "Self-healing critical startup runtime database failures", "status": "RESEARCHING", "is_seed": True},
+    {"topic": "Continuous prompt refinement and template drift protection", "status": "MONITORING", "is_seed": True}
 ]
 
 RANDOM_TOPICS = [
@@ -245,6 +251,7 @@ async def trigger_brainstorm(req: BrainstormRequest, background_tasks: Backgroun
     # 1. Create session document with status ACTIVE
     session_doc = {
         "id": session_id,
+        "is_seed": False,
         "title": f"Brainstorming: {topic}",
         "topic": topic,
         "status": "ACTIVE",
@@ -378,6 +385,7 @@ async def run_live_brainstorm(session_id: str, topic: str):
         # ── Step 5: Add a new Achievement to celebrate!
         new_achievement = {
             "id": f"ach_{str(uuid.uuid4())[:8]}",
+            "is_seed": False,
             "title": f"Approved Blueprint: {topic[:30]}...",
             "description": f"The technical AI council successfully designed and verified a secure, scalable architecture blueprint to resolve the topic: '{topic}'.",
             "icon": "sparkles",

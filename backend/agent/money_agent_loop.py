@@ -5,6 +5,7 @@ Primary strategy: AI Content Service (cold email to small businesses).
 Uses LiteLLM cascader for pitch generation — no single-provider dependency.
 """
 import asyncio
+import json
 import logging
 import uuid
 from datetime import datetime
@@ -123,13 +124,31 @@ class MoneyAgentLoop:
         logger.info("[MoneyAgent] Daily cycle started — strategy: %s", self.strategy["name"])
 
         try:
+            # ── AI Decision Point 1: Evaluate current strategy ───────────────
+            strategy_decision = await self._ai_evaluate_strategy()
+            if strategy_decision.get("switch_to"):
+                new_key = strategy_decision["switch_to"]
+                if new_key in INCOME_STRATEGIES:
+                    logger.info("[MoneyAgent] AI recommends switching strategy from %s to %s", self.strategy_key, new_key)
+                    self.strategy_key = new_key
+                    self.strategy = INCOME_STRATEGIES[new_key]
+                    logger.info("[MoneyAgent] Switched strategy to: %s", self.strategy["name"])
+                else:
+                    logger.warning("[MoneyAgent] AI recommended unknown strategy '%s', keeping current", new_key)
+
             opportunities = await self.find_opportunities()
             if not opportunities:
                 logger.info("[MoneyAgent] No opportunities found this cycle")
                 return {"status": "no_opportunities", "found": 0}
 
+            # ── AI Decision Point 2: Rank and select best opportunities ──────
+            selected = await self._ai_select_opportunities(opportunities)
+            if not selected:
+                logger.info("[MoneyAgent] AI selected no opportunities this cycle")
+                return {"status": "no_opportunities_selected", "found": len(opportunities), "selected": 0}
+
             prepared = []
-            for opp in opportunities[:5]:  # cap at 5 per cycle to avoid spam
+            for opp in selected:
                 try:
                     item = await self._prepare_pitch(opp)
                     prepared.append(item)
@@ -146,6 +165,113 @@ class MoneyAgentLoop:
             return {"status": "error", "error": str(e)}
         finally:
             self._running = False
+
+    # ── AI Decision: Strategy Evaluation ──────────────────────────────────────
+
+    async def _ai_evaluate_strategy(self) -> dict:
+        """Use AI to evaluate whether the current strategy is optimal or should switch."""
+        try:
+            import core.money_roi_tracker as roi
+            stats = roi.weekly_report()
+
+            strategies_summary = "\n".join(
+                f"- {k}: {v['name']} ({v['description']}) — income range {v['income_range']}, automation {v['automation_level']}"
+                for k, v in INCOME_STRATEGIES.items()
+            )
+
+            prompt = (
+                f"You are the Money Agent strategist for the NexusOS/OmniBot autonomous income system.\n"
+                f"Current active strategy: '{self.strategy_key}' — {self.strategy['name']}\n\n"
+                f"Weekly performance stats:\n"
+                f"- Opportunities found: {stats.get('opportunities_found', 0)}\n"
+                f"- Pitches sent: {stats.get('pitches_sent', 0)}\n"
+                f"- Deals closed: {stats.get('deals_closed', 0)}\n"
+                f"- Total earned: ${stats.get('total_earned', 0):.2f}\n"
+                f"- Conversion rate: {stats.get('conversion_rate_pct', 0)}%\n"
+                f"- Best strategy: {stats.get('best_strategy', 'content')}\n\n"
+                f"Available strategies:\n{strategies_summary}\n\n"
+                f"Based on this data, should the agent continue with the current strategy or switch to a different one?\n"
+                f"Respond with a JSON object only (no markdown, no explanation):\n"
+                f'{{"strategy_decision": "continue" or "switch", "switch_to": "<strategy_key or null>", "reason": "<brief reason>"}}'
+            )
+            response = await call_model(
+                messages=[{"role": "user", "content": prompt}],
+                task_type="money_strategy",
+                max_tokens=300
+            )
+            if response and "[MODEL_ROUTER_ERROR]" not in response:
+                # Parse JSON from response (handle potential wrapping)
+                cleaned = response.strip()
+                if cleaned.startswith("```"):
+                    cleaned = cleaned.split("\n", 1)[1]
+                    cleaned = cleaned.rsplit("\n", 1)[0] if cleaned.endswith("```") else cleaned
+                decision = json.loads(cleaned)
+                logger.info("[MoneyAgent] AI strategy decision: %s", decision)
+                return decision
+        except json.JSONDecodeError as e:
+            logger.warning("[MoneyAgent] Failed to parse AI strategy decision JSON: %s", e)
+        except Exception as e:
+            logger.warning("[MoneyAgent] AI strategy evaluation failed (graceful fallback): %s", e)
+        return {"strategy_decision": "continue", "switch_to": None, "reason": "AI call failed, defaulting to continue"}
+
+    # ── AI Decision: Opportunity Selection ────────────────────────────────────
+
+    async def _ai_select_opportunities(self, opportunities: list[dict]) -> list[dict]:
+        """Use AI to rank and select the best opportunities from the found list."""
+        if not opportunities:
+            return []
+
+        try:
+            # Summarize opportunities for the AI prompt
+            opps_summary = "\n".join(
+                f"{i+1}. Title: {o.get('title', 'Unknown')[:80]} | URL: {o.get('url', 'N/A')[:60]} | "
+                f"Snippet: {o.get('snippet', 'N/A')[:150]} | Value: ${o.get('estimated_value', 0):.0f} | Source: {o.get('source', 'unknown')}"
+                for i, o in enumerate(opportunities)
+            )
+
+            prompt = (
+                f"You are the Money Agent opportunity selector for NexusOS/OmniBot.\n"
+                f"Current strategy: {self.strategy['name']} ({self.strategy.get('niche', 'general')})\n"
+                f"Income range: {self.strategy.get('income_range', 'N/A')}\n\n"
+                f"Below are {len(opportunities)} potential opportunities found from searches. "
+                f"Select the top 1-3 most promising opportunities that are most likely to convert into paying clients.\n"
+                f"Rank them by: relevance to the niche, likelihood of response, estimated value, and quality of the contact info.\n\n"
+                f"Opportunities:\n{opps_summary}\n\n"
+                f"Respond with a JSON array only (no markdown, no explanation):\n"
+                f'[{{"index": <1-based index>, "score": <0.0-1.0>, "reason": "<brief why this is promising>"}}]'
+                f"\nReturn an empty array if none are worth pursuing."
+            )
+            response = await call_model(
+                messages=[{"role": "user", "content": prompt}],
+                task_type="money_opportunity_selection",
+                max_tokens=500
+            )
+            if response and "[MODEL_ROUTER_ERROR]" not in response:
+                cleaned = response.strip()
+                if cleaned.startswith("```"):
+                    cleaned = cleaned.split("\n", 1)[1]
+                    cleaned = cleaned.rsplit("\n", 1)[0] if cleaned.endswith("```") else cleaned
+                selections = json.loads(cleaned)
+                if isinstance(selections, list) and selections:
+                    # Sort by score descending, pick top selections
+                    selections.sort(key=lambda s: s.get("score", 0), reverse=True)
+                    selected_indices = []
+                    for sel in selections[:3]:  # cap at 3
+                        idx = sel.get("index", 0) - 1  # convert to 0-based
+                        if 0 <= idx < len(opportunities):
+                            selected_indices.append(idx)
+                    if selected_indices:
+                        result = [opportunities[i] for i in selected_indices]
+                        logger.info("[MoneyAgent] AI selected %d/%d opportunities", len(result), len(opportunities))
+                        return result
+        except json.JSONDecodeError as e:
+            logger.warning("[MoneyAgent] Failed to parse AI opportunity selection JSON: %s", e)
+        except Exception as e:
+            logger.warning("[MoneyAgent] AI opportunity selection failed (graceful fallback): %s", e)
+
+        # Fallback: take first 2 if AI fails
+        logger.info("[MoneyAgent] AI selection failed, fallback: taking first 2 opportunities")
+        return opportunities[:2]
 
     # ── Opportunity finder ───────────────────────────────────────────────────
 

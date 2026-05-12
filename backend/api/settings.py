@@ -765,6 +765,50 @@ async def save_self_evolution_settings(req: SelfEvolutionSettingsRequest):
     return {"status": "saved"}
 
 
+@router.get("/idea-engine/status")
+async def get_idea_engine_status():
+    """Expose idea engine telemetry, generation stats, and pending ideas."""
+    from pathlib import Path
+    import os
+    import json
+
+    # Check idea engine state from its module
+    from core.self_evolution.idea_engine import get_idea_engine
+    ie = get_idea_engine()
+    
+    # Load today's idea log
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    log_path = Path("autonomous_logs/idea_engine") / f"ideas_{today_str}.json"
+    ideas_today = 0
+    executed_today = 0
+    pending_count = 0
+    rejected_count = 0
+    
+    if log_path.exists():
+        try:
+            all_ideas = json.loads(log_path.read_text(encoding="utf-8"))
+            ideas_today = len(all_ideas)
+            executed_today = sum(1 for i in all_ideas if i.get("status") == "executed")
+            pending_count = sum(1 for i in all_ideas if i.get("status") == "pending")
+            rejected_count = sum(1 for i in all_ideas if i.get("status") == "rejected" or i.get("result") == "failed")
+        except Exception:
+            pass
+    
+    return {
+        "enabled": ie.enabled,
+        "rate_per_hour": ie.rate_per_hour,
+        "max_daily_executions": ie.max_daily_executions,
+        "min_score": ie.min_score,
+        "scopes": ie.target_scopes,
+        "ideas_generated_today": ideas_today,
+        "ideas_executed_today": executed_today,
+        "ideas_pending": pending_count,
+        "ideas_rejected": rejected_count,
+        "ideas_in_progress": ie.ideas_today,
+        "is_running": ie._running
+    }
+
+
 @router.get("/self-evolution/status")
 async def get_self_evolution_status():
     """Expose telemetry, locks, active states, and recent reports."""

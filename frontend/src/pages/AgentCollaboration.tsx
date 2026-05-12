@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { 
-  Users, Bot, Gavel, ShieldAlert, Sparkles, BrainCircuit, 
-  Construction, Zap, CreditCard, Database, ShieldCheck, 
-  Send, RefreshCw, AlertCircle, CheckCircle2 
+import {
+  Users, Bot, Gavel, ShieldAlert, Sparkles, BrainCircuit,
+  Construction, Zap, CreditCard, Database, ShieldCheck,
+  Send, RefreshCw, AlertCircle, CheckCircle2
 } from 'lucide-react'
 import { BASE_URL } from '../config'
 
@@ -16,6 +16,7 @@ interface Message {
 
 interface Conversation {
   id: string
+  is_seed?: boolean
   title: string
   topic: string
   status: 'ACTIVE' | 'COMPLETED' | 'FAILED'
@@ -35,6 +36,7 @@ interface Achievement {
 interface FocusTopic {
   topic: string
   status: string
+  is_seed?: boolean
 }
 
 export default function AgentCollaboration() {
@@ -185,8 +187,8 @@ export default function AgentCollaboration() {
             </div>
           </div>
         </div>
-        <button 
-          onClick={fetchData} 
+        <button
+          onClick={fetchData}
           className="flex items-center gap-2 text-xs bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 font-medium py-2 px-4 rounded-lg border border-white/[0.06] transition-all duration-200"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin text-indigo-400' : ''} />
@@ -196,7 +198,7 @@ export default function AgentCollaboration() {
 
       {/* ── Main Layout ── Three Columns ───────────────────────────────── */}
       <div className="flex-1 flex flex-col lg:flex-row h-[calc(100vh-89px)] overflow-hidden">
-        
+
         {/* ━━ COL 1: Sessions Sidebar (Left) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <aside className="w-full lg:w-[320px] shrink-0 border-r border-white/[0.04] bg-[#070c14]/40 flex flex-col overflow-y-auto">
           <div className="p-4 border-b border-white/[0.04]">
@@ -216,31 +218,37 @@ export default function AgentCollaboration() {
                 <button
                   key={session.id}
                   onClick={() => setSelectedSessionId(session.id)}
-                  className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex flex-col gap-2 ${
-                    isSelected 
-                      ? 'bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.05)]' 
-                      : 'bg-white/[0.01] hover:bg-white/[0.03] border-white/[0.04]'
-                  }`}
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 flex flex-col gap-2 ${isSelected
+                    ? 'bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.05)]'
+                    : 'bg-white/[0.01] hover:bg-white/[0.03] border-white/[0.04]'
+                    }`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase font-mono ${
-                      session.status === 'ACTIVE' 
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 animate-pulse' 
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase font-mono ${session.status === 'ACTIVE'
+                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 animate-pulse'
                         : session.status === 'FAILED'
-                        ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
-                        : 'bg-slate-500/10 text-slate-400 border border-white/[0.06]'
-                    }`}>
-                      {session.status}
-                    </span>
+                          ? 'bg-rose-500/15 text-rose-400 border border-rose-500/20'
+                          : 'bg-slate-500/10 text-slate-400 border border-white/[0.06]'
+                        }`}>
+                        {session.status}
+                      </span>
+                      {session.is_seed && (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/20 font-mono">
+                          EXAMPLE
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] text-slate-500 font-mono">
-                      {new Date(session.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <h3 className={`text-xs font-semibold leading-relaxed line-clamp-2 ${
-                    isSelected ? 'text-indigo-300' : 'text-slate-200'
-                  }`}>
-                    {session.title}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className={`text-xs font-semibold leading-relaxed line-clamp-2 ${isSelected ? 'text-indigo-300' : 'text-slate-200'
+                      }`}>
+                      {session.title}
+                    </h3>
+                  </div>
                 </button>
               )
             })}
@@ -284,7 +292,7 @@ export default function AgentCollaboration() {
         <section className="flex-1 flex flex-col h-full bg-[#060a12]/20 overflow-hidden">
           {selectedSession ? (
             <div className="flex-1 flex flex-col h-full overflow-hidden">
-              
+
               {/* Active Session Info Banner */}
               <div className="p-4 bg-[#080c14]/40 border-b border-white/[0.04] flex items-center justify-between">
                 <div>
@@ -296,9 +304,8 @@ export default function AgentCollaboration() {
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${
-                    selectedSession.status === 'ACTIVE' ? 'bg-emerald-500 animate-ping' : 'bg-slate-500'
-                  }`} />
+                  <span className={`w-2 h-2 rounded-full ${selectedSession.status === 'ACTIVE' ? 'bg-emerald-500 animate-ping' : 'bg-slate-500'
+                    }`} />
                   <span className="text-xs font-semibold font-mono text-slate-400">
                     {selectedSession.status === 'ACTIVE' ? 'Active Deliberation' : 'Archived & Completed'}
                   </span>
@@ -310,11 +317,10 @@ export default function AgentCollaboration() {
                 {selectedSession.messages.map((msg, i) => {
                   const style = getAgentStyling(msg.sender)
                   return (
-                    <div 
-                      key={i} 
-                      className={`flex gap-4 items-start ${
-                        msg.sender === 'moderator' ? 'max-w-3xl mx-auto w-full' : ''
-                      }`}
+                    <div
+                      key={i}
+                      className={`flex gap-4 items-start ${msg.sender === 'moderator' ? 'max-w-3xl mx-auto w-full' : ''
+                        }`}
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 transition-shadow ${style.bg}`}>
                         {style.icon}
@@ -327,7 +333,7 @@ export default function AgentCollaboration() {
                             {style.label}
                           </span>
                           <span className="text-[10px] text-slate-500 font-mono">
-                            {new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second: '2-digit'})}
+                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                           </span>
                         </div>
                         <div className="text-xs text-slate-300 leading-relaxed bg-[#080c14]/50 border border-white/[0.03] rounded-2xl p-4 shadow-sm relative">
@@ -375,7 +381,7 @@ export default function AgentCollaboration() {
 
         {/* ━━ COL 3: Achievements & Focus Side Panel (Right) ━━━━━━━━━━━━━━ */}
         <aside className="w-full lg:w-[350px] shrink-0 border-l border-white/[0.04] bg-[#070c14]/30 flex flex-col overflow-y-auto">
-          
+
           {/* Section A: Achievements / Accomplishments */}
           <div className="p-5 border-b border-white/[0.04] flex-1 overflow-y-auto flex flex-col min-h-[300px]">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2 font-mono">
@@ -385,8 +391,8 @@ export default function AgentCollaboration() {
 
             <div className="space-y-4 flex-1">
               {achievements.map((ach, idx) => (
-                <div 
-                  key={ach.id || idx} 
+                <div
+                  key={ach.id || idx}
                   className="group rounded-xl border border-white/[0.03] bg-white/[0.01] hover:bg-white/[0.02] p-4 flex gap-3.5 transition-all duration-200"
                 >
                   <div className="w-10 h-10 rounded-xl bg-white/[0.02] group-hover:bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0 transition-colors">
@@ -422,8 +428,8 @@ export default function AgentCollaboration() {
 
             <div className="space-y-2">
               {focusTopics.map((item, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="rounded-lg border border-white/[0.04] bg-white/[0.01] p-3 flex items-center justify-between text-xs"
                 >
                   <span className="text-[11px] font-mono text-slate-300 line-clamp-1 pr-2">

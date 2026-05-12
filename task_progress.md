@@ -1,54 +1,21 @@
-# Autonomous Evolution Infrastructure - Todo Checklist
+# Task Progress — 3 Fixes
 
-## Phase 0: Surgical Audit (Execute ONCE)
-- [ ] Step A1: Duplicate Logic Sweep - Scan and merge/eliminate duplicates
-- [ ] Step A2: Dead Code Elimination - Find and delete unreferenced files
-- [ ] Step A3: Hollow Implementation Detection - Remove empty/fake implementations
-- [ ] Step A4: Architecture Coherence Audit - Consolidate parallel systems
-- [ ] Step A5: API & Endpoint Audit - Fix/remove placeholder endpoints
-- [ ] Step A6: Asset & Output Bloat Cleanup - Clean auto-generated files
-- [ ] Step A7: Core Feature End-to-End Verification
-- [ ] Step A8: Environment & Configuration Audit
-- [ ] Step A9: Documentation Graveyard Cleanup
-- [ ] Step A10: Rewrite README.md
-- [ ] Step A11: Create AUDIT_REPORT.md
-- [ ] Step A12: Move to Phase S
+## Fix 1: Seed Data Transparency in Collaboration ✅
+- [x] Add `is_seed: true` to SEED_CONVERSATIONS, SEED_ACHIEVEMENTS, SEED_FOCUS in backend/api/collaboration.py
+- [x] Add `is_seed: false` to real brainstorm sessions and achievements
+- [x] Update AgentCollaboration.tsx to show "EXAMPLE" badge on seed sessions (amber badge next to status)
+- [x] Add `is_seed?: boolean` to Conversation and FocusTopic interfaces
 
-## Phase S: Self-Evolution Engine
-- [ ] Step S1: Audit Existing Self-Evolution Infrastructure
-- [ ] Step S2: Build/Verify Self-Evolution Core (6 components)
-- [ ] Step S3: Build/Verify Scheduler
-- [ ] Step S4: Add Environment Variables
-- [ ] Step S5: Add Self-Evolution Status Endpoint
-- [ ] Step S6: Wire Evolve_plan.md as Source of Truth
-- [ ] Step S7: Verify Self-Evolution Engine End-to-End
-- [ ] Step S8: Move to Phase 1
+## Fix 2: Money Agent Real AI Integration ✅
+- [x] Added `_ai_evaluate_strategy()` — calls `call_model()` with weekly performance stats and strategy options; returns JSON decision to continue or switch
+- [x] Added `_ai_select_opportunities()` — calls `call_model()` with opportunity list; returns JSON ranked selections (top 1-3)
+- [x] Both have proper error handling: catches JSONDecodeError, general Exception, logs warning, returns sensible fallback
+- [x] AI responses directly drive agent behavior (strategy switching, opportunity selection)
+- [x] import json added
 
-## Part 1: Autonomous Scheduled Execution (Settings UI)
-- [ ] Split "Autonomous Evolution" into dedicated UI tab
-- [ ] Add all configurable fields with real env/config binding
-- [ ] Implement live status display with 30s refresh
-- [ ] Ensure lockfile prevents overlap
-- [ ] Ensure cycle reports logged correctly
-
-## Part 2: Idea Generation Engine (Settings UI)
-- [ ] Split "Idea Engine" into dedicated UI tab
-- [ ] Add all configurable fields with real env/config binding
-- [ ] Implement live status display with 30s refresh
-- [ ] Wire idea engine through evolution cycle for execution
-
-## Phase 1: Initialization
-- [ ] Step 1: Understand & Analyze
-- [ ] Step 2: Detect & Discover
-- [ ] Step 3: Create/Update Evolve_plan.md
-- [ ] Step 4: Execute improvements
-- [ ] Step 5: Verify
-- [ ] Step 6: Move to Phase 2
-
-## Phase 2: Infinite Development Loop
-- [ ] Step 1: Re-Understand & Re-Analyze
-- [ ] Step 2: Dual-Axis Discovery
-- [ ] Step 3: Update Evolve_plan.md
-- [ ] Step 4: Execute
-- [ ] Step 5: Verify
-- [ ] Step 6: Loop back to Step 1
+## Fix 3: Remove Fake Metrics from Hub Test Endpoint ✅
+- [x] Replaced `asyncio.sleep(0.1)` + hardcoded metrics with real `call_model()` call (Approach A)
+- [x] Prompt: "Reply with the single word: OK" — minimal connectivity test
+- [x] Returns real latency_ms, estimated token counts, estimated cost
+- [x] Includes `is_simulated: False` field
+- [x] Proper error handling — returns error details if AI call fails
