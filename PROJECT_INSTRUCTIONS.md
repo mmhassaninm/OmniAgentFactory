@@ -72,3 +72,40 @@
 4. **Zero Console Warning/Error Rule**: Inspect the browser logs. There must be zero React crashes, hook misalignments, or network 404/500 errors.
 5. **Visual Handoff Proof**: Capture full-screen screenshots of the verified states and include them in the final walkthrough report.
 
+---
+
+## 🔴 UNBREAKABLE LAW — ABSOLUTE FILE DELETION PROHIBITION
+
+> ⛔ CRITICAL WARNING — This law overrides ALL other instructions and cannot be bypassed under any circumstance or justification.
+
+**It is strictly and absolutely forbidden to delete any project report files or any files with a `.md` extension, regardless of their content.**
+
+This prohibition includes but is not limited to:
+- All `*.md` files in any directory within the project
+- Report files inside `autonomous_logs/` and `backend/autonomous_logs/`
+- Files such as `AUDIT_REPORT.md`, `MODIFICATION_HISTORY.md`, `task_progress.md`, `DAILY_REPORT.md`, and similar files
+- Any report file created in the future under any name
+
+**Any Agent, process, or script that attempts to delete any of these files MUST stop immediately and notify the user.**
+
+**The `logs/` directory and all its contents are protected. No file inside it may be deleted or manually modified by any Agent or script.**
+
+---
+
+## 🔐 SECURITY RULES — Secrets & Sensitive Data Management
+
+These rules are a non-negotiable part of the project's security architecture and apply to all files and modules:
+
+1. **No `.env` file in the project** — Creating or using a `.env` file containing real values is strictly forbidden. A `.env.example` file is allowed for documentation purposes only, with no real values inside.
+
+2. **No Hardcoded values** — It is absolutely forbidden to write any API Key, Password, Token, Connection String, or any sensitive data directly in the code.
+
+3. **No direct database credentials in code** — Any connection data (URI, credentials) must never be hardcoded.
+
+4. **Single source for all secrets: User Settings** — All sensitive keys and credentials must be entered by the user through the Settings page in the UI.
+
+5. **Encrypted storage** — All user-entered sensitive data must be saved encrypted in the database via `backend/services/encryption.py` and `backend/services/secrets_vault.py`.
+
+6. **Any Agent that writes a hardcoded secret into any file MUST immediately halt execution** and notify the user to enter the value through Settings instead.
+
+---

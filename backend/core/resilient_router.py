@@ -1,6 +1,7 @@
 """
 Resilient wrapper around model router with circuit breaker pattern.
 Prevents cascading failures when providers are consistently failing.
+Includes fallback chain through FreeCloudProvider (Gemini, Groq, Mistral, etc.)
 """
 
 import logging
@@ -9,6 +10,49 @@ from typing import Any, Optional, List, Dict
 from middleware.circuit_breaker import call_with_breaker, get_all_breakers
 
 logger = logging.getLogger(__name__)
+
+
+# ── FreeCloudProvider Fallback ──────────────────────────────────────────────
+
+async def call_free_cloud_model(
+    messages: List[Dict[str, str]],
+    model: str = "gemini-2.0-flash",
+    require_tool_calling: bool = False,
+    **kwargs
+) -> Optional[str]:
+    """
+    Attempt to call a free cloud AI provider (Gemini, Groq, Mistral, etc.)
+    via the FreeCloudProvider. Returns None if no cloud provider is configured.
+
+    Args:
+        messages: Message list for LLM
+        model: Model name to use (default: gemini-2.0-flash)
+        require_tool_calling: If True, only providers with tool calling support are used
+        **kwargs: Additional arguments
+
+    Returns:
+        Response string, or None if unavailable
+    """
+    try:
+        from ai_provider.free_cloud_provider import FreeCloudProvider, CLOUD_PROVIDERS
+
+        provider = FreeCloudProvider()
+        available = provider.get_available_providers()
+
+        if not any(p.get("configured") for p in available):
+            logger.debug("[ResilientRouter] FreeCloudProvider: no API keys configured")
+            return None
+
+        response = await provider.chat_async(messages, model=model, **kwargs)
+        if response and response.success:
+            logger.info(f"[ResilientRouter] FreeCloudProvider success via {response.provider}")
+            return response.content
+
+        return None
+
+    except Exception as e:
+        logger.warning(f"[ResilientRouter] FreeCloudProvider fallback failed: {e}")
+        return None
 
 
 async def call_model_resilient(

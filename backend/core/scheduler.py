@@ -75,6 +75,54 @@ class NightModeScheduler:
             replace_existing=True,
         )
 
+        # AI Scout — Weekly free provider research (Monday 09:00)
+        self._scheduler.add_job(
+            self._ai_scout_job,
+            CronTrigger(day_of_week="mon", hour=9, minute=0),
+            id="ai_scout",
+            replace_existing=True,
+        )
+
+        # AI Health Monitor — Quick ping every 5 minutes
+        self._scheduler.add_job(
+            self._ai_health_ping_job,
+            IntervalTrigger(minutes=5),
+            id="ai_health_ping",
+            replace_existing=True,
+        )
+
+        # AI Health Report — Hourly full report
+        self._scheduler.add_job(
+            self._ai_health_report_job,
+            CronTrigger(minute=0),  # Every hour at minute 0
+            id="ai_health_report",
+            replace_existing=True,
+        )
+
+        # AI Health Quota — Full quota refresh every 1 hour
+        self._scheduler.add_job(
+            self._ai_quota_refresh_job,
+            CronTrigger(minute=5),  # Every hour at minute 5 (staggered from report)
+            id="ai_quota_refresh",
+            replace_existing=True,
+        )
+
+        # AI Health Daily Report — At midnight
+        self._scheduler.add_job(
+            self._ai_daily_report_job,
+            CronTrigger(hour=0, minute=0),
+            id="ai_daily_report",
+            replace_existing=True,
+        )
+
+        # Log Sessions Archiver — At 01:00 AM daily
+        self._scheduler.add_job(
+            self._auto_archive_logging_sessions,
+            CronTrigger(hour=1, minute=0),
+            id="log_sessions_archiver",
+            replace_existing=True,
+        )
+
         self._scheduler.start()
         self._started = True
 
@@ -460,6 +508,231 @@ class NightModeScheduler:
         except Exception as e:
             logger.debug("Failed to run provider health checker job: %s", e)
 
+    async def _ai_scout_job(self):
+        """Weekly AI Scout job — checks for new free AI providers with tool calling support."""
+        import os
+        from datetime import datetime
+
+        try:
+            logger.info("[AI SCOUT] Running weekly free provider research scan...")
+
+            # Use the project's own search engine to discover new free AI providers
+            from skills.web_search.run import search_web
+
+            queries = [
+                "free AI API tool calling function calling 2026",
+                "free cloud AI API no credit card tool calling",
+                "new free AI model API function calling 2026",
+                "Gemini Groq Mistral free API update",
+            ]
+
+            findings = []
+            for query in queries:
+                try:
+                    result = search_web(query, max_results=3)
+                    findings.append(result)
+                except Exception as qe:
+                    logger.warning(f"[AI SCOUT] Query '{query[:30]}' failed: {qe}")
+
+            # Check if Free_AI.md exists and append Update Log entry
+            free_ai_path = os.path.join(os.path.dirname(__file__), "..", "..", "Free_AI.md")
+            free_ai_path = os.path.abspath(free_ai_path)
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            update_line = f"| {today_str} | Weekly automated scan — found {len(findings)} provider updates |\n"
+
+            if os.path.exists(free_ai_path):
+                with open(free_ai_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+
+                # Append to Update Log if not already updated today
+                if today_str not in content:
+                    with open(free_ai_path, "a", encoding="utf-8") as f:
+                        f.write(update_line)
+                    logger.info(f"[AI SCOUT] Appended update to Free_AI.md: {today_str}")
+                else:
+                    logger.info("[AI SCOUT] Free_AI.md already updated today")
+
+            # Log to autonomous_logs
+            log_dir = os.path.join(os.path.dirname(__file__), "..", "autonomous_logs")
+            log_dir = os.path.abspath(log_dir)
+            os.makedirs(log_dir, exist_ok=True)
+
+            log_file = os.path.join(log_dir, f"ai_scout_{today_str}.json")
+            import json
+            with open(log_file, "w", encoding="utf-8") as f:
+                json.dump({
+                    "date": today_str,
+                    "queries": queries,
+                    "findings_count": len(findings),
+                    "findings": findings,
+                    "status": "completed",
+                }, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"[AI SCOUT] Scan complete. Log saved to {log_file}")
+
+        except Exception as e:
+            logger.error(f"[AI SCOUT] Job failed: {e}")
+
+    async def _ai_health_ping_job(self):
+        """Quick ping health check for all active providers (every 5 min)."""
+        try:
+            from services.ai_health_monitor import get_ai_health_monitor
+            from api.websocket import manager as ws_manager
+
+            monitor = get_ai_health_monitor()
+            monitor.set_ws_manager(ws_manager)
+
+            from core.database import get_db
+            try:
+                monitor.set_db(get_db())
+            except Exception:
+                pass
+
+            logger.debug("[AIHealth] Running 5-min ping...")
+            await monitor.scan_all_providers()
+        except Exception as e:
+            logger.warning(f"[AIHealth] Ping job failed: {e}")
+
+    async def _ai_health_report_job(self):
+        """Hourly full health report — updates AI_CONNECTIVITY_REPORT.md."""
+        try:
+            from services.ai_health_monitor import get_ai_health_monitor
+            from api.websocket import manager as ws_manager
+
+            monitor = get_ai_health_monitor()
+            monitor.set_ws_manager(ws_manager)
+
+            from core.database import get_db
+            try:
+                monitor.set_db(get_db())
+            except Exception:
+                pass
+
+            # Run health scan
+            results = await monitor.scan_all_providers()
+            summary = await monitor.get_summary()
+            configured = monitor.get_configured_providers()
+
+            # Generate report content
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            healthy = sum(1 for r in results if r["status"] == "healthy")
+            degraded = sum(1 for r in results if r["status"] in ("degraded", "quota_exceeded"))
+            down = sum(1 for r in results if r["status"] == "down")
+
+            # Read existing AI_CONNECTIVITY_REPORT.md or build fresh
+            import os
+            report_path = os.path.join(os.path.dirname(__file__), "..", "..", "AI_CONNECTIVITY_REPORT.md")
+            report_path = os.path.abspath(report_path)
+
+            lines = []
+            lines.append("# 🤖 AI Connectivity & Health Report")
+            lines.append("> Auto-updated every hour by OmniAgentFactory Health Monitor")
+            lines.append("> Last Updated: " + now_str)
+            lines.append("")
+            lines.append("## Provider Status Summary")
+            lines.append("| Provider | Status | Latency | Tool Calling | Last Check |")
+            lines.append("|----------|--------|---------|--------------|------------|")
+
+            for p in configured:
+                status_emoji = "🟢 OK" if p["status"] == "healthy" else \
+                               "🟡 DEGRADED" if p["status"] in ("degraded",) else \
+                               "🔴 DOWN" if p["status"] == "down" else \
+                               "🟠 QUOTA" if p["status"] == "quota_exceeded" else \
+                               "⚫ UNCONFIGURED"
+                latency = f"{p['latency_ms']}ms" if p["latency_ms"] else "N/A"
+                tool_call = "✅" if p["tool_calling"] else "❌"
+                last_check = p["last_checked"][:19] if p["last_checked"] else "Never"
+                lines.append(f"| {p['display_name']} | {status_emoji} | {latency} | {tool_call} | {last_check} |")
+
+            lines.append("")
+            lines.append("## Today's Usage")
+            lines.append(f"- Total LLM Calls: {summary['total_calls_session']}")
+            lines.append(f"- Total Tokens: {summary['total_tokens_session']}")
+            lines.append(f"- Total Cost: ${summary['total_cost_session']:.4f} (all free providers)")
+            lines.append(f"- Most Used Provider: {summary['most_used_producer']}")
+            lines.append("")
+            lines.append("## Quota Alerts")
+            alerts = await monitor.get_quota_alerts()
+            if alerts:
+                for a in alerts:
+                    lines.append(f"- ⚠️ {a['display_name']}: {a['status']} — {a.get('error', '')}")
+            else:
+                lines.append("- ✅ No active quota warnings")
+            lines.append("")
+            lines.append("## Provider Details")
+            for p in configured:
+                lines.append(f"### {p['display_name']}")
+                lines.append(f"- Status: {p['status']}")
+                lines.append(f"- Model: {p['default_model']}")
+                lines.append(f"- Latency: {p['latency_ms']}ms")
+                lines.append(f"- Calls this session: {p['calls_session']}")
+                lines.append(f"- Tokens: {p['tokens_in_session']}in / {p['tokens_out_session']}out")
+                lines.append(f"- Cost: ${p['cost_session']:.4f}")
+                lines.append(f"- Used in: {', '.join(p['used_in'])}")
+                lines.append("")
+
+            content = "\n".join(lines)
+
+            # Write report
+            os.makedirs(os.path.dirname(report_path), exist_ok=True)
+            with open(report_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+            logger.info(f"[AIHealth] Hourly report written to {report_path}")
+
+        except Exception as e:
+            logger.warning(f"[AIHealth] Report job failed: {e}")
+
+    async def _ai_quota_refresh_job(self):
+        """Full quota refresh for all providers (every hour)."""
+        try:
+            from services.ai_health_monitor import get_ai_health_monitor
+
+            monitor = get_ai_health_monitor()
+            from core.database import get_db
+            try:
+                monitor.set_db(get_db())
+            except Exception:
+                pass
+
+            logger.debug("[AIHealth] Running hourly quota refresh...")
+            await monitor.scan_all_providers()
+            logger.info("[AIHealth] Quota refresh complete")
+        except Exception as e:
+            logger.warning(f"[AIHealth] Quota refresh failed: {e}")
+
+    async def _ai_daily_report_job(self):
+        """Generate daily usage report at midnight."""
+        try:
+            from services.ai_health_monitor import get_ai_health_monitor
+
+            monitor = get_ai_health_monitor()
+            summary = await monitor.get_summary()
+
+            # Save daily report to autonomous_logs
+            import json, os
+            log_dir = os.path.join(os.path.dirname(__file__), "..", "autonomous_logs")
+            log_dir = os.path.abspath(log_dir)
+            os.makedirs(log_dir, exist_ok=True)
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            report = {
+                "date": today_str,
+                "report_type": "ai_health_daily",
+                "summary": summary,
+                "providers": monitor.get_configured_providers(),
+                "generated_at": datetime.now().isoformat(),
+            }
+
+            report_file = os.path.join(log_dir, f"ai_health_{today_str}.json")
+            with open(report_file, "w", encoding="utf-8") as f:
+                json.dump(report, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"[AIHealth] Daily report saved: {report_file}")
+        except Exception as e:
+            logger.warning(f"[AIHealth] Daily report failed: {e}")
+
     def is_night_mode(self) -> bool:
         """Check current mode."""
         return self._current_mode == "night"
@@ -479,6 +752,17 @@ class NightModeScheduler:
             "deep_reflection_done_tonight": self._deep_reflection_done_tonight,
             "memory_consolidation_done_tonight": self._memory_consolidation_done_tonight,
         }
+
+    async def _auto_archive_logging_sessions(self):
+        """Archiving logging sessions task (triggered daily at 01:00 AM)."""
+        logger.info("[NIGHT] Running daily logging sessions archiving task...")
+        try:
+            import asyncio
+            from services.log_manager import log_manager
+            count = await asyncio.to_thread(log_manager.archive_old_sessions, 30)
+            logger.info("[NIGHT] Logging sessions archiving task finished. Archived %d sessions.", count)
+        except Exception as e:
+            logger.error("[NIGHT] Logging sessions archiving job failed: %s", e)
 
     def stop(self):
         """Stop the scheduler."""

@@ -384,6 +384,7 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
     import time
 
     while not stop_event.is_set():
+        session_id = None
         try:
             # Verify MongoDB is reachable before each cycle
             from core.database import check_db_health
@@ -405,6 +406,17 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             agent = BaseAgent.from_dict(agent_doc)
             agent_dna = agent_doc.get("dna", DEFAULT_DNA)
 
+            # Initialize logging session
+            try:
+                from services.log_manager import log_manager
+                session_id = log_manager.start_session(
+                    agent_name=f"Evolve_{agent.name}",
+                    tags=["evolution", "agent_evolution", agent_id[:8]]
+                )
+                log_manager.log(session_id, "INFO", "STATE_CHANGE", f"Starting evolution cycle for agent {agent.name} (v{agent.version}, score: {agent.current_score:.2f})")
+            except Exception as le:
+                logger.error("Failed to start logging session in evolve_agent: %s", le)
+
             # Initialize best_score if missing
             best_score = agent_doc.get("best_score", agent.current_score)
             if "best_score" not in agent_doc:
@@ -419,12 +431,26 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     {"id": agent_id},
                     {"$set": {"status": "stopped"}, "$unset": {"config._stop_after_commit": ""}},
                 )
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "INFO", "STATE_CHANGE", "Soft stop flag detected — stopping evolution loop")
+                        log_manager.end_session(session_id, status="completed")
+                        session_id = None
+                    except Exception:
+                        pass
                 return
 
             # Check budget
             governor = get_budget_governor()
             if not await governor.check_budget(agent_id, estimated_tokens=2000):
                 await log_thought(agent_id, "Daily token budget exhausted — pausing evolution", phase="general")
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "WARNING", "STATE_CHANGE", "Daily token budget exhausted — pausing evolution")
+                        log_manager.end_session(session_id, status="failed")
+                        session_id = None
+                    except Exception:
+                        pass
                 await asyncio.sleep(300)  # Wait 5 minutes
                 continue
 
@@ -443,6 +469,11 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             # 2. DRAFT: Generate improved version
             await checkpoint_draft(agent_id, agent.agent_code, agent.config, agent.current_score)
             await log_thought(agent_id, "Phase DRAFT: generating improved version...", phase="draft")
+            if session_id:
+                try:
+                    log_manager.log(session_id, "INFO", "STATE_CHANGE", "Entering Phase DRAFT: generating improved version")
+                except Exception:
+                    pass
 
             hivemind = get_hivemind()
             wisdom = await hivemind.get_collective_wisdom(agent.goal)
@@ -540,24 +571,51 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
             }
             direction_hint = direction_instructions.get(direction, "Improve overall quality.")
             improvement_prompt[-1]["content"] += f"\n\nEVOLUTION FOCUS: {direction_hint}"
+            if session_id:
+                try:
+                    log_manager.log(session_id, "INFO", "ACTION", "Invoking run_swarm to generate new code version", details={"focus": direction_hint, "direction": direction})
+                except Exception:
+                    pass
             orchestrator = Orchestrator()
             new_code = await orchestrator.run_swarm(agent.goal, agent_id, db)
 
             # Check for model router error
             if new_code.startswith("[MODEL_ROUTER_ERROR]"):
                 await log_thought(agent_id, f"Model call failed: {new_code}", phase="error")
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "ERROR", "ERROR", f"Model call failed: {new_code}")
+                        log_manager.end_session(session_id, status="failed")
+                        session_id = None
+                    except Exception:
+                        pass
                 await checkpoint_rollback(agent_id)
                 await asyncio.sleep(90)
                 continue
 
             # Clean the code (remove markdown fences if present)
             new_code = _clean_code(new_code)
+            if session_id:
+                try:
+                    log_manager.log(session_id, "INFO", "RESULT", "Successfully generated draft code version")
+                except Exception:
+                    pass
 
             # 3. TEST: Evaluate new version
             await checkpoint_testing(agent_id)
             await log_thought(agent_id, "Phase TEST: evaluating new version...", phase="testing")
+            if session_id:
+                try:
+                    log_manager.log(session_id, "INFO", "STATE_CHANGE", "Entering Phase TEST: running evaluations")
+                except Exception:
+                    pass
 
             score = await test_agent(new_code, agent.test_cases, agent.name, old_code=agent.agent_code, goal=agent.goal)
+            if session_id:
+                try:
+                    log_manager.log(session_id, "INFO", "RESULT", f"Testing evaluation finished. Score: {score:.3f} (old best: {best_score:.3f})")
+                except Exception:
+                    pass
 
             # RATCKET GATE: Enforce minimum improvement threshold
             RATCHET_THRESHOLD = 0.05
@@ -566,6 +624,13 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                 await log_thought(agent_id,
                     f"⛔ Ratchet: score {score:.3f} did not beat "
                     f"best {best_score:.3f} + {RATCHET_THRESHOLD} threshold — rejected")
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "WARNING", "DECISION", f"Ratchet rejected: score {score:.3f} < threshold {best_score + RATCHET_THRESHOLD:.3f}")
+                        log_manager.end_session(session_id, status="completed")
+                        session_id = None
+                    except Exception:
+                        pass
                 # Apply FAILURE_TAX (already exists in the codebase — use it)
                 manager = get_evolution_manager()
                 manager._failure_counts[agent_id] = manager._failure_counts.get(agent_id, 0) + 1
@@ -586,6 +651,11 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     from core.red_team import run_red_team_attack
                     from core.model_router import get_model_router
                     await log_thought(agent_id, "[RED_TEAM] Running adversarial attack suite...", phase="testing")
+                    if session_id:
+                        try:
+                            log_manager.log(session_id, "INFO", "ACTION", "Running Red Team adversarial robust attack suite")
+                        except Exception:
+                            pass
                     rt_result = await run_red_team_attack(
                         agent_code=new_code,
                         agent_goal=agent.goal,
@@ -600,8 +670,18 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                             f"[RED_TEAM] ✗ Failed — {vulns} vulnerabilities found. Triggering additional evolution.",
                             phase="testing",
                         )
+                        if session_id:
+                            try:
+                                log_manager.log(session_id, "WARNING", "DECISION", f"Red Team attack failed with {vulns} vulnerabilities", details=rt_result)
+                            except Exception:
+                                pass
                     else:
                         await log_thought(agent_id, f"[RED_TEAM] ✓ Passed ({rt_result['attacks_tried']} attacks)", phase="testing")
+                        if session_id:
+                            try:
+                                log_manager.log(session_id, "INFO", "RESULT", f"Red Team attack passed successfully with {rt_result['attacks_tried']} attacks")
+                            except Exception:
+                                pass
                 except Exception as e:
                     logger.warning("Red team error for agent %s: %s", agent_id, e)
 
@@ -622,6 +702,11 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     f"✅ Evolved to v{new_version}, score: {score:.2f} (was {agent.current_score:.2f})",
                     phase="commit",
                 )
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "INFO", "DECISION", f"Ratchet and Red Team passed! Evolving to v{new_version} with score {score:.2f}")
+                    except Exception:
+                        pass
 
                 # Update best_score in agent document
                 await _mongo_retry(agent_id, lambda: db.agents.update_one(
@@ -760,6 +845,11 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                     f"❌ Evolution attempt rolled back ({reason}), keeping current",
                     phase="rollback",
                 )
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "WARNING", "DECISION", f"Evolution rolled back: {reason}")
+                    except Exception:
+                        pass
 
                 # Record ROI for this failed cycle
                 try:
@@ -844,6 +934,13 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
                                 f"{ghost.get('lessons_count', 0)} lessons saved for future agents.",
                                 phase="general",
                             )
+                            if session_id:
+                                try:
+                                    log_manager.log(session_id, "WARNING", "STATE_CHANGE", f"Agent converted to Ghost due to consecutive failures")
+                                    log_manager.end_session(session_id, status="failed")
+                                    session_id = None
+                                except Exception:
+                                    pass
                             return  # Stop the evolution loop — agent is now a ghost
                 except Exception as e:
                     logger.debug("Dead letter check failed: %s", e)
@@ -887,6 +984,14 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
 
             await log_thought(agent_id, f"Sleeping {interval}s until next evolution cycle", phase="general")
 
+            if session_id:
+                try:
+                    log_manager.log(session_id, "INFO", "STATE_CHANGE", f"Cycle completed. Sleeping for {interval}s")
+                    log_manager.end_session(session_id, status="completed")
+                    session_id = None
+                except Exception:
+                    pass
+
             # Interruptible sleep — check stop_event every second
             for _ in range(interval):
                 if stop_event.is_set():
@@ -895,9 +1000,21 @@ async def evolve_agent(agent_id: str, stop_event: asyncio.Event):
 
         except asyncio.CancelledError:
             await log_thought(agent_id, "Evolution loop cancelled", phase="general")
+            if session_id:
+                try:
+                    log_manager.log(session_id, "WARNING", "STATE_CHANGE", "Evolution loop cancelled")
+                    log_manager.end_session(session_id, status="interrupted")
+                except Exception:
+                    pass
             raise
         except Exception as e:
             logger.error("Evolution loop error for agent %s: %s", agent_id, e, exc_info=True)
+            if session_id:
+                try:
+                    log_manager.log(session_id, "ERROR", "ERROR", f"Evolution loop failed: {str(e)}")
+                    log_manager.end_session(session_id, status="failed")
+                except Exception:
+                    pass
             await log_thought(agent_id, f"⚠ Unexpected error: {type(e).__name__}: {str(e)[:200]}", phase="error")
             await log_thought(agent_id, "↺ Recovering — next cycle in 30s", phase="error")
             await asyncio.sleep(30)

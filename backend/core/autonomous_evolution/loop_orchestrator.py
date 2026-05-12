@@ -52,6 +52,20 @@ class LoopOrchestrator:
             self.cycle_count += 1
             logger.info("CYCLE %d -- %s", self.cycle_count, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
+            session_id = None
+            try:
+                from services.log_manager import log_manager
+                is_odd = (self.cycle_count % 2 == 1)
+                cycle_type = "ideas" if is_odd else "problems"
+                session_id = log_manager.start_session(
+                    agent_name="loop_orchestrator",
+                    tags=["autonomous_evolution", cycle_type, f"cycle_{self.cycle_count}"]
+                )
+                self.current_session_id = session_id
+                log_manager.log(session_id, "INFO", "STATE_CHANGE", f"Started cycle {self.cycle_count} ({cycle_type})")
+            except Exception as le:
+                logger.error("Failed to start logging session: %s", le)
+
             try:
                 # Alternate: odd cycles = ideas, even cycles = problems
                 if self.cycle_count % 2 == 1:
@@ -71,8 +85,17 @@ class LoopOrchestrator:
                 if self.cycle_count % DAILY_REPORT_EVERY_N_CYCLES == 0:
                     await self._generate_daily_report()
 
+                if session_id:
+                    log_manager.end_session(session_id, status="completed")
+
             except asyncio.CancelledError:
                 logger.info("Loop cancelled gracefully")
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "WARNING", "STATE_CHANGE", "Loop cancelled gracefully")
+                        log_manager.end_session(session_id, status="interrupted")
+                    except Exception:
+                        pass
                 break
             except Exception as e:
                 # Distinguish temporary vs permanent failures
@@ -85,8 +108,16 @@ class LoopOrchestrator:
                     wait_time,
                     e
                 )
+                if session_id:
+                    try:
+                        log_manager.log(session_id, "ERROR", "ERROR", f"Cycle failed: {str(e)}", details={"error": str(e), "is_temp": is_temp})
+                        log_manager.end_session(session_id, status="failed")
+                    except Exception:
+                        pass
                 await asyncio.sleep(wait_time)
                 continue
+            finally:
+                self.current_session_id = None
 
             logger.info("Next cycle in %ds...", CYCLE_INTERVAL_SECONDS)
             await asyncio.sleep(CYCLE_INTERVAL_SECONDS)
@@ -100,8 +131,16 @@ class LoopOrchestrator:
                     "OK" if self.registry else "MISSING",
                     "OK" if self.runner else "MISSING")
 
+        sid = getattr(self, "current_session_id", None)
+        from services.log_manager import log_manager
+
+        if sid:
+            log_manager.log(sid, "INFO", "ACTION", f"Ideas Cycle started (Cycle {self.cycle_count})")
+
         if not self.idea_engine or not self.agent_council or not self.registry:
             logger.warning("⚠️ Ideas cycle: missing required components, skipping")
+            if sid:
+                log_manager.log(sid, "WARNING", "STATE_CHANGE", "Skipping ideas cycle: missing required components")
             return
 
         try:
@@ -111,9 +150,13 @@ class LoopOrchestrator:
                 manual_ideas = await manual_cursor.to_list(length=10)
                 if manual_ideas:
                     logger.info("Found %d pending manually approved ideas to execute!", len(manual_ideas))
+                    if sid:
+                        log_manager.log(sid, "INFO", "ACTION", f"Found {len(manual_ideas)} manually approved ideas to execute")
                     for idea in manual_ideas:
                         idea_id = idea.get("id")
                         logger.info("Executing manually approved idea: %s", idea_id)
+                        if sid:
+                            log_manager.log(sid, "INFO", "DECISION", f"Executing manually approved idea: {idea_id}")
                         try:
                             if self.runner:
                                 # Update status to "implementing" to avoid race conditions
@@ -130,29 +173,47 @@ class LoopOrchestrator:
                                         outcome=result.get("summary", "Implemented successfully")
                                     )
                                     logger.info("Manually approved idea %s implemented successfully", idea_id)
+                                    if sid:
+                                        log_manager.log(sid, "INFO", "RESULT", f"Manually approved idea {idea_id} implemented successfully", details=result)
                                 else:
                                     await self.registry.mark_idea_rejected(
                                         idea_id,
                                         "Implementation failed: " + result.get("summary", "Unknown error")
                                     )
+                                    if sid:
+                                        log_manager.log(sid, "ERROR", "RESULT", f"Manually approved idea {idea_id} failed: {result.get('summary')}", details=result)
                             else:
                                 logger.warning("Implementation runner not configured, skipping manual idea %s", idea_id)
+                                if sid:
+                                    log_manager.log(sid, "WARNING", "STATE_CHANGE", f"Runner not configured; skipping manual idea {idea_id}")
                         except Exception as inner_e:
                             await self.registry.mark_idea_rejected(idea_id, f"Implementation failed: {inner_e}")
                             logger.error("Manually approved idea %s failed: %s", idea_id, inner_e)
+                            if sid:
+                                log_manager.log(sid, "ERROR", "ERROR", f"Manually approved idea {idea_id} failed with exception: {str(inner_e)}")
             except Exception as e:
                 logger.error("Failed to query/execute manually approved ideas: %s", e)
+                if sid:
+                    log_manager.log(sid, "ERROR", "ERROR", f"Failed to query manually approved ideas: {str(e)}")
 
             # ── Main automated idea research loop ─────────────────────────────────────
+            if sid:
+                log_manager.log(sid, "INFO", "ACTION", "Starting automated idea research and generation")
             ideas = await self.idea_engine.research_and_generate()
             if not ideas:
                 logger.info("No new ideas generated this cycle")
+                if sid:
+                    log_manager.log(sid, "INFO", "STATE_CHANGE", "No new ideas generated this cycle")
                 return
 
             logger.info("Generated %d potential ideas", len(ideas))
+            if sid:
+                log_manager.log(sid, "INFO", "RESULT", f"Generated {len(ideas)} potential ideas")
 
             for idea in ideas:
                 logger.info("Evaluating: %s", idea.get("title"))
+                if sid:
+                    log_manager.log(sid, "INFO", "ACTION", f"Evaluating idea: '{idea.get('title')}'")
                 try:
                     council_result = await self.agent_council.deliberate(idea)
                     final = council_result.get("final", {})
@@ -160,12 +221,16 @@ class LoopOrchestrator:
                     score = final.get("final_score", 0)
 
                     logger.info("Council verdict: %s (score: %s/10)", decision, score)
+                    if sid:
+                        log_manager.log(sid, "INFO", "DECISION", f"Council verdict: {decision} (score: {score}/10) for idea '{idea.get('title')}'", details=final)
 
                     idea["council_verdict"] = final
                     idea_id = await self.registry.register_idea(idea)
 
                     if decision == "approve" and score >= 6:
                         logger.info("Executing idea: %s", idea_id)
+                        if sid:
+                            log_manager.log(sid, "INFO", "ACTION", f"Executing approved idea: {idea_id}")
                         try:
                             if self.runner:
                                 result = await self.runner.execute_idea(idea_id, idea)
@@ -175,51 +240,85 @@ class LoopOrchestrator:
                                     outcome=result.get("summary", "Implemented successfully")
                                 )
                                 logger.info("Idea %s implemented successfully", idea_id)
+                                if sid:
+                                    log_manager.log(sid, "INFO", "RESULT", f"Idea {idea_id} implemented successfully", details=result)
                             else:
                                 logger.warning("Implementation runner not configured, skipping")
+                                if sid:
+                                    log_manager.log(sid, "WARNING", "STATE_CHANGE", "Runner not configured; skipping execution")
                         except Exception as e:
                             await self.registry.mark_idea_rejected(idea_id, "Implementation failed: " + str(e))
                             logger.error("Idea %s implementation failed: %s", idea_id, e)
+                            if sid:
+                                log_manager.log(sid, "ERROR", "ERROR", f"Idea {idea_id} implementation failed: {str(e)}")
                     else:
                         await self.registry.mark_idea_rejected(
                             idea_id,
                             "Council rejected: " + final.get("rationale", "Low score")
                         )
+                        if sid:
+                            log_manager.log(sid, "INFO", "STATE_CHANGE", f"Idea {idea_id} rejected by council")
 
                 except Exception as e:
                     logger.error("Error processing idea: %s", e)
+                    if sid:
+                        log_manager.log(sid, "ERROR", "ERROR", f"Error processing idea: {str(e)}")
 
         except Exception as e:
             logger.error("Ideas cycle failed: %s", e)
+            if sid:
+                log_manager.log(sid, "ERROR", "ERROR", f"Ideas cycle failed: {str(e)}")
 
     async def _problems_cycle(self):
         """EVEN cycles: Scan for problems and solve them."""
         logger.info("PROBLEMS CYCLE -- Scanning for issues...")
 
+        sid = getattr(self, "current_session_id", None)
+        from services.log_manager import log_manager
+
+        if sid:
+            log_manager.log(sid, "INFO", "ACTION", f"Problems Cycle started (Cycle {self.cycle_count})")
+
         if not self.problem_scanner or not self.agent_council or not self.registry:
             logger.warning("Problem scanner not configured, skipping")
+            if sid:
+                log_manager.log(sid, "WARNING", "STATE_CHANGE", "Skipping problems cycle: missing required components")
             return
 
         try:
+            if sid:
+                log_manager.log(sid, "INFO", "ACTION", "Scanning code/registry for active problems")
             problems = await self.problem_scanner.scan_and_identify()
             if not problems:
                 logger.info("No new problems detected this cycle")
+                if sid:
+                    log_manager.log(sid, "INFO", "STATE_CHANGE", "No new problems detected this cycle")
                 return
 
             logger.info("Found %d potential problems", len(problems))
+            if sid:
+                log_manager.log(sid, "INFO", "RESULT", f"Found {len(problems)} potential problems")
 
             for problem in problems:
                 logger.info("Analyzing: %s", problem.get("title"))
+                if sid:
+                    log_manager.log(sid, "INFO", "ACTION", f"Analyzing problem: '{problem.get('title')}'")
                 try:
                     council_result = await self.agent_council.deliberate(problem)
                     final = council_result.get("final", {})
                     decision = final.get("final_decision", "modify")
+
+                    logger.info("Council verdict: %s", decision)
+                    if sid:
+                        log_manager.log(sid, "INFO", "DECISION", f"Council verdict: {decision} for problem '{problem.get('title')}'", details=final)
 
                     problem["council_verdict"] = final
                     prob_id = await self.registry.register_problem(problem)
 
                     if decision in ["approve", "modify"]:
                         logger.info("Solving problem: %s", prob_id)
+                        if sid:
+                            log_manager.log(sid, "INFO", "ACTION", f"Executing solution for problem: {prob_id}")
                         try:
                             if self.runner:
                                 result = await self.runner.execute_solution(prob_id, problem)
@@ -230,18 +329,30 @@ class LoopOrchestrator:
                                     verified=result.get("tested", False)
                                 )
                                 logger.info("Problem %s solved", prob_id)
+                                if sid:
+                                    log_manager.log(sid, "INFO", "RESULT", f"Problem {prob_id} solved successfully", details=result)
                             else:
                                 logger.warning("Implementation runner not configured, skipping solution")
+                                if sid:
+                                    log_manager.log(sid, "WARNING", "STATE_CHANGE", "Runner not configured; skipping problem resolution")
                         except Exception as e:
                             logger.error("Problem %s solution failed: %s", prob_id, e)
+                            if sid:
+                                log_manager.log(sid, "ERROR", "ERROR", f"Problem {prob_id} solution failed: {str(e)}")
                     else:
                         logger.info("Problem %s deferred (council: %s)", prob_id, decision)
+                        if sid:
+                            log_manager.log(sid, "INFO", "STATE_CHANGE", f"Problem {prob_id} deferred/unapproved by council")
 
                 except Exception as e:
                     logger.error("Error processing problem: %s", e)
+                    if sid:
+                        log_manager.log(sid, "ERROR", "ERROR", f"Error processing problem: {str(e)}")
 
         except Exception as e:
             logger.error("Problems cycle failed: %s", e)
+            if sid:
+                log_manager.log(sid, "ERROR", "ERROR", f"Problems cycle failed: {str(e)}")
 
     async def _registry_review(self):
         """Review and report on registry statistics."""

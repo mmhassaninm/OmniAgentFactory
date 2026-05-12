@@ -116,6 +116,18 @@ async def _setup_indexes(db: AsyncIOMotorDatabase):
     await make_index(db.dev_loop_history, "cycle_id", unique=True)
     await make_index(db.dev_loop_history, [("timestamp", -1)])
 
+    # Task Queue indexes
+    await make_index(db.task_queue, "id", unique=True)
+    await make_index(db.task_queue, [("status", 1), ("priority", 1), ("created_at", 1)])
+    await make_index(db.task_queue, [("category", 1), ("status", 1)])
+    await make_index(db.task_queue, [("assigned_to", 1), ("status", 1)])
+    await make_index(db.task_queue, "created_at")
+    await make_index(db.task_history, "id", unique=True)
+    await make_index(db.task_history, [("status", 1), ("completed_at", -1)])
+    await make_index(db.task_history, [("category", 1), ("completed_at", -1)])
+    await make_index(db.task_history, [("assigned_to", 1), ("completed_at", -1)])
+    await make_index(db.task_history, "completed_at")
+
     logger.info("MongoDB indexes verified for all collections")
 
 

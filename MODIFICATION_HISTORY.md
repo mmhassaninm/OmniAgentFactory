@@ -114,3 +114,14 @@
 - Outcome       : success
 - Notes         : Prevented React hook mismatch crashes on initial load and established complete immunity against autonomous self-evolution regression for critical and governance files.
 
+## 2026-05-13 — Absolute Deletion Prohibition & Secrets Management Constitution
+- Files changed : PROJECT_INSTRUCTIONS.md
+- Approach      : Appended the "🔴 UNBREAKABLE LAW — ABSOLUTE FILE DELETION PROHIBITION" and "🔐 SECURITY RULES — Secrets & Sensitive Data Management" sections directly into PROJECT_INSTRUCTIONS.md.
+- Outcome       : success
+- Notes         : Established explicit instructions and non-negotiable security/integrity constraints to prevent accidental report deletions and safeguard secrets.
+
+## 2026-05-13 — Centralized Logging System & Automated/Manual Log Archiving
+- Files changed : backend/services/log_manager.py, backend/routers/logs.py, backend/main.py, backend/core/autonomous_evolution/loop_orchestrator.py, backend/agent/loop.py, backend/core/evolve_engine.py, backend/core/scheduler.py, backend/scripts/archive_logs.py, logs/LOG_SYSTEM.md
+- Approach      : Built a thread-safe LogManager singleton using mutex locks and atomic temp file swapping. Exposed structured REST endpoints for logs access. Instrumented background evolution loops, agent loops, self-evolution tasks, and the daily 01:00 AM auto-archiving job. Created a manual archiving utility script and compiled complete LOG_SYSTEM.md specifications.
+- Outcome       : success
+- Notes         : Successfully verified clean docker backend rebuild, automated startup execution, and error-free manual archiving command outputs.

@@ -192,6 +192,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Failed to start Self-Evolution components: %s", e)
 
+    # 5c. Start Universal Task Queue System
+    try:
+        from core.task_queue_engine import start_queue_system
+        await start_queue_system()
+        logger.info("✓ Universal Task Queue System started (MongoDB-backed)")
+    except Exception as e:
+        logger.warning("Task Queue System failed to start: %s", e)
+
     # ── Legacy Systems ──────────────────────────────────────────────────
     # Initialize multi-provider registry from DB settings
     try:
@@ -309,6 +317,11 @@ async def lifespan(app: FastAPI):
     try:
         from core.scheduler import get_night_scheduler
         get_night_scheduler().stop()
+    except Exception:
+        pass
+    try:
+        from core.task_queue_engine import stop_queue_system
+        await stop_queue_system()
     except Exception:
         pass
     try:
@@ -519,6 +532,7 @@ from api.websocket import router as websocket_router
 from api.settings import router as factory_settings_router
 from api.dev_loop import router as dev_loop_router
 from api.browser_session import router as browser_session_router
+from api.omni_commander import router as omni_commander_router
 
 app.include_router(factory_agents_router, prefix="/api/factory/agents", tags=["Factory Agents"])
 app.include_router(factory_control_router, prefix="/api/factory", tags=["Factory Control"])
@@ -526,6 +540,8 @@ app.include_router(factory_settings_router, prefix="/api/factory/settings", tags
 app.include_router(dev_loop_router, prefix="/api/dev-loop", tags=["Dev Loop"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(browser_session_router, prefix="/ws/browser", tags=["Browser Telemetry WS"])
+app.include_router(omni_commander_router)
+
 
 # ── OmniBot Master Upgrade Routers ──────────────────────────────────────
 try:
@@ -576,6 +592,14 @@ try:
     logger.info("✓ Auth router loaded")
 except Exception as e:
     logger.warning("Auth router failed to load: %s", e)
+
+# ── AI Model Hub (Health Monitor) Router ─────────────────────────────────────
+try:
+    from api.ai_model_hub import router as ai_hub_router
+    app.include_router(ai_hub_router)
+    logger.info("✓ AI Model Hub router loaded")
+except Exception as e:
+    logger.warning("AI Model Hub router failed to load: %s", e)
 
 # ── Free AI Model Access Router ──────────────────────────────────────────────
 try:
@@ -654,6 +678,14 @@ try:
 except Exception as e:
     logger.warning("System Metrics API failed to load: %s", e)
 
+# ── Centralized Logging System API ───────────────────────────────────────────
+try:
+    from routers.logs import router as logs_router
+    app.include_router(logs_router, prefix="/api/logs", tags=["Logs"])
+    logger.info("✓ Centralized Logging System API registered")
+except Exception as e:
+    logger.warning("Centralized Logging System API failed to load: %s", e)
+
 # ── Autonomous Evolution Registry API ─────────────────────────────────────────
 try:
     from api.evolution_registry import router as evolution_router
@@ -662,7 +694,13 @@ try:
 except Exception as e:
     logger.warning("Evolution Registry API failed to load: %s", e)
 
-
+# ── Task Queue API ────────────────────────────────────────────────────────────
+try:
+    from api.task_queue import router as task_queue_router
+    app.include_router(task_queue_router)
+    logger.info("✓ Task Queue API registered")
+except Exception as e:
+    logger.warning("Task Queue API failed to load: %s", e)
 
 @app.get("/api/router/status")
 async def get_router_status():
