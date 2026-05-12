@@ -413,6 +413,12 @@ async def rate_limit_middleware(request: Request, call_next):
         tier = "models"
     elif "/api/files" in request.url.path:
         tier = "files"
+    elif "/api/channels" in request.url.path:
+        tier = "channels"
+    elif "/api/browser" in request.url.path:
+        tier = "browser"
+    elif "/api/skills" in request.url.path and "/run" in request.url.path:
+        tier = "skills"
     else:
         tier = "default"
 
@@ -520,6 +526,56 @@ app.include_router(factory_settings_router, prefix="/api/factory/settings", tags
 app.include_router(dev_loop_router, prefix="/api/dev-loop", tags=["Dev Loop"])
 app.include_router(websocket_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(browser_session_router, prefix="/ws/browser", tags=["Browser Telemetry WS"])
+
+# ── OmniBot Master Upgrade Routers ──────────────────────────────────────
+try:
+    from api.channels import router as channels_router
+    app.include_router(channels_router)
+    logger.info("✓ Channels router loaded")
+except Exception as e:
+    logger.warning("Channels router failed to load: %s", e)
+
+try:
+    from api.memory import router as memory_router
+    app.include_router(memory_router)
+    logger.info("✓ Memory API router loaded")
+except Exception as e:
+    logger.warning("Memory API router failed to load: %s", e)
+
+try:
+    from api.heartbeat import router as heartbeat_router
+    app.include_router(heartbeat_router)
+    logger.info("✓ Heartbeat API router loaded")
+except Exception as e:
+    logger.warning("Heartbeat API router failed to load: %s", e)
+
+try:
+    from api.revenue import router as revenue_router
+    app.include_router(revenue_router)
+    logger.info("✓ Revenue API router loaded")
+except Exception as e:
+    logger.warning("Revenue API router failed to load: %s", e)
+
+try:
+    from api.skills import router as skills_router
+    app.include_router(skills_router)
+    logger.info("✓ Skills API router loaded")
+except Exception as e:
+    logger.warning("Skills API router failed to load: %s", e)
+
+try:
+    from api.browser import router as browser_api_router
+    app.include_router(browser_api_router)
+    logger.info("✓ Browser API router loaded")
+except Exception as e:
+    logger.warning("Browser API router failed to load: %s", e)
+
+try:
+    from middleware.auth import router as auth_router
+    app.include_router(auth_router)
+    logger.info("✓ Auth router loaded")
+except Exception as e:
+    logger.warning("Auth router failed to load: %s", e)
 
 # ── Free AI Model Access Router ──────────────────────────────────────────────
 try:

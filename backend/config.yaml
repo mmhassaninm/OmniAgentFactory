@@ -19,19 +19,32 @@ models:
 
 # Call retry and backoff options
 retry_count: 5
-initial_backoff: 1.0     # starting delay in seconds
-max_backoff: 30.0        # maximum retry delay in seconds
+initial_backoff: 1.0 # starting delay in seconds
+max_backoff: 30.0 # maximum retry delay in seconds
 
 # Rate Limiting: Minimum delay between successive provider requests
-throttle_seconds: 0.5    # seconds to wait
+throttle_seconds: 0.5 # seconds to wait
 
 # Response Caching Settings (TTL-based, in-memory)
 cache:
   enabled: true
-  ttl: 300               # time to live in seconds (5 minutes)
-  max_size: 1000         # maximum capacity of cached responses
+  ttl: 300 # time to live in seconds (5 minutes)
+  max_size: 1000 # maximum capacity of cached responses
 
 # Circuit Breaker settings for failed sub-providers
 circuit_breaker:
-  max_failures: 3        # consecutive errors before marking degraded
+  max_failures: 3 # consecutive errors before marking degraded
   cool_down_seconds: 300 # seconds to skip a degraded provider
+
+# ── Multi-Channel Messaging ──────────────────────────────────────────────
+channels:
+  enabled:
+    - telegram
+    - whatsapp
+    - discord
+  telegram:
+    enabled: true
+  whatsapp:
+    enabled: true
+  discord:
+    enabled: true

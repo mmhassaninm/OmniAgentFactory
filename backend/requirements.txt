@@ -57,3 +57,19 @@ pyyaml>=6.0
 # pyautogui>=0.9.54               # mouse/keyboard automation (Windows only)
 # pynput>=1.7.6                   # alternative for keyboard control (Windows only)
 # pywin32>=306                    # Windows-specific utilities (Windows only)
+
+# ── OmniBot Master Upgrade — Multi-Channel ──────────────────────────
+discord.py>=2.3.0               # Discord bot integration
+
+# ── OmniBot Master Upgrade — Knowledge Graph ────────────────────────
+networkx>=3.1                    # Knowledge graph engine
+
+# ── OmniBot Master Upgrade — Security ───────────────────────────────
+python-jose[cryptography]>=3.3  # JWT token creation/verification
+passlib[bcrypt]>=1.7.4          # Password hashing
+
+# ── OmniBot Master Upgrade — Browser Agent ──────────────────────────
+# playwright already listed above
+
+# ── OmniBot Master Upgrade — Sandbox ────────────────────────────────
+# docker already listed above

@@ -60,6 +60,9 @@ class RateLimiter:
 _chat_limiter = RateLimiter(requests_per_minute=30)  # Chat is expensive
 _models_limiter = RateLimiter(requests_per_minute=60)  # Standard
 _files_limiter = RateLimiter(requests_per_minute=120)  # File ops are cheap
+_channels_limiter = RateLimiter(requests_per_minute=60)  # Channel webhooks
+_browser_limiter = RateLimiter(requests_per_minute=10)  # Browser is resource-heavy
+_skills_limiter = RateLimiter(requests_per_minute=30)  # Skill execution
 _default_limiter = RateLimiter(requests_per_minute=60)  # Everything else
 
 
