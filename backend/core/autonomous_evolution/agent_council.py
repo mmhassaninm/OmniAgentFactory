@@ -15,59 +15,59 @@ logger = logging.getLogger(__name__)
 
 COUNCIL_ROLES = {
     "critic": {
-        "name": "العقل الناقد (Critic)",
-        "personality": "متشكك ومحافظ — يسأل: ما الذي يمكن أن يسوء؟",
-        "focus": "المخاطر والتعقيد والتكاليف والآثار السلبية"
+        "name": "Critical Mind (Critic)",
+        "personality": "Skeptical and conservative — asks: What could go wrong?",
+        "focus": "Risks, complexities, external costs, rate limits, and potential negative impacts"
     },
     "visionary": {
-        "name": "العقل المبدع (Visionary)",
-        "personality": "متحمس ومبتكر — يرى الإمكانيات والفرص",
-        "focus": "الفرص والقيمة المضافة والإبداع والأثر طويل الأجل"
+        "name": "Visionary Mind (Visionary)",
+        "personality": "Enthusiastic and innovative — sees possibilities and opportunities",
+        "focus": "Opportunities, value additions, creative architecture, and long-term impacts"
     },
     "pragmatist": {
-        "name": "العقل العملي (Pragmatist)",
-        "personality": "واقعي ومنطقي — يوازن بين الطموح والواقع",
-        "focus": "قابلية التنفيذ والموارد والجدول الزمني والأثر الفوري"
+        "name": "Pragmatic Mind (Pragmatist)",
+        "personality": "Realistic and logical — balances ambition with execution reality",
+        "focus": "Feasibility, resources, expected file structures, timeline, and immediate impacts"
     }
 }
 
 AGENT_ROLE_PROMPT = """
-أنت {role_name} في مجلس تقييم تقني للنظام الذاتي التطور.
+You are the {role_name} in a technical evaluation council for an autonomous, self-evolving system.
 {personality}
-ركز على: {focus}
+Focus on: {focus}
 
-# الاقتراح المراد تقييمه
-الفئة: {category}
-العنوان: {title}
-الوصف: {description}
+# Proposal to Evaluate
+Category: {category}
+Title: {title}
+Description: {description}
 
-# المهمة
-قيّم هذا الاقتراح من منظورك. كن صريحاً وناقداً. أجب بـ JSON فقط:
+# Assignment
+Evaluate this proposal from your designated professional persona. Be honest, direct, and critical. Respond in English with a valid JSON block only:
 {{
   "score": 0-10,
   "verdict": "approve|reject|modify",
-  "key_points": ["نقطة 1", "نقطة 2"],
-  "condition": "شرط الموافقة (إن وجد)"
+  "key_points": ["point 1", "point 2"],
+  "condition": "condition for approval (if any)"
 }}
 """
 
 MODERATOR_PROMPT = """
-أنت مدير مجلس تقني. لديك آراء 3 مقيّمين حول اقتراح ما.
+You are the Council Moderator (Moderator). You have received feedback from 3 technical evaluators regarding a proposal.
 
-الاقتراح: {title}
-النوع: {category}
+Proposal: {title}
+Category: {category}
 
-آراء المجلس:
-- الناقد: {critic_score}/10 ({critic_verdict})
-- المبدع: {visionary_score}/10 ({visionary_verdict})
-- العملي: {pragmatist_score}/10 ({pragmatist_verdict})
+Council Verdicts:
+- Critic: {critic_score}/10 ({critic_verdict})
+- Visionary: {visionary_score}/10 ({visionary_verdict})
+- Pragmatist: {pragmatist_score}/10 ({pragmatist_verdict})
 
-قرر القرار النهائي. أجب بـ JSON فقط:
+Determine the final unified decision. Respond in English with a valid JSON block only:
 {{
   "final_decision": "approve|reject|modify",
   "confidence": 0-100,
   "final_score": 0-10,
-  "rationale": "سبب القرار"
+  "rationale": "reason for the decision"
 }}
 """
 
@@ -81,11 +81,40 @@ class AgentCouncil:
 
     async def deliberate(self, proposal: Dict[str, Any]) -> Dict[str, Any]:
         """Run council deliberation and return verdict (with caching)."""
+        import uuid
+        from datetime import datetime
+        
+        db = None
+        session_id = None
+        title = proposal.get("title", "Untitled")
+        description = proposal.get("description", "")
+        category = proposal.get("category", proposal.get("type", "idea"))
+        
         try:
-            title = proposal.get("title", "Untitled")
-            description = proposal.get("description", "")
-            category = proposal.get("category", proposal.get("type", "idea"))
+            from core.database import get_db
+            db = get_db()
+            session_id = f"session_auto_{str(uuid.uuid4())[:8]}"
+            session_doc = {
+                "id": session_id,
+                "title": f"Brainstorming: {title}",
+                "topic": title,
+                "status": "ACTIVE",
+                "created_at": datetime.utcnow().isoformat() + "Z",
+                "messages": [
+                    {
+                        "sender": "moderator",
+                        "name": "Council Moderator (Moderator)",
+                        "avatar": "gavel",
+                        "message": f"Welcome, members of the technical self-evolution council. We have received a new proposal/issue titled: '{title}'. Category: '{category}'. Description: '{description[:300]}...'. Let us deliberate to produce a well-engineered decision on its feasibility and alignment with increasing passive financial yield.",
+                        "timestamp": datetime.utcnow().isoformat() + "Z"
+                    }
+                ]
+            }
+            await db.collaboration_sessions.insert_one(session_doc)
+        except Exception as dbe:
+            logger.debug(f"Auto-collaboration session init skipped or failed: {dbe}")
 
+        try:
             logger.info(f"📋 Council deliberating: {title}")
 
             # Step 0: Check cached verdict first (reduce API calls by 60-70%)
@@ -94,6 +123,34 @@ class AgentCouncil:
                 try:
                     verdict_data = json.loads(cached_verdict.get("verdict_json", "{}"))
                     logger.info(f"📦 Using cached verdict (similarity: {cached_verdict.get('confidence', 0):.0f}%)")
+                    
+                    if db and session_id:
+                        try:
+                            # Update active session with cached verdict instantly
+                            final_cached = verdict_data.get("final", {})
+                            m_msg = (
+                                f"This proposal has been deliberated on previously and cached semantically in the vector store. "
+                                f"The archived decision has been retrieved to optimize API usage and execution efficiency:\n"
+                                f"Final Decision: [{final_cached.get('final_decision', 'approve').upper()}] "
+                                f"with a confidence of {final_cached.get('confidence', 90)}% and score of {final_cached.get('final_score', 8)}/10.\n"
+                                f"Rationale: {final_cached.get('rationale', 'Approved based on historical cache matching.')}"
+                            )
+                            await db.collaboration_sessions.update_one(
+                                {"id": session_id},
+                                {
+                                    "$set": {"status": "COMPLETED"},
+                                    "$push": {"messages": {
+                                        "sender": "moderator",
+                                        "name": "Council Moderator (Moderator)",
+                                        "avatar": "gavel",
+                                        "message": m_msg,
+                                        "timestamp": datetime.utcnow().isoformat() + "Z"
+                                    }}
+                                }
+                            )
+                        except Exception as cache_log_e:
+                            logger.debug(f"Cache session logging failed: {cache_log_e}")
+                            
                     return verdict_data
                 except Exception as e:
                     logger.debug(f"Cached verdict parsing failed: {e}")
@@ -122,6 +179,69 @@ class AgentCouncil:
                 else:
                     verdicts[role_key] = results[i]
 
+            # Write individual votes to db dynamically for that highly immersive experience
+            if db and session_id:
+                try:
+                    # 1. Visionary message
+                    v_val = verdicts.get("visionary", {})
+                    v_points = ", ".join(v_val.get("key_points", []))
+                    v_msg = f"As the Visionary Mind, I see an excellent innovative opportunity here! My score is {v_val.get('score', 5)}/10. Key benefits: {v_points}."
+                    if v_val.get("condition"):
+                        v_msg += f" Provided that: {v_val.get('condition')}."
+                    
+                    await db.collaboration_sessions.update_one(
+                        {"id": session_id},
+                        {"$push": {"messages": {
+                            "sender": "visionary",
+                            "name": "Visionary Mind (Visionary)",
+                            "avatar": "brain-circuit",
+                            "message": v_msg,
+                            "timestamp": datetime.utcnow().isoformat() + "Z"
+                        }}}
+                    )
+                    await asyncio.sleep(1.0)
+
+                    # 2. Critic message
+                    c_val = verdicts.get("critic", {})
+                    c_points = ", ".join(c_val.get("key_points", []))
+                    c_msg = f"Representing the Critical Mind, I score this proposal {c_val.get('score', 5)}/10. The following safety and architectural risks must be addressed: {c_points}."
+                    if c_val.get("condition"):
+                        c_msg += f" Core condition: {c_val.get('condition')}."
+                    
+                    await db.collaboration_sessions.update_one(
+                        {"id": session_id},
+                        {"$push": {"messages": {
+                            "sender": "critic",
+                            "name": "Critical Mind (Critic)",
+                            "avatar": "shield-alert",
+                            "message": c_msg,
+                            "timestamp": datetime.utcnow().isoformat() + "Z"
+                        }}}
+                    )
+                    await asyncio.sleep(1.0)
+
+                    # 3. Pragmatist message
+                    p_val = verdicts.get("pragmatist", {})
+                    p_points = ", ".join(p_val.get("key_points", []))
+                    p_msg = f"As the Pragmatic Mind, I score this {p_val.get('score', 5)}/10. Regarding feasibility and resources: {p_points}."
+                    if p_val.get("condition"):
+                        p_msg += f" Actionable recommendation: {p_val.get('condition')}."
+                    
+                    await db.collaboration_sessions.update_one(
+                        {"id": session_id},
+                        {"$push": {"messages": {
+                            "sender": "pragmatist",
+                            "name": "Pragmatic Mind (Pragmatist)",
+                            "avatar": "construction",
+                            "message": p_msg,
+                            "timestamp": datetime.utcnow().isoformat() + "Z"
+                        }}}
+                    )
+                    await asyncio.sleep(1.0)
+
+                except Exception as log_e:
+                    logger.debug(f"Failed to stream council messages: {log_e}")
+
             # Step 2: Moderator makes final decision
             final = await self._moderate(title, category, verdicts)
 
@@ -131,6 +251,42 @@ class AgentCouncil:
                 "final": final
             }
 
+            # Write final moderator decision
+            if db and session_id:
+                try:
+                    m_msg = (
+                        f"Based on the council's deliberation: The final approved decision of the council is [{final.get('final_decision', 'modify').upper()}] "
+                        f"with a confidence of {final.get('confidence', 70)}% and score of {final.get('final_score', 5)}/10.\n"
+                        f"Rationale: {final.get('rationale', 'Consensus reached through voting.')}"
+                    )
+                    await db.collaboration_sessions.update_one(
+                        {"id": session_id},
+                        {
+                            "$set": {"status": "COMPLETED"},
+                            "$push": {"messages": {
+                                "sender": "moderator",
+                                "name": "Council Moderator (Moderator)",
+                                "avatar": "gavel",
+                                "message": m_msg,
+                                "timestamp": datetime.utcnow().isoformat() + "Z"
+                            }}
+                        }
+                    )
+                    
+                    # Generate an achievement for successes
+                    if final.get("final_decision") == "approve" and final.get("final_score", 0) >= 6:
+                        ach_doc = {
+                            "id": f"ach_auto_{str(uuid.uuid4())[:8]}",
+                            "title": f"Council Approves: {title[:40]}...",
+                            "description": f"Successfully verified and authorized the architectural blueprint for '{title}' to proceed in the autonomous pipeline.",
+                            "icon": "zap" if category == "performance" else "sparkles",
+                            "date": datetime.utcnow().isoformat() + "Z",
+                            "category": "Evolution"
+                        }
+                        await db.collaboration_achievements.insert_one(ach_doc)
+                except Exception as final_log_e:
+                    logger.debug(f"Failed to log moderator final decision: {final_log_e}")
+
             # Step 3: Cache the verdict for future similar proposals
             await self.verdict_cache.cache_verdict(proposal, result)
 
@@ -138,6 +294,14 @@ class AgentCouncil:
 
         except Exception as e:
             logger.error(f"Council deliberation failed: {e}")
+            if db and session_id:
+                try:
+                    await db.collaboration_sessions.update_one(
+                        {"id": session_id},
+                        {"$set": {"status": "FAILED"}}
+                    )
+                except:
+                    pass
             return {
                 "proposal": proposal,
                 "verdicts": {},

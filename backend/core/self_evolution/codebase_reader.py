@@ -31,7 +31,8 @@ class CodebaseReader:
                 ".venv", "venv", ".env", ".env.local", ".env.*.local",
                 "*.log", "*.zip", "*.pyc", ".DS_Store", ".vibelab_drafts",
                 "dist", "build", "*.egg-info", ".next", "out",
-                "chroma_db", "autonomous_logs", "frontend/public"
+                "chroma_db", "chroma_db_backup", "autonomous_logs", "frontend/public",
+                "NexusOS-main", "omnibot-cli", "python-engine", "Project_Docs", "logs"
             ]
         else:
             self.ignore_patterns = ignore_patterns
@@ -90,18 +91,32 @@ class CodebaseReader:
         return (7, "other")
 
     def read_codebase(self, max_tokens: Optional[int] = None) -> str:
-        """Read entire codebase respecting token budget and prioritization."""
+        """Read entire codebase respecting token budget and prioritization with logging."""
         if max_tokens is None:
             max_tokens = self.max_tokens
 
+        logger.info(f"Starting directory traversal of {self.root_path}...")
         # Collect all code files with priority
         files_with_priority = []
+        allowed_extensions = {".py", ".tsx", ".ts", ".js", ".jsx", ".sql", ".yml", ".yaml"}
 
-        for ext in ["*.py", "*.tsx", "*.ts", "*.js", "*.jsx", "*.sql", "*.yml", "*.yaml"]:
-            for path in self.root_path.rglob(ext):
-                if not self._should_ignore(path):
-                    priority = self._get_file_priority(path)
-                    files_with_priority.append((priority, path))
+        # Use os.walk and prune ignored directories in-place to prevent recursive traversal
+        for root, dirs, files in os.walk(self.root_path):
+            # Prune directories in ignore_patterns to stop recursion into them
+            original_dirs = list(dirs)
+            dirs[:] = [d for d in dirs if d not in self.ignore_patterns]
+            pruned = [d for d in original_dirs if d not in dirs]
+            if pruned:
+                logger.debug(f"Pruned subdirectories: {pruned} under {root}")
+
+            for file in files:
+                path = Path(root) / file
+                if path.suffix in allowed_extensions:
+                    if not self._should_ignore(path):
+                        priority = self._get_file_priority(path)
+                        files_with_priority.append((priority, path))
+
+        logger.info(f"Scan complete. Collected {len(files_with_priority)} code files.")
 
         # Sort by priority
         files_with_priority.sort(key=lambda x: (x[0][0], x[1].name))
@@ -112,6 +127,7 @@ class CodebaseReader:
 
         for (priority, category), path in files_with_priority:
             try:
+                logger.info(f"Reading file: {path} (Category: {category})")
                 content = path.read_text(encoding="utf-8", errors="ignore")
                 file_tokens = self._estimate_tokens(content)
 

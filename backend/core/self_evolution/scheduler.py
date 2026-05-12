@@ -25,14 +25,33 @@ class EvolutionScheduler:
         # Load config from environment
         self.enabled = os.getenv("SELF_EVOLUTION_ENABLED", "true").lower() == "true"
         try:
-            self.interval_hours = float(os.getenv("EVOLUTION_INTERVAL_HOURS", "6"))
+            self.interval_minutes = float(os.getenv("EVOLUTION_INTERVAL_MINUTES", "30"))
         except ValueError:
-            self.interval_hours = 6
+            self.interval_minutes = 30
 
         logger.info(
-            "Evolution Scheduler configured: enabled=%s, interval=%d hours",
-            self.enabled, int(self.interval_hours)
+            "Evolution Scheduler configured: enabled=%s, interval=%d minutes",
+            self.enabled, int(self.interval_minutes)
         )
+
+    def reload_config(self, enabled: Optional[bool] = None, interval_minutes: Optional[float] = None):
+        """Update configurations dynamically at runtime."""
+        if enabled is not None:
+            self.enabled = enabled
+        if interval_minutes is not None:
+            self.interval_minutes = interval_minutes
+        
+        logger.info(
+            "Evolution Scheduler reloaded: enabled=%s, interval=%d minutes",
+            self.enabled, int(self.interval_minutes)
+        )
+        
+        # If running and disabled, stop the scheduler task
+        if not self.enabled and self._running:
+            self.stop()
+        # If enabled and not running, start it
+        elif self.enabled and not self._running:
+            self.start()
 
     def start(self) -> bool:
         """Start the scheduler."""
@@ -46,7 +65,7 @@ class EvolutionScheduler:
 
         self._running = True
         self._task = asyncio.create_task(self._loop())
-        logger.info("✓ Evolution Scheduler started (interval: %d hours)", int(self.interval_hours))
+        logger.info("✓ Evolution Scheduler started (interval: %d minutes)", int(self.interval_minutes))
         return True
 
     def stop(self) -> bool:
@@ -81,11 +100,11 @@ class EvolutionScheduler:
             while self._running:
                 try:
                     # Calculate wait time in seconds
-                    wait_seconds = int(self.interval_hours * 3600)
+                    wait_seconds = int(self.interval_minutes * 60)
 
                     logger.info(
-                        "Next evolution cycle scheduled in %d hours (%s)",
-                        int(self.interval_hours),
+                        "Next evolution cycle scheduled in %d minutes (%s)",
+                        int(self.interval_minutes),
                         (datetime.now() + timedelta(seconds=wait_seconds)).isoformat()
                     )
 

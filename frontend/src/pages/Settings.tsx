@@ -68,7 +68,7 @@ export default function Settings() {
   const { t } = useLang()
   const qc = useQueryClient()
 
-  const [activeTab, setActiveTab] = useState<'general' | 'shopify'>('general')
+  const [activeTab, setActiveTab] = useState<'general' | 'shopify' | 'evolution'>('general')
   const [keyValues, setKeyValues] = useState<Record<string, string>>({})
   const [showKey, setShowKey] = useState<Record<string, boolean>>({})
   const [revealedGroq, setRevealedGroq] = useState(1)
@@ -76,6 +76,64 @@ export default function Settings() {
   const [revealedOther, setRevealedOther] = useState(1)
   const [toast, setToast] = useState<string | null>(null)
   const [validatingKeys, setValidatingKeys] = useState<Record<string, boolean>>({})
+
+  // Self-Evolution Settings & Telemetry State
+  const [evEnabled, setEvEnabled] = useState(true)
+  const [evInterval, setEvInterval] = useState(30)
+  const [evMaxPatches, setEvMaxPatches] = useState(5)
+  const [evMaxTokens, setEvMaxTokens] = useState(30000)
+  const [evRollback, setEvRollback] = useState(true)
+  const [ieEnabled, setIeEnabled] = useState(true)
+  const [ieRate, setIeRate] = useState(100)
+  const [ieMaxDaily, setIeMaxDaily] = useState(2400)
+  const [ieScopes, setIeScopes] = useState<string[]>(['everything'])
+  const [ieMinScore, setIeMinScore] = useState(5.0)
+
+  // Fetch self-evolution configs
+  const { data: evData, isLoading: isLoadingEv } = useQuery({
+    queryKey: ['self-evolution-settings'],
+    queryFn: () => fetchJson('/api/factory/settings/self-evolution'),
+  })
+
+  useEffect(() => {
+    if (evData) {
+      setEvEnabled(evData.self_evolution_enabled)
+      setEvInterval(evData.evolution_interval_minutes)
+      setEvMaxPatches(evData.evolution_max_patches_per_cycle)
+      setEvMaxTokens(evData.evolution_max_tokens)
+      setEvRollback(evData.evolution_rollback_on_failure)
+      setIeEnabled(evData.idea_engine_enabled)
+      setIeRate(evData.idea_engine_rate_per_hour)
+      setIeMaxDaily(evData.idea_engine_max_daily_executions)
+      setIeScopes(evData.idea_engine_scopes || ['everything'])
+      setIeMinScore(evData.idea_engine_min_score)
+    }
+  }, [evData])
+
+  // Fetch live self-evolution status / telemetry
+  const { data: evStatus, refetch: refetchEvStatus } = useQuery({
+    queryKey: ['self-evolution-status'],
+    queryFn: () => fetchJson('/api/factory/settings/self-evolution/status'),
+    refetchInterval: 30000, // auto-refresh every 30s as requested
+  })
+
+  const saveEvMut = useMutation({
+    mutationFn: (vals: any) =>
+      fetchJson('/api/factory/settings/self-evolution', {
+        method: 'POST',
+        body: JSON.stringify(vals),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['self-evolution-settings'] })
+      qc.invalidateQueries({ queryKey: ['self-evolution-status'] })
+      setToast('✓ Self-Evolution configurations saved and applied!')
+      setTimeout(() => setToast(null), 4000)
+    },
+    onError: (err: any) => {
+      setToast(`✗ Error saving configurations: ${err.message}`)
+      setTimeout(() => setToast(null), 5000)
+    }
+  })
 
   // Shopify tab state
   const [shopifyForm, setShopifyForm] = useState({
@@ -164,6 +222,48 @@ export default function Settings() {
       setTimeout(() => setToast(null), 5000)
     }
   })
+
+  // General settings state (PayPal link and default service price)
+  const [paypalMeLink, setPaypalMeLink] = useState('')
+  const [defaultServicePrice, setDefaultServicePrice] = useState(25)
+
+  const { data: generalData, isLoading: isLoadingGeneral } = useQuery({
+    queryKey: ['general-settings'],
+    queryFn: () => fetchJson('/api/factory/settings/general'),
+  })
+
+  useEffect(() => {
+    if (generalData) {
+      setPaypalMeLink(generalData.paypal_me_link || '')
+      setDefaultServicePrice(generalData.default_service_price ?? 25)
+    }
+  }, [generalData])
+
+  const saveGeneralMut = useMutation({
+    mutationFn: (vals: { paypal_me_link: string; default_service_price: number }) =>
+      fetchJson('/api/factory/settings/general', {
+        method: 'POST',
+        body: JSON.stringify(vals),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['general-settings'] })
+      setToast('✓ General settings saved successfully!')
+      setTimeout(() => setToast(null), 4000)
+    },
+    onError: (err: any) => {
+      setToast(`✗ Error saving general settings: ${err.message}`)
+      setTimeout(() => setToast(null), 5000)
+    }
+  })
+
+  // Load Shopify settings when tab is activated
+  useEffect(() => {
+    if (activeTab === 'shopify') {
+      fetchJson('/api/shopify/settings')
+        .then(d => { if (d) setShopifyForm(f => ({ ...f, ...d })) })
+        .catch(() => {})
+    }
+  }, [activeTab])
 
   const keys: KeyDef[] = data?.keys || []
   const groqKeys = keys.filter(k => k.env_name.startsWith('GROQ_KEY_'))
@@ -616,16 +716,6 @@ export default function Settings() {
     )
   }
 
-  // Load Shopify settings when tab is activated
-  useEffect(() => {
-    if (activeTab === 'shopify') {
-      fetch('/api/shopify/settings')
-        .then(r => r.ok ? r.json() : null)
-        .then(d => { if (d) setShopifyForm(f => ({ ...f, ...d })) })
-        .catch(() => {})
-    }
-  }, [activeTab])
-
   function renderShopifyPanel() {
     const field = (
       label: string,
@@ -705,12 +795,10 @@ export default function Settings() {
             onClick={async () => {
               setShopifySaving(true)
               try {
-                const res = await fetch('/api/shopify/settings', {
+                const d = await fetchJson('/api/shopify/settings', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(shopifyForm),
                 })
-                const d = await res.json()
                 setToast(d.ok ? '✓ Shopify settings saved!' : '✗ Save failed')
                 setTimeout(() => setToast(null), 4000)
               } catch { setToast('✗ Save failed'); setTimeout(() => setToast(null), 4000) }
@@ -727,8 +815,7 @@ export default function Settings() {
               setShopifyTesting(true)
               setShopifyTestResult(null)
               try {
-                const res = await fetch('/api/shopify/settings/test', { method: 'POST' })
-                const d = await res.json()
+                const d = await fetchJson('/api/shopify/settings/test', { method: 'POST' })
                 setShopifyTestResult({ ok: d.ok, msg: d.ok ? `✓ Connected: ${d.shop_name}` : `✗ ${d.error}` })
               } catch { setShopifyTestResult({ ok: false, msg: '✗ Request failed' }) }
               setShopifyTesting(false)
@@ -744,6 +831,336 @@ export default function Settings() {
               {shopifyTestResult.msg}
             </span>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  function renderEvolutionPanel() {
+    const formatCountdown = (totalSeconds: number) => {
+      if (!totalSeconds || totalSeconds <= 0) return '00:00'
+      const mins = Math.floor(totalSeconds / 60)
+      const secs = totalSeconds % 60
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    }
+
+    const getResultColor = (result: string) => {
+      if (result === 'success') return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+      if (result === 'rolled_back') return 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+      return 'text-rose-400 bg-rose-500/10 border-rose-500/20'
+    }
+
+    const toggleScope = (scope: string) => {
+      if (ieScopes.includes(scope)) {
+        if (ieScopes.length > 1) {
+          setIeScopes(ieScopes.filter(s => s !== scope))
+        }
+      } else {
+        setIeScopes([...ieScopes.filter(s => s !== 'everything'), scope])
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* ── LIVE TELEMETRY DASHBOARD ── */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="glass-panel border border-[#1e293b] rounded-2xl p-5 bg-[#070b13]/60 relative overflow-hidden flex flex-col justify-between h-32 hover:border-[#00d4ff]/20 transition-all">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-[#64748b] tracking-wider uppercase">Scheduler Status</span>
+              <span className="text-xl">⏱️</span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${evStatus?.scheduler_state === 'Running' ? 'bg-emerald-500 animate-pulse' : evStatus?.scheduler_state === 'Idle' ? 'bg-cyan-500' : 'bg-rose-500'} shadow-[0_0_8px_currentColor]`} />
+              <span className="text-lg font-black text-[#f0f4f8]">{evStatus?.scheduler_state || 'Loading...'}</span>
+            </div>
+          </div>
+
+          <div className="glass-panel border border-[#1e293b] rounded-2xl p-5 bg-[#070b13]/60 relative overflow-hidden flex flex-col justify-between h-32 hover:border-[#00d4ff]/20 transition-all">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-[#64748b] tracking-wider uppercase">Next Cycle Runs In</span>
+              <span className="text-xl">⏳</span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-black text-[#00d4ff] font-mono tracking-widest shadow-[0_0_10px_rgba(0,212,255,0.15)]">
+                {evStatus ? formatCountdown(evStatus.next_run_countdown) : '00:00'}
+              </span>
+            </div>
+          </div>
+
+          <div className="glass-panel border border-[#1e293b] rounded-2xl p-5 bg-[#070b13]/60 relative overflow-hidden flex flex-col justify-between h-32 hover:border-[#00d4ff]/20 transition-all">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-[#64748b] tracking-wider uppercase">Applied Improvements</span>
+              <span className="text-xl">✨</span>
+            </div>
+            <div className="mt-2">
+              <span className="text-3xl font-black bg-gradient-to-r from-emerald-400 to-[#00d4ff] bg-clip-text text-transparent">
+                {evStatus?.total_improvements ?? 0}
+              </span>
+            </div>
+          </div>
+
+          <div className="glass-panel border border-[#1e293b] rounded-2xl p-5 bg-[#070b13]/60 relative overflow-hidden flex flex-col justify-between h-32 hover:border-[#00d4ff]/20 transition-all">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-[#64748b] tracking-wider uppercase">Last Cycle Result</span>
+              <span className="text-xl">📋</span>
+            </div>
+            <div className="mt-2 flex">
+              <span className={`px-2.5 py-1 text-xs font-black uppercase rounded-lg border tracking-wider ${
+                evStatus?.last_result === 'success' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.15)]' :
+                evStatus?.last_result === 'rolled_back' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                evStatus?.last_result === 'failed' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                'bg-bg-panel text-text-muted border-border'
+              }`}>
+                {evStatus?.last_result ? evStatus.last_result.replace('_', ' ') : 'Never Run'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── CONFIGURATION SPLIT VIEW ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Evolution Scheduler Config */}
+          <div className="glass-panel border border-[#141b2c] rounded-2xl p-6 bg-[#070b13]/60 relative overflow-hidden">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-[#00d4ff]/10 border border-[#00d4ff]/20 flex items-center justify-center text-xl">🚀</div>
+              <div>
+                <h3 className="text-base font-black text-[#f0f4f8]">Self-Evolution Core Scheduler</h3>
+                <p className="text-xs text-[#64748b]">Configure how often the codebase self-improves.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] hover:border-[#00d4ff]/20 transition-all flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-[#94a3b8]">Enable Self-Evolution Loop</p>
+                  <p className="text-[10px] text-[#64748b] mt-0.5">Allows the compiler loop to implement backlog improvements.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEvEnabled(!evEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${evEnabled ? 'bg-[#00d4ff]' : 'bg-[#1e293b]'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${evEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#94a3b8]">Interval (Minutes)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={evInterval}
+                    onChange={e => setEvInterval(Math.max(1, Number(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#04060b] border border-[#1e293b] text-[#f0f4f8] text-sm font-mono focus:outline-none focus:border-[#00d4ff]/40 transition-all"
+                  />
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#94a3b8]">Max Patches / Cycle</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={evMaxPatches}
+                    onChange={e => setEvMaxPatches(Math.max(1, Number(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#04060b] border border-[#1e293b] text-[#f0f4f8] text-sm font-mono focus:outline-none focus:border-[#00d4ff]/40 transition-all"
+                  />
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#94a3b8]">Max Cycle Tokens</label>
+                  <input
+                    type="number"
+                    min="1000"
+                    max="200000"
+                    value={evMaxTokens}
+                    onChange={e => setEvMaxTokens(Math.max(1000, Number(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#04060b] border border-[#1e293b] text-[#f0f4f8] text-sm font-mono focus:outline-none focus:border-[#00d4ff]/40 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] hover:border-[#00d4ff]/20 transition-all flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-[#94a3b8]">Automatic Rollback on Failures</p>
+                  <p className="text-[10px] text-[#64748b] mt-0.5">Undo modifications automatically from local backups if syntax check/tests fail.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEvRollback(!evRollback)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${evRollback ? 'bg-[#00d4ff]' : 'bg-[#1e293b]'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${evRollback ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Idea Engine Config */}
+          <div className="glass-panel border border-[#141b2c] rounded-2xl p-6 bg-[#070b13]/60 relative overflow-hidden">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-[#7c3aed]/10 border border-[#7c3aed]/20 flex items-center justify-center text-xl">💡</div>
+              <div>
+                <h3 className="text-base font-black text-[#f0f4f8]">Idea Generation & Monetization Engine</h3>
+                <p className="text-xs text-[#64748b]">Configure autonomous, hourly concept design & prioritization.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] hover:border-[#7c3aed]/20 transition-all flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-[#94a3b8]">Enable Idea Engine Background Worker</p>
+                  <p className="text-[10px] text-[#64748b] mt-0.5">Discovers, scores, and appends code optimization/income blueprints to Evolve_plan.md.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIeEnabled(!ieEnabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${ieEnabled ? 'bg-[#7c3aed]' : 'bg-[#1e293b]'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${ieEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#94a3b8]">Generation rate/hr</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={ieRate}
+                    onChange={e => setIeRate(Math.max(1, Number(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#04060b] border border-[#1e293b] text-[#f0f4f8] text-sm font-mono focus:outline-none focus:border-[#7c3aed]/40 transition-all"
+                  />
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#94a3b8]">Max daily creations</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={ieMaxDaily}
+                    onChange={e => setIeMaxDaily(Math.max(1, Number(e.target.value)))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#04060b] border border-[#1e293b] text-[#f0f4f8] text-sm font-mono focus:outline-none focus:border-[#7c3aed]/40 transition-all"
+                  />
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-[#94a3b8]">Min Rank Score (1-10)</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="1.0"
+                    max="10.0"
+                    value={ieMinScore}
+                    onChange={e => setIeMinScore(Math.min(10.0, Math.max(1.0, Number(e.target.value))))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#04060b] border border-[#1e293b] text-[#f0f4f8] text-sm font-mono focus:outline-none focus:border-[#7c3aed]/40 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Target Scopes Multiselect */}
+              <div className="p-4 rounded-xl bg-[#090d16]/40 border border-[#141b2c] flex flex-col gap-2">
+                <label className="text-xs font-semibold text-[#94a3b8]">Target Scopes / Focus Areas</label>
+                <div className="flex flex-wrap gap-2">
+                  {['everything', 'ui', 'backend', 'performance', 'security', 'architecture'].map(scope => {
+                    const active = ieScopes.includes(scope)
+                    return (
+                      <button
+                        key={scope}
+                        type="button"
+                        onClick={() => toggleScope(scope)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border uppercase transition-all ${
+                          active
+                            ? 'bg-[#7c3aed]/20 text-[#c084fc] border-[#7c3aed]/40 shadow-[0_0_10px_rgba(124,58,237,0.15)]'
+                            : 'bg-transparent text-[#64748b] border-[#1e293b] hover:text-[#f0f4f8]'
+                        }`}
+                      >
+                        {scope}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── APPLY BUTTONS ── */}
+        <div className="flex items-center gap-3 justify-end">
+          <button
+            type="button"
+            onClick={() => refetchEvStatus()}
+            className="px-5 py-2.5 rounded-xl font-bold text-sm bg-cyan-500/10 hover:bg-cyan-500/20 text-[#00d4ff] border border-[#00d4ff]/20 transition-all flex items-center gap-2"
+          >
+            🔄 Refresh Live Telemetry
+          </button>
+
+          <button
+            type="button"
+            onClick={() => saveEvMut.mutate({
+              self_evolution_enabled: evEnabled,
+              evolution_interval_minutes: evInterval,
+              evolution_max_patches_per_cycle: evMaxPatches,
+              evolution_max_tokens: evMaxTokens,
+              evolution_rollback_on_failure: evRollback,
+              idea_engine_enabled: ieEnabled,
+              idea_engine_rate_per_hour: ieRate,
+              idea_engine_max_daily_executions: ieMaxDaily,
+              idea_engine_scopes: ieScopes,
+              idea_engine_min_score: ieMinScore
+            })}
+            disabled={saveEvMut.isPending}
+            className="px-6 py-2.5 rounded-xl font-black text-sm bg-gradient-to-r from-[#00d4ff] to-[#7c3aed] text-[#030508] hover:shadow-[0_0_20px_rgba(0,212,255,0.4)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            {saveEvMut.isPending ? 'Applying Settings...' : 'Apply Self-Evolution Config'}
+          </button>
+        </div>
+
+        {/* ── RECENT CYCLES TELEMETRY TABLE ── */}
+        <div className="glass-panel border border-[#141b2c] rounded-2xl p-6 bg-[#070b13]/60 relative overflow-hidden">
+          <h3 className="text-sm font-black text-[#f0f4f8] mb-4 flex items-center gap-2">
+            <span>📊</span> Recent 5 Evolution Cycles Summary
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-[#94a3b8] font-mono">
+              <thead>
+                <tr className="border-b border-[#1e293b] text-[#64748b] text-[10px] uppercase tracking-wider">
+                  <th className="pb-3 font-semibold">Iteration #</th>
+                  <th className="pb-3 font-semibold">Timestamp</th>
+                  <th className="pb-3 font-semibold">Item ID</th>
+                  <th className="pb-3 font-semibold text-center">Patches</th>
+                  <th className="pb-3 font-semibold text-right">Result Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e293b]/50">
+                {evStatus?.last_5_cycles && evStatus.last_5_cycles.length > 0 ? (
+                  evStatus.last_5_cycles.map((cycle: any, idx: number) => {
+                    const result = cycle.verified ? 'success' : cycle.rolled_back ? 'rolled_back' : 'failed'
+                    return (
+                      <tr key={idx} className="hover:bg-[#090d16]/30 transition-colors">
+                        <td className="py-3 font-bold text-[#f0f4f8]">#{cycle.iteration}</td>
+                        <td className="py-3 text-[#64748b]">{new Date(cycle.timestamp).toLocaleString()}</td>
+                        <td className="py-3 text-cyan-300 font-semibold">{cycle.item_implemented || 'N/A'}</td>
+                        <td className="py-3 text-center text-[#f0f4f8]">{cycle.patches_applied} applied</td>
+                        <td className="py-3 text-right">
+                          <span className={`px-2 py-0.5 rounded-md border text-[10px] uppercase font-bold ${getResultColor(result)}`}>
+                            {result.replace('_', ' ')}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-center text-[#64748b]">No self-evolution cycle reports found. Let a cycle run!</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     )
@@ -830,7 +1247,7 @@ export default function Settings() {
 
         {/* Tab bar */}
         <div className="flex gap-1 mb-6 border-b border-[#141b2c]">
-          {(['general', 'shopify'] as const).map(tab => (
+          {(['general', 'shopify', 'evolution'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -840,12 +1257,14 @@ export default function Settings() {
                   : 'border-transparent text-[#64748b] hover:text-[#f0f4f8]'
               }`}
             >
-              {tab === 'general' ? 'General' : 'Shopify'}
+              {tab === 'general' ? 'General' : tab === 'shopify' ? 'Shopify' : 'Autonomous Evolution'}
             </button>
           ))}
         </div>
 
         {activeTab === 'shopify' && renderShopifyPanel()}
+
+        {activeTab === 'evolution' && renderEvolutionPanel()}
 
         {activeTab === 'general' && <>
 
@@ -905,6 +1324,8 @@ export default function Settings() {
               <input
                 type="text"
                 placeholder={t('revenue.paypal_placeholder')}
+                value={paypalMeLink}
+                onChange={e => setPaypalMeLink(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-lg bg-[#04060b] border border-[#1e293b] text-text-primary text-sm font-mono placeholder:text-text-muted/40 focus:outline-none focus:border-[#10b981]/40 transition-all"
               />
             </div>
@@ -915,7 +1336,8 @@ export default function Settings() {
               </label>
               <input
                 type="number"
-                defaultValue={25}
+                value={defaultServicePrice}
+                onChange={e => setDefaultServicePrice(Number(e.target.value))}
                 className="w-32 px-4 py-2.5 rounded-lg bg-[#04060b] border border-[#1e293b] text-text-primary text-sm font-mono focus:outline-none focus:border-[#10b981]/40 transition-all"
               />
             </div>
@@ -928,9 +1350,11 @@ export default function Settings() {
             </div>
 
             <button
-              className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#10b981] hover:bg-[#059669] text-white transition-all duration-200 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              onClick={() => saveGeneralMut.mutate({ paypal_me_link: paypalMeLink, default_service_price: defaultServicePrice })}
+              disabled={saveGeneralMut.isPending}
+              className="px-5 py-2.5 rounded-xl font-bold text-sm bg-[#10b981] hover:bg-[#059669] text-white transition-all duration-200 hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50"
             >
-              {t('revenue.save')}
+              {saveGeneralMut.isPending ? 'Saving...' : t('revenue.save')}
             </button>
           </div>
         </div>

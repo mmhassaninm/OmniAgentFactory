@@ -28,7 +28,7 @@ class Verifier:
         iteration: int
     ) -> Dict[str, Any]:
         """
-        Verify modified files. Rollback on failure.
+        Verify modified files. Rollback on failure if configured.
 
         Returns:
             {
@@ -37,22 +37,29 @@ class Verifier:
               "error": "error message if any"
             }
         """
+        import os
         result = {
             "verified": False,
             "rolled_back": False,
             "error": None
         }
 
-        logger.info("Verifying %d modified files...", len(modified_files))
+        # Check rollback policy
+        rollback_enabled = os.getenv("EVOLUTION_ROLLBACK_ON_FAILURE", "true").lower() == "true"
+
+        logger.info("Verifying %d modified files... (rollback_enabled=%s)", len(modified_files), rollback_enabled)
 
         # Step 1: Syntax check on Python files
         python_files = [f for f in modified_files if f.endswith(".py")]
         if python_files:
             if not self._syntax_check(python_files):
                 result["error"] = "Syntax check failed on Python files"
-                await self._rollback(backup_path, modified_files, iteration)
-                result["rolled_back"] = True
-                logger.error("✗ Syntax check failed. Rolling back.")
+                if rollback_enabled:
+                    await self._rollback(backup_path, modified_files, iteration)
+                    result["rolled_back"] = True
+                    logger.error("✗ Syntax check failed. Rolling back.")
+                else:
+                    logger.warning("✗ Syntax check failed. Rollback bypassed by policy.")
                 return result
 
         logger.info("✓ Syntax check passed")
@@ -61,9 +68,12 @@ class Verifier:
         if python_files:
             if not self._import_check(python_files):
                 result["error"] = "Import resolution check failed"
-                await self._rollback(backup_path, modified_files, iteration)
-                result["rolled_back"] = True
-                logger.error("✗ Import check failed. Rolling back.")
+                if rollback_enabled:
+                    await self._rollback(backup_path, modified_files, iteration)
+                    result["rolled_back"] = True
+                    logger.error("✗ Import check failed. Rolling back.")
+                else:
+                    logger.warning("✗ Import check failed. Rollback bypassed by policy.")
                 return result
 
         logger.info("✓ Import check passed")
@@ -74,8 +84,11 @@ class Verifier:
         if not health_ok:
             logger.warning("⚠ Server health check failed (server may not be running)")
             result["error"] = "Server health check failed"
-            await self._rollback(backup_path, modified_files, iteration)
-            result["rolled_back"] = True
+            if rollback_enabled:
+                await self._rollback(backup_path, modified_files, iteration)
+                result["rolled_back"] = True
+            else:
+                logger.warning("Server health check failed. Rollback bypassed by policy.")
             return result
 
         logger.info("✓ Server health check passed")

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Shield, Cpu, Key, Settings, Activity, Workflow, DollarSign, ShoppingBag, Brain, Sparkles } from 'lucide-react'
+import { Shield, Cpu, Key, Settings, Activity, Workflow, DollarSign, ShoppingBag, Brain, Sparkles, Users } from 'lucide-react'
 import { useFactoryStatus } from '../hooks/useAgent'
 
 export default function MainLayout() {
@@ -110,6 +110,20 @@ export default function MainLayout() {
             >
               <Brain size={16} />
               <span>Evolution</span>
+            </NavLink>
+
+            <NavLink
+              to="/collaboration"
+              className={({ isActive }) =>
+                `py-2.5 px-4 rounded-lg mx-2 flex items-center gap-3 text-sm transition-all duration-150 ${
+                  isActive
+                    ? 'bg-indigo-500/15 text-indigo-300 border-l-2 border-indigo-400 font-semibold'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-white/5'
+                }`
+              }
+            >
+              <Users size={16} />
+              <span>Collaboration</span>
             </NavLink>
 
             <NavLink

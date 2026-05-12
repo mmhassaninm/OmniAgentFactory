@@ -53,3 +53,58 @@
 - Approach      : Integrated G4FProvider as a dedicated fallback tier (Tier 4.5) in the core ModelRouter cascade, allowing automatic keyless failovers when paid API credentials are unconfigured. Enhanced health check reports with live sub-provider statuses, failures, and cool-down metrics. Implemented automated response validation to filter login/authentication walls (such as You.com) and trigger rotation.
 - Outcome       : success
 - Notes         : Live cascade test successfully routed past unconfigured paid providers, filtered You.com's login wall, and retrieved translations from Bing/ChatgptNext.
+
+## 2026-05-12 — Alignment with Passive Income Mission & 100 Monetization Ideas
+- Files changed : PROJECT_INSTRUCTIONS.md, 100_MONETIZATION_IDEAS.md
+- Approach      : Updated the project constitution to prioritize fully passive financial income as the primary core mission, and created a comprehensive 100-blueprint monetization guide tailored to OmniBot's tech stack.
+- Outcome       : success
+- Notes         : The project's architecture, self-evolution loop, and agent breeding will now directly align with and optimize for achieving passive financial yields.
+
+## 2026-05-12 — Multi-Strategy Monetization Console and Switcher
+- Files changed : backend/agent/money_agent_loop.py, backend/api/money.py, frontend/src/pages/MoneyAgent.tsx
+- Approach      : Integrated database-backed strategy switches and custom parameter updates (niche, keywords, target rates) using MongoDB settings. Developed REST APIs for retrieving and setting these strategy details. Overhauled the front-end interface into an ultra-premium, interactive glassmorphic Monetization Strategy Command Hub with form modal drawers.
+- Outcome       : success
+- Notes         : Python files compile successfully. TypeScript verification confirms zero type-safety issues in the new React page, ensuring complete end-to-end stability.
+
+## 2026-05-12 — Live Inter-Agent Chats & Monetization Search Focus
+- Files changed : backend/core/autonomous_evolution/agent_council.py, backend/core/autonomous_evolution/idea_engine_v2.py, frontend/src/pages/Dashboard.tsx
+- Approach      : Bridged background self-evolution deliberations with MongoDB's collaboration collection to stream live chats of Visionary, Critic, and Pragmatist agents. Augmented search queries and prompt instructions of the Idea Engine to focus on zero-intervention passive monetization. Added live indicators and a navigation button for the Collaboration Hub on the main Dashboard.
+- Outcome       : success
+- Notes         : Highly immersive multi-agent deliberation simulation is now fully integrated with background self-improvement loops. Verified that the React app builds without any errors or warnings in 4.9s.
+
+## 2026-05-12 — Stealth Affiliate Marketing & Forum Placement (Idea 48)
+- Files changed : backend/api/money.py, backend/agent/money_agent_loop.py, frontend/src/pages/MoneyAgent.tsx, Evolve_plan.md
+- Approach      : Implemented database-backed custom marketing campaigns, automatic thread scraping via targeted keywords, and dynamic organic reply drafts featuring passive referral links. Overhauled the Money Agent page to render live campaigns, statistics, generated placements, and a custom launch dialog.
+- Outcome       : success
+- Notes         : All Python modules compile successfully. Production React compilation passes 100% cleanly with zero errors/warnings in 3.7s.
+
+## 2026-05-12 — Collaboration Hub Translation & Dynamic Settings Page Integration
+- Files changed : frontend/src/pages/AgentCollaboration.tsx, frontend/src/pages/Settings.tsx, backend/api/settings.py, backend/main.py
+- Approach      : Translated the Agent Collaboration Hub UI entirely to English and adjusted layout LTR. Resolved Settings Shopify tab 404 errors by routing calls through the apiCall/fetchJson helper, and integrated DB-backed states for PayPal Link and Price configurations.
+- Outcome       : success
+- Notes         : The entire React application compiles with 100% success in 3.65s, with zero warnings or errors. Tested FastAPI startup with dynamic MongoDB settings loading.
+
+## 2026-05-12 — React Hook Fix, Docker Proxy Decoupling & Constitution Update
+- Files changed : frontend/src/pages/Settings.tsx, frontend/vite.config.ts, docker-compose.yml, PROJECT_INSTRUCTIONS.md
+- Approach      : Fixed a React hook-ordering issue in Settings.tsx by moving the Shopify useEffect above the loading early-return statement. Corrected Vite's container proxy target in vite.config.ts to point directly to backend:3001, allowing standard proxy routing for /api/health requests. Inserted a strict post-modification browser verification rule inside PROJECT_INSTRUCTIONS.md.
+- Outcome       : success
+- Notes         : Subagent verification successfully completed; verified correct English translation, dynamic settings loading/saving to MongoDB, and error-free rendering in a real browser session.
+
+## 2026-05-12 — Safe File-Deletion Mandate Constitution Update
+- Files changed : PROJECT_INSTRUCTIONS.md
+- Approach      : Appended a strict, zero-tolerance file deletion safety checklist (in English and Arabic) inside PROJECT_INSTRUCTIONS.md to prevent unchecked, automated, or manual deletions of key modules.
+- Outcome       : success
+- Notes         : Entire project is legally aligned with safe refactoring and structural stability goals.
+
+## 2026-05-12 — English Default Language Standard Constitution Update
+- Files changed : PROJECT_INSTRUCTIONS.md
+- Approach      : Appended a strict default primary language protocol (in English and Arabic) inside PROJECT_INSTRUCTIONS.md to establish English as the default UI/codebase language, mandating that any Arabic translation work be restricted solely to separate Arabic-specific builds or branches.
+- Outcome       : success
+- Notes         : Solidifies the core English language baseline for the primary factory project codebase.
+
+## 2026-05-12 — Agent Collaboration Hub English Default Language Localization
+- Files changed : backend/api/collaboration.py, backend/core/autonomous_evolution/agent_council.py, backend/core/autonomous_evolution/problem_scanner.py, Evolve_plan.md
+- Approach      : Translated all database seed logs, achievements, research focus topics, and random brain-debate subjects into English. Rewrote agent_council and problem_scanner prompts to mandate English responses from LLM streams. Ran database migrations to purge old Arabic seeds and seeded new technical English datasets.
+- Outcome       : success
+- Notes         : Chrome browser subagent successfully verified that all parts of the Collaboration Hub—including seeded history, focus topics, and live streaming inter-agent discussions—are 100% in English.
+

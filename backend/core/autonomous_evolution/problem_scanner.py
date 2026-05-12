@@ -18,7 +18,7 @@ BACKEND_ROOT = _HERE.parent.parent.parent   # NexusOS/backend/
 PROJECT_ROOT = BACKEND_ROOT.parent          # NexusOS/
 
 PROBLEM_DIAGNOSIS_PROMPT = """
-أنت مهندس قائد في تشخيص مشاكل الأنظمة AI.
+You are a principal engineer specializing in system diagnostics, performance profiling, and security hardening for multi-agent applications.
 You are a lead engineer diagnosing AI system issues.
 
 # Static Analysis Results

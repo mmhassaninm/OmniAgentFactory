@@ -17,6 +17,8 @@ from .ai_reasoner import get_ai_reasoner, AIReasoner
 from .patch_applier import get_patch_applier, PatchApplier
 from .verifier import get_verifier, Verifier
 from .evolution_loop import get_evolution_loop, EvolutionLoop, run_self_evolution_cycle
+from .scheduler import get_evolution_scheduler, EvolutionScheduler, start_evolution_scheduler, stop_evolution_scheduler
+from .idea_engine import get_idea_engine, IdeaEngine, start_idea_engine, stop_idea_engine
 
 __all__ = [
     "StateManager",
@@ -25,6 +27,8 @@ __all__ = [
     "PatchApplier",
     "Verifier",
     "EvolutionLoop",
+    "EvolutionScheduler",
+    "IdeaEngine",
     "get_state_manager",
     "get_codebase_reader",
     "get_ai_reasoner",
@@ -32,4 +36,10 @@ __all__ = [
     "get_verifier",
     "get_evolution_loop",
     "run_self_evolution_cycle",
+    "get_evolution_scheduler",
+    "start_evolution_scheduler",
+    "stop_evolution_scheduler",
+    "get_idea_engine",
+    "start_idea_engine",
+    "stop_idea_engine",
 ]

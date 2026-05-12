@@ -80,8 +80,8 @@ services:
       backend:
         condition: service_healthy
     environment:
-      - VITE_API_URL=http://backend:3001
-      - VITE_WS_URL=ws://backend:3001
+      - VITE_API_URL=http://localhost:3001
+      - VITE_WS_URL=ws://localhost:3001
 
 volumes:
   mongo_data:

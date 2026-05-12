@@ -9,19 +9,29 @@ from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
-# Ideas about AI/evolution/agents that inspire NexusOS development
+# Ideas about AI/evolution/agents and passive monetization that inspire NexusOS development
 SEARCH_QUERIES = [
-    "AI agent self-improvement techniques 2025",
+    "AI agent self-improvement techniques 2026",
     "autonomous AI evolution loop best practices",
     "multi-agent collaboration patterns LLM",
     "self-evolving code generation systems",
-    "agent framework improvements 2025",
-    "continuous AI system optimization",
+    "passive income AI agents automation 2026",
+    "autonomous AI SaaS monetization microtasks",
+    "zero-intervention digital product generation arbitrage",
+    "automated affiliate marketing agent network",
+    "automated digital products shopify revenue bot",
+    "multi-channel AI revenue generation strategies",
 ]
 
 IDEA_GENERATION_PROMPT = """
-أنت محلل تقني متخصص في AI agents وأنظمة التطور الذاتي.
-You are a technical analyst specializing in self-evolving AI systems.
+You are a senior technical analyst specializing in AI agents, autonomous self-evolving architectures, and zero-intervention monetization pipelines.
+You are a technical analyst specializing in self-evolving AI systems and profitable automation.
+
+# Ultimate Core Mandate
+The absolute priority of OmniBot/NexusOS is generating passive financial yield with zero human intervention.
+Every development idea generated must either:
+1. Direct or optimize multi-channel revenue generation (AI Content generation, microtask automation, digital product sales, automated Shopify store deployment, arbitrage bots, affiliate networking).
+2. Deepen self-evolution capabilities (the ability of the factory to write its own custom money-making engines, add new UI pages, self-update its code, and deploy features autonomously).
 
 # Project Context
 NexusOS is an autonomous AI agent factory with:
@@ -40,10 +50,11 @@ NexusOS is an autonomous AI agent factory with:
 
 # Your Task
 Generate 2-3 novel development ideas that:
-1. Are completely different from implemented ideas
-2. Leverage findings from web research
-3. Fit the NexusOS architecture
-4. Deliver measurable value (performance, reliability, features, automation)
+1. Are completely different from implemented ideas.
+2. Directly align with the Ultimate Core Mandate (monetization/self-development).
+3. Leverage findings from web research.
+4. Fit the NexusOS architecture.
+5. Deliver measurable value (performance, passive income, reliability, automation).
 
 Output ONLY valid JSON (no markdown, no explanation):
 {{
@@ -95,9 +106,10 @@ class IdeaEngineV2:
             return []
 
     async def _web_research(self) -> List[Dict[str, str]]:
-        """Search the web using DuckDuckGo for relevant topics."""
+        """Search the web using DuckDuckGo for relevant topics with strict async timeouts."""
         results = []
         try:
+            import asyncio
             from duckduckgo_search import DDGS
 
             # Pick 1-2 random searches
@@ -106,15 +118,23 @@ class IdeaEngineV2:
             for query in queries:
                 logger.info(f"  Searching: {query}")
                 try:
-                    with DDGS() as ddgs:
-                        search_results = list(ddgs.text(query, max_results=3))
-                        for r in search_results:
-                            results.append({
-                                "title": r.get("title", ""),
-                                "snippet": r.get("body", "")[:200],
-                                "url": r.get("href", ""),
-                                "query": query
-                            })
+                    # Run DDGS in a background thread to prevent blocking the main asyncio event loop
+                    def sync_search():
+                        with DDGS(timeout=5) as ddgs:
+                            return list(ddgs.text(query, max_results=3))
+
+                    # Hard safety limit at the async coroutine level
+                    search_results = await asyncio.wait_for(
+                        asyncio.to_thread(sync_search),
+                        timeout=6.0
+                    )
+                    for r in search_results:
+                        results.append({
+                            "title": r.get("title", ""),
+                            "snippet": r.get("body", "")[:200],
+                            "url": r.get("href", ""),
+                            "query": query
+                        })
                 except Exception as e:
                     logger.warning(f"  Search failed for '{query}': {e}")
 

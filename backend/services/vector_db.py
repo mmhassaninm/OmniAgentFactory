@@ -11,11 +11,24 @@ os.makedirs(DB_DIR, exist_ok=True)
 
 class VectorMemory:
     """
-    Nexus Long-Term Semantic Memory using local ChromaDB.
+    Nexus Long-Term Semantic Memory using local or HTTP-based ChromaDB.
     """
     def __init__(self):
         try:
-            self.client = chromadb.PersistentClient(path=DB_DIR)
+            chroma_host = os.getenv("CHROMA_HOST")
+            chroma_port = int(os.getenv("CHROMA_PORT", "8000"))
+
+            # If running inside Docker-compose, connect to the chromadb service container
+            if chroma_host and chroma_host not in ("localhost", "127.0.0.1"):
+                logger.info(f"Connecting to ChromaDB HTTP Server at {chroma_host}:{chroma_port}...")
+                self.client = chromadb.HttpClient(host=chroma_host, port=chroma_port)
+            else:
+                # Fall back to container-local fast overlay to prevent NTFS SQLite deadlock issues
+                local_path = "/tmp/chroma_db"
+                os.makedirs(local_path, exist_ok=True)
+                logger.info(f"Using container-local high-performance ChromaDB at {local_path}...")
+                self.client = chromadb.PersistentClient(path=local_path)
+
             # Collection for general factual RAG and past code solutions
             self.knowledge_vault = self.client.get_or_create_collection(
                 name="nexus_vault",

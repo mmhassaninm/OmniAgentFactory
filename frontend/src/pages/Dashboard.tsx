@@ -6,7 +6,7 @@ import { apiCall } from '../api'
 import {
   Zap, Cpu, Database, GitBranch, Activity, AlertCircle, CheckCircle2,
   AlertTriangle, Clock, TrendingUp, Grid3x3, Layers, Server, Smartphone,
-  ShoppingBag, DollarSign, BookOpen, BarChart3, Shield, Sparkles
+  ShoppingBag, DollarSign, BookOpen, BarChart3, Shield, Sparkles, Users
 } from 'lucide-react'
 
 interface DashboardStats {
@@ -103,6 +103,19 @@ export default function Dashboard() {
       }
     },
     refetchInterval: 30000,
+    retry: 1,
+  })
+
+  const { data: collaborationSessions } = useQuery<any[]>({
+    queryKey: ['collaboration-sessions'],
+    queryFn: async () => {
+      try {
+        return await apiCall('/api/collaboration/conversations')
+      } catch {
+        return []
+      }
+    },
+    refetchInterval: 5000,
     retry: 1,
   })
 
@@ -314,6 +327,34 @@ export default function Dashboard() {
                 {getStatusIcon(moneyStatus?.paypal_configured || false)}
               </div>
 
+              {/* Agent Collaboration Hub */}
+              <div
+                onClick={() => navigate('/collaboration')}
+                className="flex items-center justify-between p-4 bg-indigo-950/20 rounded-lg border border-indigo-500/30 hover:border-indigo-400 cursor-pointer transition-colors shadow-[0_0_15px_rgba(99,102,241,0.05)]"
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-indigo-400 animate-pulse" />
+                  <div>
+                    <div className="font-medium text-indigo-200">Agent Collaboration Hub</div>
+                    <div className="text-sm text-indigo-300">
+                      {collaborationSessions && collaborationSessions.length > 0 ? (
+                        collaborationSessions[0].status === 'ACTIVE' ? (
+                          <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                            عصف ذهني حي: {collaborationSessions[0].title.replace("عصف ذهني: ", "")}
+                          </span>
+                        ) : (
+                          <span>آخر مداولة: {collaborationSessions[0].title.replace("عصف ذهني: ", "")}</span>
+                        )
+                      ) : (
+                        "لا توجد مداولات نشطة حالياً"
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {getStatusIcon(collaborationSessions && collaborationSessions.some(s => s.status === 'ACTIVE') || false)}
+              </div>
+
               {/* Evolution Loop */}
               <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-3">
@@ -325,7 +366,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                {getStatusIcon(factoryStatus?.factory.actively_evolving || 0 > 0)}
+                {getStatusIcon((factoryStatus?.factory.actively_evolving || 0) > 0)}
               </div>
             </div>
           </div>
@@ -383,6 +424,12 @@ export default function Dashboard() {
                 className="w-full text-left px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors text-sm border border-slate-600"
               >
                 → Evolution Dashboard
+              </button>
+              <button
+                onClick={() => navigate('/collaboration')}
+                className="w-full text-left px-4 py-2 bg-indigo-950/40 hover:bg-indigo-900/60 text-indigo-200 rounded-lg transition-colors text-sm border border-indigo-500/30"
+              >
+                → Agent Collaboration Hub
               </button>
               <button
                 onClick={() => navigate('/models')}

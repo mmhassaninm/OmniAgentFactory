@@ -47,6 +47,8 @@ class EvolutionLoop:
               "error": "error message if any"
             }
         """
+        import os
+        import sys
         cycle_result = {
             "iteration": 0,
             "timestamp": datetime.now().isoformat(),
@@ -57,6 +59,43 @@ class EvolutionLoop:
             "rolled_back": False,
             "error": None
         }
+
+        lock_file_path = Path(self.root_path) / "autonomous_logs" / "evolution_cycle.lock"
+        lock_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Check lockfile
+        if lock_file_path.exists():
+            try:
+                lock_content = lock_file_path.read_text().strip()
+                if lock_content:
+                    running_pid = int(lock_content)
+                    is_running = False
+                    try:
+                        os.kill(running_pid, 0)
+                        is_running = True
+                    except OSError:
+                        is_running = False
+
+                    if is_running:
+                        msg = f"Aborting cycle: Evolution cycle is already running in another process (PID {running_pid})"
+                        logger.warning(msg)
+                        cycle_result["error"] = msg
+                        return cycle_result
+                    else:
+                        logger.warning(f"Found stale lockfile for PID {running_pid} (process not running). Cleaning up.")
+                        lock_file_path.unlink(missing_ok=True)
+            except Exception as e:
+                logger.warning(f"Failed to read/verify lockfile: {e}. Removing.")
+                lock_file_path.unlink(missing_ok=True)
+
+        # Acquire lock
+        try:
+            lock_file_path.write_text(str(os.getpid()))
+        except Exception as e:
+            msg = f"Failed to acquire lockfile: {e}"
+            logger.error(msg)
+            cycle_result["error"] = msg
+            return cycle_result
 
         try:
             # Step 1: Load state and increment iteration
@@ -171,6 +210,13 @@ class EvolutionLoop:
             cycle_result["timestamp"] = datetime.now().isoformat()
             self._write_cycle_report(cycle_result)
             return cycle_result
+        finally:
+            # Clean up lockfile
+            try:
+                if lock_file_path.exists():
+                    lock_file_path.unlink(missing_ok=True)
+            except Exception as e:
+                logger.warning(f"Failed to clean up lockfile: {e}")
 
     def _write_cycle_report(self, cycle_result: Dict[str, Any]) -> bool:
         """Write detailed cycle report to autonomous_logs/cycle_reports/."""

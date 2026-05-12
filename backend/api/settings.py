@@ -611,3 +611,247 @@ async def save_constitution(req: SaveConstitutionRequest):
     return {"status": "saved", "count": len(req.rules)}
 
 
+# ── General Settings (PayPal, Service Pricing) ───────────────────────────
+
+class SaveGeneralSettingsRequest(BaseModel):
+    paypal_me_link: str
+    default_service_price: int
+
+
+@router.get("/general")
+async def get_general_settings():
+    """Retrieve general settings (PayPal Link, default service price)."""
+    from core.database import get_db
+    from core.config import get_settings
+    db = get_db()
+    s = get_settings()
+    stored = await db.settings.find_one({"_id": "general_settings"}) if db is not None else None
+    
+    paypal_me_link = stored.get("paypal_me_link", s.paypal_me_link) if stored else s.paypal_me_link
+    default_service_price = stored.get("default_service_price", s.default_service_price) if stored else s.default_service_price
+    
+    return {
+        "paypal_me_link": paypal_me_link,
+        "default_service_price": default_service_price
+    }
+
+
+@router.post("/general")
+async def save_general_settings(req: SaveGeneralSettingsRequest):
+    """Save general settings to MongoDB and update the runtime config singleton."""
+    from core.database import get_db
+    from core.config import get_settings
+    db = get_db()
+    if db is not None:
+        await db.settings.update_one(
+            {"_id": "general_settings"},
+            {"$set": {
+                "paypal_me_link": req.paypal_me_link.strip(),
+                "default_service_price": req.default_service_price
+            }},
+            upsert=True
+        )
+        
+        # Sync with the process-wide settings singleton
+        s = get_settings()
+        s.paypal_me_link = req.paypal_me_link.strip()
+        s.default_service_price = req.default_service_price
+        logger.info("General settings updated and saved to DB (PayPal: %s, Price: $%d)", s.paypal_me_link, s.default_service_price)
+        
+    return {"status": "saved"}
+
+
+# ── Self Evolution Settings ──────────────────────────────────────────────
+
+class SelfEvolutionSettingsRequest(BaseModel):
+    self_evolution_enabled: bool
+    evolution_interval_minutes: float
+    evolution_max_patches_per_cycle: int
+    evolution_max_tokens: int
+    evolution_rollback_on_failure: bool
+    idea_engine_enabled: bool
+    idea_engine_rate_per_hour: float
+    idea_engine_max_daily_executions: int
+    idea_engine_scopes: List[str]
+    idea_engine_min_score: float
+
+
+@router.get("/self-evolution")
+async def get_self_evolution_settings():
+    """Retrieve self-evolution configurations."""
+    from core.database import get_db
+    import os
+    db = get_db()
+
+    stored = await db.settings.find_one({"_id": "self_evolution_settings"}) if db is not None else None
+
+    # Merge values with OS environment fallback values
+    return {
+        "self_evolution_enabled": stored.get("self_evolution_enabled", os.getenv("SELF_EVOLUTION_ENABLED", "true").lower() == "true") if stored else (os.getenv("SELF_EVOLUTION_ENABLED", "true").lower() == "true"),
+        "evolution_interval_minutes": stored.get("evolution_interval_minutes", float(os.getenv("EVOLUTION_INTERVAL_MINUTES", "30"))) if stored else float(os.getenv("EVOLUTION_INTERVAL_MINUTES", "30")),
+        "evolution_max_patches_per_cycle": stored.get("evolution_max_patches_per_cycle", int(os.getenv("EVOLUTION_MAX_PATCHES_PER_CYCLE", "5"))) if stored else int(os.getenv("EVOLUTION_MAX_PATCHES_PER_CYCLE", "5")),
+        "evolution_max_tokens": stored.get("evolution_max_tokens", int(os.getenv("EVOLUTION_MAX_TOKENS", "30000"))) if stored else int(os.getenv("EVOLUTION_MAX_TOKENS", "30000")),
+        "evolution_rollback_on_failure": stored.get("evolution_rollback_on_failure", os.getenv("EVOLUTION_ROLLBACK_ON_FAILURE", "true").lower() == "true") if stored else (os.getenv("EVOLUTION_ROLLBACK_ON_FAILURE", "true").lower() == "true"),
+        "idea_engine_enabled": stored.get("idea_engine_enabled", os.getenv("IDEA_ENGINE_ENABLED", "true").lower() == "true") if stored else (os.getenv("IDEA_ENGINE_ENABLED", "true").lower() == "true"),
+        "idea_engine_rate_per_hour": stored.get("idea_engine_rate_per_hour", float(os.getenv("IDEA_ENGINE_RATE_PER_HOUR", "100"))) if stored else float(os.getenv("IDEA_ENGINE_RATE_PER_HOUR", "100")),
+        "idea_engine_max_daily_executions": stored.get("idea_engine_max_daily_executions", int(os.getenv("IDEA_ENGINE_MAX_DAILY_EXECUTIONS", "2400"))) if stored else int(os.getenv("IDEA_ENGINE_MAX_DAILY_EXECUTIONS", "2400")),
+        "idea_engine_scopes": stored.get("idea_engine_scopes", os.getenv("IDEA_ENGINE_TARGET_SCOPES", "everything").lower().split(",")) if stored else os.getenv("IDEA_ENGINE_TARGET_SCOPES", "everything").lower().split(","),
+        "idea_engine_min_score": stored.get("idea_engine_min_score", float(os.getenv("IDEA_ENGINE_MIN_SCORE", "5.0"))) if stored else float(os.getenv("IDEA_ENGINE_MIN_SCORE", "5.0")),
+    }
+
+
+@router.post("/self-evolution")
+async def save_self_evolution_settings(req: SelfEvolutionSettingsRequest):
+    """Save self-evolution settings, propagate to environment, and hot-reload components."""
+    from core.database import get_db
+    import os
+    db = get_db()
+
+    doc = {
+        "self_evolution_enabled": req.self_evolution_enabled,
+        "evolution_interval_minutes": req.evolution_interval_minutes,
+        "evolution_max_patches_per_cycle": req.evolution_max_patches_per_cycle,
+        "evolution_max_tokens": req.evolution_max_tokens,
+        "evolution_rollback_on_failure": req.evolution_rollback_on_failure,
+        "idea_engine_enabled": req.idea_engine_enabled,
+        "idea_engine_rate_per_hour": req.idea_engine_rate_per_hour,
+        "idea_engine_max_daily_executions": req.idea_engine_max_daily_executions,
+        "idea_engine_scopes": req.idea_engine_scopes,
+        "idea_engine_min_score": req.idea_engine_min_score,
+        "updated_at": datetime.now()
+    }
+
+    if db is not None:
+        await db.settings.update_one(
+            {"_id": "self_evolution_settings"},
+            {"$set": doc},
+            upsert=True
+        )
+
+    # Dynamically apply variables to environment process space
+    os.environ["SELF_EVOLUTION_ENABLED"] = str(req.self_evolution_enabled).lower()
+    os.environ["EVOLUTION_INTERVAL_MINUTES"] = str(req.evolution_interval_minutes)
+    os.environ["EVOLUTION_MAX_PATCHES_PER_CYCLE"] = str(req.evolution_max_patches_per_cycle)
+    os.environ["EVOLUTION_MAX_TOKENS"] = str(req.evolution_max_tokens)
+    os.environ["EVOLUTION_ROLLBACK_ON_FAILURE"] = str(req.evolution_rollback_on_failure).lower()
+    os.environ["IDEA_ENGINE_ENABLED"] = str(req.idea_engine_enabled).lower()
+    os.environ["IDEA_ENGINE_RATE_PER_HOUR"] = str(req.idea_engine_rate_per_hour)
+    os.environ["IDEA_ENGINE_MAX_DAILY_EXECUTIONS"] = str(req.idea_engine_max_daily_executions)
+    os.environ["IDEA_ENGINE_TARGET_SCOPES"] = ",".join(req.idea_engine_scopes)
+    os.environ["IDEA_ENGINE_MIN_SCORE"] = str(req.idea_engine_min_score)
+
+    # Reload Scheduler and Idea Engine dynamically
+    try:
+        from core.self_evolution.scheduler import get_evolution_scheduler
+        sch = get_evolution_scheduler()
+        sch.reload_config(enabled=req.self_evolution_enabled, interval_minutes=req.evolution_interval_minutes)
+    except Exception as e:
+        logger.warning("Failed to hot-reload EvolutionScheduler: %s", e)
+
+    try:
+        from core.self_evolution.idea_engine import get_idea_engine
+        ie = get_idea_engine()
+        ie.reload_config(
+            enabled=req.idea_engine_enabled,
+            rate_per_hour=req.idea_engine_rate_per_hour,
+            max_daily_executions=req.idea_engine_max_daily_executions,
+            target_scopes=req.idea_engine_scopes,
+            min_score=req.idea_engine_min_score
+        )
+    except Exception as e:
+        logger.warning("Failed to hot-reload IdeaEngine: %s", e)
+
+    logger.info("Self-Evolution configurations saved and hot-reloaded.")
+    return {"status": "saved"}
+
+
+@router.get("/self-evolution/status")
+async def get_self_evolution_status():
+    """Expose telemetry, locks, active states, and recent reports."""
+    from core.self_evolution.state_manager import get_state_manager
+    from pathlib import Path
+    import os
+    import json
+
+    sm = get_state_manager()
+    state = sm.load_state()
+
+    # Check lock file
+    lock_file_path = Path("autonomous_logs/evolution_cycle.lock")
+    is_running = False
+    lock_pid = None
+    if lock_file_path.exists():
+        try:
+            content = lock_file_path.read_text().strip()
+            if content:
+                lock_pid = int(content)
+                try:
+                    os.kill(lock_pid, 0)
+                    is_running = True
+                except OSError:
+                    is_running = False
+        except Exception:
+            is_running = False
+
+    # Calculate countdown
+    last_run_str = state.get("last_run")
+    countdown_seconds = 0
+    try:
+        interval_minutes = float(os.getenv("EVOLUTION_INTERVAL_MINUTES", "30"))
+    except Exception:
+        interval_minutes = 30.0
+
+    if last_run_str:
+        try:
+            last_run_dt = datetime.fromisoformat(last_run_str)
+            elapsed = (datetime.now() - last_run_dt).total_seconds()
+            countdown_seconds = max(0.0, (interval_minutes * 60) - elapsed)
+        except Exception:
+            countdown_seconds = 0.0
+
+    # Load recent 5 cycle reports
+    last_5_reports = []
+    try:
+        reports_dir = Path("autonomous_logs/cycle_reports")
+        if reports_dir.exists():
+            files = sorted(reports_dir.glob("cycle_*.json"), reverse=True)[:5]
+            for file in files:
+                try:
+                    last_5_reports.append(json.loads(file.read_text(encoding="utf-8")))
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.warning("Failed to load cycle reports: %s", e)
+
+    # Get last cycle result
+    last_result = "never_run"
+    if last_5_reports:
+        latest = last_5_reports[0]
+        if latest.get("verified"):
+            last_result = "success"
+        elif latest.get("rolled_back"):
+            last_result = "rolled_back"
+        else:
+            last_result = "failed"
+
+    # Determine general running status of the scheduler
+    from core.self_evolution.scheduler import get_evolution_scheduler
+    sch = get_evolution_scheduler()
+    scheduler_state = "Disabled"
+    if sch.enabled:
+        scheduler_state = "Running" if is_running else "Idle"
+
+    return {
+        "scheduler_state": scheduler_state,
+        "last_run": last_run_str,
+        "last_result": last_result,
+        "total_improvements": state.get("total_improvements", 0),
+        "total_errors": state.get("total_errors", 0),
+        "next_run_countdown": int(countdown_seconds),
+        "is_running": is_running,
+        "lock_pid": lock_pid,
+        "last_5_cycles": last_5_reports
+    }
+
+
+

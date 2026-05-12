@@ -83,6 +83,15 @@ async def lifespan(app: FastAPI):
             from core.money_roi_tracker import load_from_db
             await load_from_db(db)
             logger.info("✓ Money ROI Tracker cache hydrated from database")
+            
+            # Load general settings from DB and override Settings singleton
+            stored_general = await db.settings.find_one({"_id": "general_settings"})
+            if stored_general:
+                settings_inst = get_settings()
+                settings_inst.paypal_me_link = stored_general.get("paypal_me_link", settings_inst.paypal_me_link)
+                settings_inst.default_service_price = int(stored_general.get("default_service_price", settings_inst.default_service_price))
+                logger.info("✓ Loaded General settings (PayPal: %s, Price: $%d) from database", settings_inst.paypal_me_link, settings_inst.default_service_price)
+
 
         settings = get_settings()
         if settings.agent_mode in ("human_in_loop", "supervised", "review_only"):
@@ -145,6 +154,43 @@ async def lifespan(app: FastAPI):
             logger.info("ℹ️ Autonomous Evolution disabled (set ENABLE_AUTONOMOUS_EVOLUTION=true to enable)")
     except Exception as e:
         logger.warning("Autonomous Evolution v3.0 failed to start: %s", e)
+
+    # ── SELF EVOLUTION SCHEDULER & IDEA ENGINE v4.0 ───────────────────────
+    try:
+        if db is not None:
+            # 1. Load Self-Evolution settings from DB and override environment
+            stored_ev = await db.settings.find_one({"_id": "self_evolution_settings"})
+            if stored_ev:
+                import os
+                os.environ["SELF_EVOLUTION_ENABLED"] = str(stored_ev.get("self_evolution_enabled", True)).lower()
+                os.environ["EVOLUTION_INTERVAL_MINUTES"] = str(stored_ev.get("evolution_interval_minutes", 30.0))
+                os.environ["EVOLUTION_MAX_PATCHES_PER_CYCLE"] = str(stored_ev.get("evolution_max_patches_per_cycle", 5))
+                os.environ["EVOLUTION_MAX_TOKENS"] = str(stored_ev.get("evolution_max_tokens", 30000))
+                os.environ["EVOLUTION_ROLLBACK_ON_FAILURE"] = str(stored_ev.get("evolution_rollback_on_failure", True)).lower()
+                os.environ["IDEA_ENGINE_ENABLED"] = str(stored_ev.get("idea_engine_enabled", True)).lower()
+                os.environ["IDEA_ENGINE_RATE_PER_HOUR"] = str(stored_ev.get("idea_engine_rate_per_hour", 100.0))
+                os.environ["IDEA_ENGINE_MAX_DAILY_EXECUTIONS"] = str(stored_ev.get("idea_engine_max_daily_executions", 2400))
+                os.environ["IDEA_ENGINE_TARGET_SCOPES"] = ",".join(stored_ev.get("idea_engine_scopes", ["everything"]))
+                os.environ["IDEA_ENGINE_MIN_SCORE"] = str(stored_ev.get("idea_engine_min_score", 5.0))
+                logger.info("✓ Self-Evolution configurations loaded from MongoDB and mapped to environment")
+
+            # 2. Start scheduler and idea engine
+            from core.model_router import get_model_router
+            from core.self_evolution.scheduler import start_evolution_scheduler
+            from core.self_evolution.idea_engine import get_idea_engine
+
+            router = get_model_router()
+            
+            # Start Evolution Scheduler
+            start_evolution_scheduler(router, ".")
+            
+            # Start Idea Engine
+            ie_engine = get_idea_engine(router, ".")
+            ie_engine.start()
+            
+            logger.info("🚀 SELF-EVOLUTION SCHEDULER & IDEA ENGINE v4.0 started successfully!")
+    except Exception as e:
+        logger.warning("Failed to start Self-Evolution components: %s", e)
 
     # ── Legacy Systems ──────────────────────────────────────────────────
     # Initialize multi-provider registry from DB settings
@@ -490,6 +536,14 @@ try:
     logger.info("✓ Money Agent router loaded")
 except Exception as e:
     logger.warning("Money Agent router failed to load: %s", e)
+
+# ── Collaboration Hub Router ─────────────────────────────────────────────────
+try:
+    from api.collaboration import router as collaboration_router
+    app.include_router(collaboration_router, prefix="/api/collaboration", tags=["Collaboration Hub"])
+    logger.info("✓ Collaboration Hub router loaded")
+except Exception as e:
+    logger.warning("Collaboration Hub router failed to load: %s", e)
 
 # ── OS Shell UI Routers (desktop shell) ─────────────────────────────────
 try:
