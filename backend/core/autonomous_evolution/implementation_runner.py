@@ -225,7 +225,28 @@ class ImplementationRunner:
     def _resolve_path(self, rel_path: str) -> Tuple[Path, str]:
         """Resolve relative path to absolute with safety checks."""
         try:
-            abs_path = (PROJECT_ROOT / rel_path).resolve()
+            # Normalize path delimiters and handle container-specific absolute paths
+            clean_path = rel_path.replace("\\", "/")
+            if clean_path.startswith("/app/"):
+                # Inside Docker, /app maps to ./backend on the host. Standardize as backend/... relative to PROJECT_ROOT
+                clean_path = "backend/" + clean_path[5:]
+            elif clean_path.startswith("/project/"):
+                # Inside Docker, /project maps to ./ on the host. Standardize by stripping prefix
+                clean_path = clean_path[9:]
+            elif clean_path.startswith("/backend/"):
+                # Handle leading slash with backend
+                clean_path = "backend/" + clean_path[9:]
+            elif clean_path.startswith("/"):
+                # Stripping standard absolute root slash if any
+                clean_path = clean_path[1:]
+                if not clean_path.startswith("backend/"):
+                    clean_path = "backend/" + clean_path
+
+            # If it's a bare path like 'core/benchmarker.py', make sure it is prefixed with 'backend/'
+            if not clean_path.startswith("backend/") and not clean_path.startswith("project/"):
+                clean_path = "backend/" + clean_path
+
+            abs_path = (PROJECT_ROOT / clean_path).resolve()
             try:
                 abs_path.relative_to(PROJECT_ROOT)
             except ValueError:
