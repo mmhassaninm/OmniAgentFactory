@@ -1,1 +1,0 @@
-document.addEventListener('DOMContentLoaded', function() { const collectionFilter = document.querySelector('#filters'); if (collectionFilter) { collectionFilter.addEventListener('change', function() { const value = collectionFilter.value; // Add logic to filter products based on the selected value }); } });

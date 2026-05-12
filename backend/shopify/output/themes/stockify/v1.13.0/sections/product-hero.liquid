@@ -1,5 +1,0 @@
-<section id="product-hero" class="container mx-auto px-4 py-4 text-center text-[#3498db] leading-tight font-sans text-3xl font-bold">
-    <h1 class="font-montserrat text-5xl leading-tight">{{ settings.heading }}</h1>
-    <p class="font-lato text-2xl pb-4">{{ settings.price }}</p>
-    <a href="{{ product.url }}" class="bg-[#3498db] hover:bg-[#2ecc71] text-white font-bold py-2 px-4 rounded">{{ settings.cta_label }}</a>
-  </section>{% schema %}{% schema-setting id="image" type="image_picker" label="Product image" %}{% schema-setting id="heading" type="text" label="Heading" default="{{ product.title }}" %}{% schema-setting id="price" type="money" label="Price" default="{{ product.price | money }}" %}{% schema-setting id="cta_label" type="text" label="Button label" default="Add to Cart" %}{% endschema %}

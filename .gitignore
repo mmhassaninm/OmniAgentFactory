@@ -1,81 +1,136 @@
-# OmniBot — Security-First .gitignore
+============================================================
+OmniAgentFactory — .gitignore
+Auto-maintained: do not manually edit sections marked [AUTO]
+============================================================
 
-# === SECRETS & CREDENTIALS (NEVER COMMIT) ===
+─── SECRETS & CREDENTIALS ───────────────────────────────────
 .env
 .env.*
 !.env.example
-*.key
 *.pem
+*.key
 *.p12
 *.pfx
+*secret*
+*credential*
+*api_key*
+*private_key*
 secrets/
-credentials/
-*_credentials.json
-_secrets.json
-service_account.json
+vault/
 
-# === SENSITIVE DATA ===
+─── AUTO-GENERATED REPORTS [AUTO] ──────────────────────────
+backend/autonomous_logs/report_*.md
+backend/autonomous_logs/report_*.json
+backend/autonomous_logs/ai_health_*.json
+backend/autonomous_logs/ai_scout_*.json
+backend/autonomous_logs/task_archive_*.json
+backend/autonomous_logs/evolution_state.json
+backend/autonomous_logs/.evolution_state.lock
+backend/autonomous_logs/idea_engine/
+autonomous_logs/EXECUTION_HISTORY.json
+autonomous_logs/IDEAS_LOG.json
+autonomous_logs/PROBLEMS_LOG.json
+autonomous_logs/BUDGET_TRACKER.json
+autonomous_logs/cycle_*.json
+autonomous_logs/cycle_reports/
+autonomous_logs/METRICS/
+autonomous_logs/backups/
+**/DAILY_REPORT.md
+AI_CONNECTIVITY_REPORT.md
+AUDIT_REPORT.md
 ERROR_LOG.md
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-backend/logs/
-exports/
-Project_Docs/Logs/*
-Project_Docs/Secrets/*
+**/daily_reports/
 
-# === DATABASE ===
+─── SHOPIFY BUILD OUTPUT [AUTO] ────────────────────────────
+backend/shopify/output/
+backend/shopify/output/themes/*.zip
+
+─── KEEP THESE LOG DIRS (but not their contents) ────────────
+!backend/autonomous_logs/.gitkeep
+!autonomous_logs/.gitkeep
+!autonomous_logs/backups/.gitkeep
+!autonomous_logs/METRICS/.gitkeep
+
+─── PYTHON CACHE ────────────────────────────────────────────
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+dist/
+build/
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+
+─── NODE / FRONTEND ─────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+jspm_packages/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+*.tsbuildinfo
+
+─── DATABASES & VECTOR STORES ───────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
 *.rdb
 *.bson
+*.pkl
+chroma_db/
+chromadb/
 chroma_data/
+vector_store/
 data/
 backend/data/*
 mongodb_data/
+backend/chroma_db_backup/
 
-# === PYTHON ===
-__pycache__/
-**/__pycache__/
-*.py[cod]
-*.pyc
-backend/chroma_db/
-*$py.class
-*.so
-.Python
-build/
-dist/
-*.egg-info/
-.eggs/
-venv/
-env/
-.venv/
-pip-log.txt
+─── BACKUP & TEMP FILES ─────────────────────────────────────
+*.bak
+*.tmp
+*.temp
+*backup*
+*_backup_*
+*.pid
+nohup.out
 
-# === NODE / FRONTEND ===
-node_modules/
-frontend/node_modules/
-jspm_packages/
-frontend/dist/
-.npm
-*.tsbuildinfo
+─── LOG FILES ───────────────────────────────────────────────
+*.log
+logs/*.txt
+logs/*.log
+logs/sessions/
+logs/backend_test.log
+logs/money_agent_browser.png
+*.err.log
+*.out.log
+backend_err.log
+backend_out.log
+frontend_err.log
+frontend_out.log
+frontend_startup.log
+simple_batch_test.log
+backend.log
 
-# === OS FILES ===
+─── OS & EDITOR ─────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
+.idea/
 *.swp
 *.swo
+*.orig
 *~
-
-# === EDITOR ===
 .vscode/settings.json
-.idea/
 *.suo
 .ntvs
 *.njsproj
@@ -83,16 +138,18 @@ desktop.ini
 .vibelab_config
 .vibelab_drafts/
 
-# === DOCKER ===
+─── LARGE/BINARY FILES ──────────────────────────────────────
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+─── DOCKER ──────────────────────────────────────────────────
 docker-compose.override.yml
 
-# === SENSITIVE RUNTIME FILES ===
-*.pid
-nohup.out
-
-# === GENERATED / PRIVATE REFERENCE MATERIAL ===
+─── PRIVATE REFERENCE ───────────────────────────────────────
 NexusOS-main/Style_References/
 
-# === BUILD OUTPUTS ===
+─── BUILD OUTPUTS ───────────────────────────────────────────
 out/
 coverage/
