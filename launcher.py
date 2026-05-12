@@ -544,7 +544,6 @@ def main(skip_kill_cleanup=False):
                         _processes[1] = launch_frontend()
         except Exception as e:
             log_message(f"[MONITOR] Exception in health monitor loop: {e}")
-
 if __name__ == "__main__":
     # Check for --skip-kill flag (called from start_omnibot.bat which already cleaned up)
     skip_kill = "--skip-kill" in sys.argv

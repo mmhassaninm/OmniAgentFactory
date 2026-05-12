@@ -120,6 +120,7 @@ Required JSON structure:
 }}
 
 Rules:
+- NEVER attempt to modify 'frontend/src/pages/Settings.tsx', 'PROJECT_INSTRUCTIONS.md', 'MODIFICATION_HISTORY.md', or 'AGENTS.md'. These files are strictly protected and excluded from autonomous self-evolution.
 - For replace_block: old_content must be a unique string in the file
 - For create_file: only set overwrite=true if file already exists and should be replaced
 - For delete_file: no old_content or new_content needed

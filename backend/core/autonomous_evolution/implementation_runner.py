@@ -33,7 +33,8 @@ AUTONOMOUS_LOGS = PROJECT_ROOT / "autonomous_logs"
 EXECUTION_HISTORY = AUTONOMOUS_LOGS / "EXECUTION_HISTORY.json"
 
 # Files the runner must never modify
-FORBIDDEN_FILES = {".env", ".gitignore", "MODIFICATION_HISTORY.md", "docker-compose.yml"}
+# NOTE: abs_path.name (basename) is checked, so use just the filename
+FORBIDDEN_FILES = {".env", ".gitignore", "MODIFICATION_HISTORY.md", "docker-compose.yml", "Settings.tsx"}
 
 PLAN_PROMPT = (
     "You are a senior Python engineer implementing a code change.\n\n"

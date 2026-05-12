@@ -108,3 +108,9 @@
 - Outcome       : success
 - Notes         : Chrome browser subagent successfully verified that all parts of the Collaboration Hub—including seeded history, focus topics, and live streaming inter-agent discussions—are 100% in English.
 
+## 2026-05-12 — Fix Settings Page Hook Regression & Self-Evolution Immunity
+- Files changed : frontend/src/pages/Settings.tsx, backend/core/self_evolution/patch_applier.py, backend/core/self_evolution/ai_reasoner.py
+- Approach      : Relocated 'idea-engine-status' query hook above loading early-return in Settings.tsx, added protected file exclusion checks in PatchApplier, and updated AI Reasoner instructions.
+- Outcome       : success
+- Notes         : Prevented React hook mismatch crashes on initial load and established complete immunity against autonomous self-evolution regression for critical and governance files.
+

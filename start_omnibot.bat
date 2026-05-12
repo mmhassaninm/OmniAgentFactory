@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 chcp 65001 >nul 2>&1
 
 echo ====================================================
-echo             OMNIBOT LAUNCHER v2.4
+echo             OMNIBOT LAUNCHER v2.6
 echo ====================================================
 echo.
 
@@ -17,17 +17,50 @@ set "LOG_FILE=%BASE_DIR%Project_Docs\Logs\launcher_diagnostic.log"
 if not exist "%BASE_DIR%Project_Docs\Logs\" mkdir "%BASE_DIR%Project_Docs\Logs\" 2>nul
 
 echo === OmniBot Launcher Log [%date% %time%] === > "%LOG_FILE%"
-echo [%date% %time%] Launcher v2.4 starting >> "%LOG_FILE%"
+echo [%date% %time%] Launcher v2.6 starting >> "%LOG_FILE%"
 
 REM --- Step 1: Kill old processes ---
-echo [1/5] Cleaning old processes...
-echo [1/5] Cleaning old processes... >> "%LOG_FILE%"
-powershell -NoProfile -WindowStyle Hidden -Command "try { Get-Process python,pythonw,node,uvicorn -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match 'launcher|omnibot|main.py|vite' } | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Host 'cleaned' } catch {}" >> "%LOG_FILE%" 2>&1
+echo [1/6] Cleaning old processes...
+echo [1/6] Cleaning old processes... >> "%LOG_FILE%"
+powershell -NoProfile -WindowStyle Hidden -Command "try { Get-Process python,pythonw,node,uvicorn -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -match 'launcher|omnibot|main.py|vite|tray_manager|run_tray' } | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Host 'cleaned' } catch {}" >> "%LOG_FILE%" 2>&1
 timeout /t 1 /nobreak >nul 2>&1
 
-REM --- Step 2: Check Docker ---
-echo [2/5] Checking Docker services...
-echo [2/5] Docker check... >> "%LOG_FILE%"
+REM --- Step 2: Find pythonw.exe full path ---
+echo [2/6] Finding pythonw.exe...
+echo [2/6] Finding pythonw.exe... >> "%LOG_FILE%"
+set "PYTHONW="
+for /f "tokens=*" %%i in ('where pythonw 2^>nul') do (
+    if not defined PYTHONW set "PYTHONW=%%i"
+)
+if not defined PYTHONW (
+    REM Fallback: try common locations
+    if exist "%CONDA_PREFIX%\pythonw.exe" set "PYTHONW=%CONDA_PREFIX%\pythonw.exe"
+    if not defined PYTHONW if exist "%LOCALAPPDATA%\miniconda3\pythonw.exe" set "PYTHONW=%LOCALAPPDATA%\miniconda3\pythonw.exe"
+    if not defined PYTHONW if exist "%USERPROFILE%\miniconda3\pythonw.exe" set "PYTHONW=%USERPROFILE%\miniconda3\pythonw.exe"
+)
+if not defined PYTHONW (
+    echo     [WARNING] pythonw.exe not found — falling back to python.exe
+    echo [WARNING] pythonw.exe not found >> "%LOG_FILE%"
+    set "PYTHONW=pythonw.exe"
+) else (
+    echo     [OK] pythonw.exe: %PYTHONW%
+    echo [OK] pythonw.exe: %PYTHONW% >> "%LOG_FILE%"
+)
+echo.
+
+REM --- Step 3: Launch tray icon (FIRST — visible immediately) ---
+echo [3/6] Starting system tray icon...
+echo [3/6] Starting system tray icon... >> "%LOG_FILE%"
+echo [%date% %time%] Launching: "%PYTHONW%" "%BASE_DIR%run_tray.py" >> "%LOG_FILE%"
+start "" "%PYTHONW%" "%BASE_DIR%run_tray.py"
+echo     [OK] Tray icon launcher started
+echo [OK] Tray icon launcher started >> "%LOG_FILE%"
+timeout /t 2 /nobreak >nul 2>&1
+echo.
+
+REM --- Step 4: Check Docker ---
+echo [4/6] Checking Docker services...
+echo [4/6] Docker check... >> "%LOG_FILE%"
 docker-compose ps mongo >nul 2>&1
 if %errorlevel% equ 0 (
     echo     [OK] Docker is running
@@ -41,9 +74,9 @@ if %errorlevel% equ 0 (
 )
 echo.
 
-REM --- Step 3: Find Python ---
-echo [3/5] Finding Python...
-echo [3/5] Python search... >> "%LOG_FILE%"
+REM --- Step 5: Find Python ---
+echo [5/6] Finding Python...
+echo [5/6] Python search... >> "%LOG_FILE%"
 set "PYTHON="
 
 if exist "%CONDA_PREFIX%\python.exe" set "PYTHON=%CONDA_PREFIX%\python.exe"
@@ -75,83 +108,32 @@ echo     [OK] Python: %PYTHON%
 echo [OK] Python: %PYTHON% >> "%LOG_FILE%"
 echo.
 
-REM --- Step 4: Launch OmniBot ---
-echo [4/5] Starting OmniBot services...
-echo [4/5] Starting launcher.py >> "%LOG_FILE%"
+REM --- Step 6: Launch OmniBot (background) ---
+echo [6/6] Starting OmniBot services (background)...
+echo [6/6] Starting launcher.py >> "%LOG_FILE%"
 echo [%date% %time%] Launching: "%PYTHON%" "%BASE_DIR%launcher.py" --skip-kill >> "%LOG_FILE%"
 
-"%PYTHON%" "%BASE_DIR%launcher.py" --skip-kill >> "%LOG_FILE%" 2>&1
-set "LAUNCH_EXIT=%errorlevel%"
+REM Launch launcher.py in the background so the batch script continues
+start "" /B "%PYTHON%" "%BASE_DIR%launcher.py" --skip-kill >> "%LOG_FILE%" 2>&1
+timeout /t 3 /nobreak >nul 2>&1
 
-if %LAUNCH_EXIT% neq 0 (
-    echo     [ERROR] Launcher exited with code %LAUNCH_EXIT%
-    echo [%date% %time%] ERROR: Launcher exit code %LAUNCH_EXIT% >> "%LOG_FILE%"
-    echo.
-    echo   === LAST 20 LINES OF LOG ===
-    powershell -NoProfile -Command "Get-Content '%LOG_FILE%' -Tail 20"
-    echo   === END OF LOG ===
-    echo.
-    set /A ERROR_COUNT+=1
-    goto :FAILED
-)
-echo     [OK] Launcher started successfully
-echo [OK] Launcher started >> "%LOG_FILE%"
+echo     [OK] Launcher started in background
+echo [OK] Launcher started in background >> "%LOG_FILE%"
 echo.
 
-REM --- Step 5: Health check (30s max) ---
-echo [5/5] Waiting for backend...
-echo [5/5] Health check... >> "%LOG_FILE%"
-
-setlocal enabledelayedexpansion
-set "HC_RESULT=0"
-set "HC_TIMEOUT=30"
-set "HC_ELAPSED=0"
-
-:HC_LOOP
-if !HC_ELAPSED! geq %HC_TIMEOUT% (
-    set "HC_RESULT=1"
-    goto :HC_END
-)
-
-powershell -NoProfile -Command "try { [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}; \$req = [Net.HttpWebRequest]::Create('http://localhost:3001/api/health'); \$req.Timeout = 2000; \$res = \$req.GetResponse(); if (\$res.StatusCode -eq 200) { Write-Host 'OK'; exit 0 } } catch { exit 1 }" >nul 2>&1
-
-if %errorlevel% equ 0 (
-    echo     [OK] Backend is ready!
-    echo [%date% %time%] OK: Backend ready >> "%LOG_FILE%"
-    goto :HC_END
-) else (
-    echo -n "."
-    timeout /t 2 /nobreak >nul 2>&1
-    set /A HC_ELAPSED+=2
-    goto :HC_LOOP
-)
-
-:HC_END
-if "%HC_RESULT%"=="1" (
-    set /A ERROR_COUNT+=1
-    echo.
-    echo   [ERROR] Backend failed to start within 30 seconds
-    echo   [%date% %time%] ERROR: Backend timeout 30s >> "%LOG_FILE%"
-    echo.
-    echo   === CHECKING BACKEND LOGS ===
-    docker-compose logs backend 2>&1 | tail -30
-    echo.
-    goto :FAILED
-)
-
-REM --- Success ---
+REM --- Success (no health check — launcher runs async) ---
 echo.
 echo ====================================================
-echo    ✓ OMNIBOT IS ONLINE!
+echo    ✓ OMNIBOT IS STARTING!
 echo ====================================================
 echo    Backend:   http://localhost:3001
 echo    Frontend:  http://localhost:5173
 echo    Dashboard: http://localhost:5173/shopify
 echo    Logs:      Project_Docs/Logs/omnibot.log
 echo ====================================================
-echo [%date% %time%] OMNIBOT ONLINE >> "%LOG_FILE%"
+echo [%date% %time%] OMNIBOT STARTING >> "%LOG_FILE%"
 echo.
-echo  Services running in background (system tray icon active).
+echo  System tray icon is active (right-click for menu).
 echo  Close this window anytime - services continue running.
 echo.
 echo  === Press any key to close this window ===
@@ -167,7 +149,10 @@ echo.
 echo   LOG FILES:
 echo     %LOG_FILE%
 echo     Project_Docs/Logs/omnibot.log
-echo     backend_out.log / backend_err.log
+echo     Project_Docs/Logs/tray_manager.log
+echo     tray_error.log
+echo.
+echo   Check tray_error.log if the tray icon did not appear.
 echo.
 echo   POSSIBLE FIXES:
 echo     1. Make sure Docker Desktop is running

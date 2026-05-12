@@ -45,6 +45,20 @@ class PatchApplier:
 
         for i, patch in enumerate(patches):
             try:
+                # Check for file exclusion to prevent autonomous regressions in critical files
+                rel_file_path = Path(patch["file"]).as_posix().strip("./")
+                excluded_files = {
+                    "frontend/src/pages/Settings.tsx",
+                    "PROJECT_INSTRUCTIONS.md",
+                    "MODIFICATION_HISTORY.md",
+                    "AGENTS.md",
+                }
+                if rel_file_path in excluded_files:
+                    logger.warning("Patch %d skipped: file '%s' is protected/excluded from autonomous modification.", i + 1, rel_file_path)
+                    result["patches_skipped"] += 1
+                    result["errors"].append(f"Patch {i}: File '{rel_file_path}' is protected and excluded from autonomous modification.")
+                    continue
+
                 file_path = self.root_path / patch["file"]
                 action = patch["action"]
 

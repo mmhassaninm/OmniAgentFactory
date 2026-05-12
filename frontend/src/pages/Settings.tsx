@@ -256,7 +256,17 @@ export default function Settings() {
     }
   })
 
-  // Load Shopify settings when tab is activated
+  // REGRESSION FIX: Moved idea-engine-status useQuery hook BEFORE the isLoading early-return
+  // to prevent React hook-ordering violations during initial load.
+  const { data: ieStatus, refetch: refetchIeStatus } = useQuery({
+    queryKey: ['idea-engine-status'],
+    queryFn: () => fetchJson('/api/factory/settings/idea-engine/status'),
+    refetchInterval: 30000, // auto-refresh every 30s
+  })
+
+  // REGRESSION FIX: Moved Shopify useEffect BEFORE the isLoading early-return to prevent
+  // React hook-ordering violation. The same bug regressed twice — all `useEffect` calls on
+  // Settings.tsx MUST remain above the conditional early-return at `if (isLoading) { ... }`.
   useEffect(() => {
     if (activeTab === 'shopify') {
       fetchJson('/api/shopify/settings')
@@ -1159,13 +1169,6 @@ export default function Settings() {
       </div>
     )
   }
-
-  // ── IDEA ENGINE TELEMETRY & FETCH ──
-  const { data: ieStatus, refetch: refetchIeStatus } = useQuery({
-    queryKey: ['idea-engine-status'],
-    queryFn: () => fetchJson('/api/factory/settings/idea-engine/status'),
-    refetchInterval: 30000, // auto-refresh every 30s
-  })
 
   function renderIdeaEnginePanel() {
     return (
