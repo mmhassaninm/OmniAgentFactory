@@ -20,6 +20,9 @@
 
 This file tracks all discovered problems, missing components, and new features for the continuous, autonomous evolution of OmniBot.
 
+> [!NOTE]
+> For the latest senior architect-level cutting-edge development blueprints, please refer directly to the [50_NEXT_LEVEL_ARCHITECT_IDEAS.md](file:///d:/2026/Projects/AI/NexusOS/50_NEXT_LEVEL_ARCHITECT_IDEAS.md) registry.
+
 ---
 
 ## 📋 Evolution Backlog & Prioritization

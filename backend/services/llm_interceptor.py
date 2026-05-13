@@ -168,3 +168,38 @@ def get_active_call_count() -> int:
 def get_total_calls() -> int:
     """Get total intercepted calls this session."""
     return _call_counter
+
+
+# ── Background LLM Client & Exception for SleepWakeController ───
+
+import httpx
+
+class BackgroundAIDisabledException(Exception):
+    """Exception raised when background AI calls are disabled due to system configuration or high CPU load."""
+    pass
+
+
+class BackgroundLLMClient:
+    """
+    An async context manager wrapping httpx.AsyncClient.
+    Checks system settings and handles intercepting/auditing for background LLM processes.
+    """
+    def __init__(self, *args, **kwargs):
+        self.client = httpx.AsyncClient(*args, **kwargs)
+
+    async def __aenter__(self):
+        from models.settings import get_settings
+        try:
+            settings = await get_settings()
+            if not settings or not settings.proactiveBackgroundProcessing:
+                raise BackgroundAIDisabledException("Proactive background processing is disabled in system settings.")
+        except Exception as e:
+            if isinstance(e, BackgroundAIDisabledException):
+                raise
+            logger.warning("Failed to check background processing settings: %s", e)
+
+        await self.client.__aenter__()
+        return self.client
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.client.__aexit__(exc_type, exc_val, exc_tb)

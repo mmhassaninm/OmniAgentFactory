@@ -9,6 +9,7 @@ import os
 import subprocess
 import tempfile
 import sys
+import asyncio
 from typing import Dict, Any
 
 from core.omni_commander.executors.file_executor import WORKSPACE_ROOT
@@ -31,8 +32,9 @@ async def execute_code_action(params: Dict[str, Any]) -> Dict[str, Any]:
                 temp_py_path = temp_py.name
                 
             try:
-                # Run the script with the current python interpreter inside workspace cwd
-                res = subprocess.run(
+                # Run the script with the current python interpreter inside workspace cwd in a background thread
+                res = await asyncio.to_thread(
+                    subprocess.run,
                     [sys.executable, temp_py_path],
                     cwd=WORKSPACE_ROOT,
                     capture_output=True,
@@ -57,8 +59,9 @@ async def execute_code_action(params: Dict[str, Any]) -> Dict[str, Any]:
             if not cmd:
                 return {"success": False, "error": "Command parameter is empty."}
                 
-            # Execute whitelisted terminal instruction
-            res = subprocess.run(
+            # Execute whitelisted terminal instruction in a background thread
+            res = await asyncio.to_thread(
+                subprocess.run,
                 cmd,
                 shell=True,
                 cwd=WORKSPACE_ROOT,
@@ -76,7 +79,8 @@ async def execute_code_action(params: Dict[str, Any]) -> Dict[str, Any]:
             
         # ── 3. GIT STATUS ──────────────────────────────────────────────────────
         elif action == "git_status":
-            res = subprocess.run(
+            res = await asyncio.to_thread(
+                subprocess.run,
                 ["git", "status"],
                 cwd=WORKSPACE_ROOT,
                 capture_output=True,
@@ -94,10 +98,11 @@ async def execute_code_action(params: Dict[str, Any]) -> Dict[str, Any]:
             msg = params.get("commit_message", "Omni Commander automated updates")
             
             # Step A: Add all changes
-            subprocess.run(["git", "add", "."], cwd=WORKSPACE_ROOT, timeout=10)
+            await asyncio.to_thread(subprocess.run, ["git", "add", "."], cwd=WORKSPACE_ROOT, timeout=10)
             
             # Step B: Commit
-            res = subprocess.run(
+            res = await asyncio.to_thread(
+                subprocess.run,
                 ["git", "commit", "-m", msg],
                 cwd=WORKSPACE_ROOT,
                 capture_output=True,
@@ -113,7 +118,8 @@ async def execute_code_action(params: Dict[str, Any]) -> Dict[str, Any]:
             
         # ── 5. GIT PUSH ────────────────────────────────────────────────────────
         elif action == "git_push":
-            res = subprocess.run(
+            res = await asyncio.to_thread(
+                subprocess.run,
                 ["git", "push"],
                 cwd=WORKSPACE_ROOT,
                 capture_output=True,

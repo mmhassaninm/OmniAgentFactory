@@ -1,22 +1,12 @@
-/*
-================================================================================
-NEXUSOS / SHELL COMPONENTS REMOVAL LIST (STEP 0 - DEPLOYED)
-================================================================================
-These files/folders are scheduled for complete deletion to pivot to the standalone Web Dashboard:
-- frontend/src/components/shell/AppLauncher.tsx
-- frontend/src/components/shell/Desktop.tsx
-- frontend/src/components/shell/NotificationToast.tsx
-- frontend/src/components/shell/Taskbar.tsx
-- frontend/src/components/shell/WindowFrame.tsx
-- frontend-nexus/ (entire standalone desktop project folder on port 5174)
-================================================================================
-*/
-
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { lazy } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import MainLayout from './components/MainLayout'
 import { LanguageProvider } from './i18n/LanguageContext'
 import { PreLoader } from './components/PreLoader'
+import GlobalErrorHandler from './components/GlobalErrorHandler'
+import ErrorBoundary from './components/ErrorBoundary'
+import PageLoader from './components/PageLoader'
+import ErrorPage from './pages/errors/ErrorPage'
 
 // Lazy load all page components for route-based code-splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -35,59 +25,70 @@ const AgentCollaboration = lazy(() => import('./pages/AgentCollaboration'))
 const TaskQueue = lazy(() => import('./pages/TaskQueue'))
 const OmniCommander = lazy(() => import('./pages/OmniCommander'))
 
-
-// Simple loading fallback
-const PageLoader = () => <div className="flex items-center justify-center h-screen"><div className="text-xl text-[#475569]">Loading...</div></div>
+// Wrapper to add ErrorBoundary + PageLoader around each lazy-loaded page
+function PageGuard({ children, pageName }: { children: React.ReactNode; pageName: string }) {
+  return (
+    <ErrorBoundary pageName={pageName}>
+      <PageLoader name={pageName} timeout={10}>
+        <>{children}</>
+      </PageLoader>
+    </ErrorBoundary>
+  )
+}
 
 export default function App() {
   return (
     <LanguageProvider>
       <BrowserRouter>
-        <PreLoader>
-          <Routes>
-            {/* Main Layout containing Sidebar + Content */}
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
-              <Route path="/dashboard" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
-              <Route path="/factory" element={<Suspense fallback={<PageLoader />}><Factory /></Suspense>} />
+        <GlobalErrorHandler>
+          <PreLoader>
+            <Routes>
+              {/* Main Layout containing Sidebar + Content */}
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<PageGuard pageName="Dashboard"><Dashboard /></PageGuard>} />
+                <Route path="/dashboard" element={<PageGuard pageName="Dashboard"><Dashboard /></PageGuard>} />
+                <Route path="/factory" element={<PageGuard pageName="Factory"><Factory /></PageGuard>} />
 
-              <Route path="/collaboration" element={<Suspense fallback={<PageLoader />}><AgentCollaboration /></Suspense>} />
-              <Route path="/brainstorm" element={<Suspense fallback={<PageLoader />}><AgentCollaboration /></Suspense>} />
+                <Route path="/collaboration" element={<PageGuard pageName="Collaboration"><AgentCollaboration /></PageGuard>} />
+                <Route path="/brainstorm" element={<PageGuard pageName="Collaboration"><AgentCollaboration /></PageGuard>} />
 
-              <Route path="/dev-loop" element={<Suspense fallback={<PageLoader />}><DevLoopDashboard /></Suspense>} />
-              <Route path="/devloop" element={<Suspense fallback={<PageLoader />}><DevLoopDashboard /></Suspense>} />
+                <Route path="/dev-loop" element={<PageGuard pageName="Dev Loop"><DevLoopDashboard /></PageGuard>} />
+                <Route path="/devloop" element={<PageGuard pageName="Dev Loop"><DevLoopDashboard /></PageGuard>} />
 
-              <Route path="/money-agent" element={<Suspense fallback={<PageLoader />}><MoneyAgent /></Suspense>} />
-              <Route path="/money" element={<Suspense fallback={<PageLoader />}><MoneyAgent /></Suspense>} />
+                <Route path="/money-agent" element={<PageGuard pageName="Money Agent"><MoneyAgent /></PageGuard>} />
+                <Route path="/money" element={<PageGuard pageName="Money Agent"><MoneyAgent /></PageGuard>} />
 
-              <Route path="/shopify" element={<Suspense fallback={<PageLoader />}><ShopifyFactory /></Suspense>} />
+                <Route path="/shopify" element={<PageGuard pageName="Shopify"><ShopifyFactory /></PageGuard>} />
 
-              <Route path="/evolution" element={<Suspense fallback={<PageLoader />}><EvolutionRegistry /></Suspense>} />
+                <Route path="/evolution" element={<PageGuard pageName="Evolution"><EvolutionRegistry /></PageGuard>} />
 
-              <Route path="/queue" element={<Suspense fallback={<PageLoader />}><TaskQueue /></Suspense>} />
-              <Route path="/task-queue" element={<Suspense fallback={<PageLoader />}><TaskQueue /></Suspense>} />
-              <Route path="/commander" element={<Suspense fallback={<PageLoader />}><OmniCommander /></Suspense>} />
+                <Route path="/queue" element={<PageGuard pageName="Task Queue"><TaskQueue /></PageGuard>} />
+                <Route path="/task-queue" element={<PageGuard pageName="Task Queue"><TaskQueue /></PageGuard>} />
+                <Route path="/commander" element={<PageGuard pageName="OmniCommander"><OmniCommander /></PageGuard>} />
 
+                {/* Support both new /agents/:id and legacy /agent/:agentId routes */}
+                <Route path="/agents/:agentId" element={<PageGuard pageName="Agent Detail"><AgentDetail /></PageGuard>} />
+                <Route path="/agent/:agentId" element={<PageGuard pageName="Agent Detail"><AgentDetail /></PageGuard>} />
 
-              {/* Support both new /agents/:id and legacy /agent/:agentId routes */}
-              <Route path="/agents/:agentId" element={<Suspense fallback={<PageLoader />}><AgentDetail /></Suspense>} />
-              <Route path="/agent/:agentId" element={<Suspense fallback={<PageLoader />}><AgentDetail /></Suspense>} />
+                <Route path="/agents/:agentId/chat" element={<PageGuard pageName="Agent Chat"><AgentChat /></PageGuard>} />
+                <Route path="/agent/:agentId/chat" element={<PageGuard pageName="Agent Chat"><AgentChat /></PageGuard>} />
 
-              <Route path="/agents/:agentId/chat" element={<Suspense fallback={<PageLoader />}><AgentChat /></Suspense>} />
-              <Route path="/agent/:agentId/chat" element={<Suspense fallback={<PageLoader />}><AgentChat /></Suspense>} />
+                <Route path="/agent/:agentId/preview" element={<PageGuard pageName="Agent Preview"><AgentPreview /></PageGuard>} />
 
-              <Route path="/agent/:agentId/preview" element={<Suspense fallback={<PageLoader />}><AgentPreview /></Suspense>} />
+                <Route path="/settings" element={<PageGuard pageName="Settings"><Settings /></PageGuard>} />
+                <Route path="/settings/keys" element={<PageGuard pageName="Key Vault"><KeyVault /></PageGuard>} />
 
-              <Route path="/settings" element={<Suspense fallback={<PageLoader />}><Settings /></Suspense>} />
-              <Route path="/settings/keys" element={<Suspense fallback={<PageLoader />}><KeyVault /></Suspense>} />
+                {/* Support both /models and /hub */}
+                <Route path="/models" element={<PageGuard pageName="Model Hub"><ModelHub /></PageGuard>} />
+                <Route path="/hub" element={<PageGuard pageName="Model Hub"><ModelHub /></PageGuard>} />
+                <Route path="/vault" element={<PageGuard pageName="Key Vault"><KeyVault /></PageGuard>} />
+              </Route>
 
-              {/* Support both /models and /hub */}
-              <Route path="/models" element={<Suspense fallback={<PageLoader />}><ModelHub /></Suspense>} />
-              <Route path="/hub" element={<Suspense fallback={<PageLoader />}><ModelHub /></Suspense>} />
-              <Route path="/vault" element={<Suspense fallback={<PageLoader />}><KeyVault /></Suspense>} />
-            </Route>
-          </Routes>
-        </PreLoader>
+              {/* Catch-all 404 - MUST be LAST */}
+              <Route path="*" element={<ErrorPage code={404} fullPage={true} />} />
+            </Routes>
+          </PreLoader>
+        </GlobalErrorHandler>
       </BrowserRouter>
     </LanguageProvider>
   )

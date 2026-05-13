@@ -1,9 +1,15 @@
 import asyncio
 import logging
+import uuid
+import os
+import time
+from datetime import datetime
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from contextlib import asynccontextmanager
+import traceback
 
 from core.config import get_settings
 
@@ -844,7 +850,116 @@ async def simple_health():
         "version": "2.0"
     }
 
+# ── Global Error ID Generator ──────────────────────────────────────────
 
+def generate_error_id() -> str:
+    """Generate a unique error ID in format ERR-YYYYMMDD-XXXX."""
+    now = datetime.utcnow()
+    date = now.strftime("%Y%m%d")
+    rand = uuid.uuid4().hex[:4].upper()
+    return f"ERR-{date}-{rand}"
+
+
+# ── Standard Error Response Builder ───────────────────────────────────
+
+def build_error_response(status_code: int, error_type: str, message: str, request: Request = None, error_id: str = None):
+    """Build a standardized error response."""
+    error_id = error_id or generate_error_id()
+    content = {
+        "error": True,
+        "code": status_code,
+        "type": error_type,
+        "message": message,
+        "error_id": error_id,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    if request is not None:
+        content["path"] = str(request.url)
+    return JSONResponse(status_code=status_code, content=content)
+
+
+# ── Global Exception Handlers ─────────────────────────────────────────
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    """Handle 404 Not Found errors with standard format."""
+    from fastapi.exceptions import HTTPException
+    error_id = generate_error_id()
+    logger.warning("[%s] 404 Not Found: %s %s", error_id, request.method, request.url.path)
+    return build_error_response(
+        status_code=404,
+        error_type="NotFound",
+        message="The requested resource was not found",
+        request=request,
+        error_id=error_id,
+    )
+
+
+@app.exception_handler(405)
+async def method_not_allowed_handler(request: Request, exc):
+    """Handle 405 Method Not Allowed errors."""
+    error_id = generate_error_id()
+    logger.warning("[%s] 405 Method Not Allowed: %s %s", error_id, request.method, request.url.path)
+    return build_error_response(
+        status_code=405,
+        error_type="MethodNotAllowed",
+        message=f"Method {request.method} not allowed for this endpoint",
+        request=request,
+        error_id=error_id,
+    )
+
+
+@app.exception_handler(429)
+async def rate_limit_handler(request: Request, exc):
+    """Handle 429 Rate Limit errors."""
+    error_id = generate_error_id()
+    logger.warning("[%s] 429 Rate Limit: %s %s", error_id, request.method, request.url.path)
+    return build_error_response(
+        status_code=429,
+        error_type="RateLimit",
+        message="Too many requests. Please wait and retry.",
+        request=request,
+        error_id=error_id,
+    )
+
+
+@app.exception_handler(500)
+async def internal_server_error_handler(request: Request, exc):
+    """Handle 500 Internal Server errors."""
+    error_id = generate_error_id()
+    logger.error("[%s] 500 Internal Server Error: %s %s", error_id, request.method, request.url.path)
+    logger.error("[%s] Exception: %s", error_id, str(exc))
+    logger.error("[%s] Traceback:\n%s", error_id, traceback.format_exc())
+    return build_error_response(
+        status_code=500,
+        error_type="ServerError",
+        message="An unexpected error occurred. The system has been notified.",
+        request=request,
+        error_id=error_id,
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc):
+    """Catch-all handler for any unhandled exception."""
+    error_id = generate_error_id()
+    logger.critical("[%s] UNHANDLED EXCEPTION: %s %s — %s", error_id, request.method, request.url.path, str(exc))
+    logger.critical("[%s] Traceback:\n%s", error_id, traceback.format_exc())
+
+    try:
+        from utils.error_log import log_error
+        # Log the traceback as string since log_error may not accept exc_info
+        log_error(f"[{error_id}] {traceback.format_exc()}")
+    except Exception:
+        pass
+
+    return build_error_response(
+        status_code=500,
+        error_type="ServerError",
+        message="An unexpected error occurred. Our team has been notified.",
+        request=request,
+        error_id=error_id,
+    )
 
 
 if __name__ == "__main__":

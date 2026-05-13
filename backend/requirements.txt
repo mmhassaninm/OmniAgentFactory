@@ -22,6 +22,8 @@ httpx
 requests
 beautifulsoup4
 duckduckgo-search
+python-multipart
+
 
 # ── Security ───────────────────────────
 cryptography

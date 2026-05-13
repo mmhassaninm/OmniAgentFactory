@@ -132,8 +132,6 @@ async def test_intent_router_parsing():
 
 @pytest.mark.asyncio
 async def test_orchestrator_confirmation_workflow():
-    orchestrator = OmniOrchestrator()
-    
     # Mock db and queue engine dependencies
     mock_db = MagicMock()
     mock_db.commander_sessions.find_one = AsyncMock(return_value={})
@@ -141,6 +139,9 @@ async def test_orchestrator_confirmation_workflow():
     
     mock_queue = MagicMock()
     mock_queue.enqueue = AsyncMock()
+    mock_queue.complete = AsyncMock()
+    mock_queue.fail = AsyncMock()
+
     
     # Formulate a mock ActionPlan with a confirmation_required step (like delete_file)
     mock_plan = ActionPlan(
@@ -158,19 +159,22 @@ async def test_orchestrator_confirmation_workflow():
     )
     
     with patch("core.omni_commander.orchestrator.get_db", return_value=mock_db), \
-         patch("core.omni_commander.orchestrator.get_queue_engine", return_value=mock_queue), \
-         patch.object(orchestrator.intent_router, "route", AsyncMock(return_value=mock_plan)):
+         patch("core.omni_commander.orchestrator.get_queue_engine", return_value=mock_queue):
              
-        # Execute stream and assert it pauses on confirmation required
-        events = []
-        async for event in orchestrator.execute_prompt_stream("Delete dummy.txt", "test_session"):
-            events.append(event)
-            
-        assert any(e["type"] == "plan_created" for e in events)
-        assert any(e["type"] == "confirmation_required" for e in events)
+        orchestrator = OmniOrchestrator()
         
-        # Verify db updated session to paused status
-        mock_db.commander_sessions.update_one.assert_any_call(
-            {"_id": "test_session"},
-            {"$set": {"status": "paused", "current_step_index": 0}}
-        )
+        with patch.object(orchestrator.intent_router, "route", AsyncMock(return_value=mock_plan)):
+            # Execute stream and assert it pauses on confirmation required
+            events = []
+            async for event in orchestrator.execute_prompt_stream("Delete dummy.txt", "test_session"):
+                events.append(event)
+                
+            assert any(e["type"] == "plan_created" for e in events)
+            assert any(e["type"] == "confirmation_required" for e in events)
+            
+            # Verify db updated session to paused status
+            mock_db.commander_sessions.update_one.assert_any_call(
+                {"_id": "test_session"},
+                {"$set": {"status": "paused", "current_step_index": 0}}
+            )
+

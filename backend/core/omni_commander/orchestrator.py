@@ -8,6 +8,7 @@ and WebSocket connections to power real-time dashboard progress tracking.
 
 import asyncio
 from datetime import datetime
+import json
 import logging
 from typing import Dict, Any, List, Optional, AsyncGenerator
 import uuid
