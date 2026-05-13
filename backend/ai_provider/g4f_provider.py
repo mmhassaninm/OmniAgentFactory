@@ -426,7 +426,7 @@ class G4FProvider(AIProvider):
 
             try:
                 logger.info(f"Async streaming via sub-provider '{p_name}' for model '{mapped_model}'")
-                response = self.async_client.chat.completions.create(
+                response = await self.async_client.chat.completions.create(
                     model=mapped_model,
                     messages=messages,
                     provider=g4f_prov,

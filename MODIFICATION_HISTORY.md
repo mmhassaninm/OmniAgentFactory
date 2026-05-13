@@ -149,3 +149,9 @@
 - Approach      : Created a comprehensive, structured, continuously updatable registry featuring 50 brand-new, cutting-edge software architecture and passive monetization blueprints for NexusOS, completely separate from legacy idea backlogs.
 - Outcome       : success
 - Notes         : The ideas cover meta-evolution, decentralized finance, edge intelligence, specialized SaaS APIs, automated content, and enterprise yield solutions with unique machine-readable IDs.
+
+## 2026-05-13 — G4FProvider Stream Async Bugfix
+- Files changed : backend/ai_provider/g4f_provider.py
+- Approach      : Appended missing await keyword to the async completion create call inside the stream_async generator to resolve the coroutine correctly.
+- Outcome       : success
+- Notes         : Successfully fixed a critical runtime TypeError ('coroutine' object is not iterable) preventing keyless token streaming fallback, verified via full pytest checks.
