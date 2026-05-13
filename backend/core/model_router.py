@@ -166,6 +166,70 @@ async def _try_completion(model: str, api_key: str, messages: list, **kwargs) ->
             
         if model.startswith("openrouter/"):
             call_kwargs["api_base"] = "https://openrouter.ai/api/v1"
+            
+            # --- PROVIDER FALLBACK ---
+            extra_body = call_kwargs.get("extra_body", {}) or {}
+            extra_body = dict(extra_body)
+            
+            all_openrouter_fallbacks = [
+                "openrouter/auto",
+                "openrouter/auto:free",
+                "openrouter/meta-llama/llama-3.1-8b-instruct:free",
+                "openrouter/mistralai/mistral-7b-instruct:free",
+                "openrouter/google/gemma-2-9b-it:free",
+                "openrouter/microsoft/phi-3-mini-128k-instruct:free"
+            ]
+            
+            fallback_models = [model]
+            try:
+                idx = all_openrouter_fallbacks.index(model)
+                remaining = all_openrouter_fallbacks[idx + 1:]
+            except ValueError:
+                remaining = all_openrouter_fallbacks
+                
+            for m in remaining:
+                if m not in fallback_models:
+                    fallback_models.append(m)
+                    
+            def _clean_id(m_id: str) -> str:
+                if m_id.startswith("openrouter/"):
+                    return m_id[len("openrouter/"):]
+                return m_id
+                
+            extra_body["models"] = [_clean_id(m) for m in fallback_models]
+            extra_body["route"] = "fallback"
+            
+            # --- RESPONSE HEALING ---
+            if kwargs.get("response_format") and not kwargs.get("stream"):
+                extra_body["plugins"] = [{"id": "response-healing"}]
+                
+            call_kwargs["extra_body"] = extra_body
+            
+            # --- PROMPT CACHING & OPTIMAL PAYLOAD HEADERS ---
+            messages_copy = []
+            for msg in messages:
+                if isinstance(msg, dict) and msg.get("role") == "system" and isinstance(msg.get("content"), str):
+                    messages_copy.append({
+                        "role": "system",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": msg["content"],
+                                "cache_control": {"type": "ephemeral"}
+                            }
+                        ]
+                    })
+                else:
+                    messages_copy.append(msg)
+            call_kwargs["messages"] = messages_copy
+            
+            extra_headers = call_kwargs.get("extra_headers", {}) or {}
+            extra_headers = dict(extra_headers)
+            if "HTTP-Referer" not in extra_headers:
+                extra_headers["HTTP-Referer"] = "https://github.com/mmhassaninm/OmniAgentFactory"
+            if "X-Title" not in extra_headers:
+                extra_headers["X-Title"] = "NexusOS Autonomous Agent Factory"
+            call_kwargs["extra_headers"] = extra_headers
         elif model.startswith("cerebras/"):
             call_kwargs["api_base"] = "https://api.cerebras.ai/v1"
         elif model.startswith("cloudflare/") or model.startswith("@cf/"):

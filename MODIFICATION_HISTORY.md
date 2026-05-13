@@ -155,3 +155,10 @@
 - Approach      : Appended missing await keyword to the async completion create call inside the stream_async generator to resolve the coroutine correctly.
 - Outcome       : success
 - Notes         : Successfully fixed a critical runtime TypeError ('coroutine' object is not iterable) preventing keyless token streaming fallback, verified via full pytest checks.
+
+## 2026-05-13 — OpenRouter Payload Upgrades & Model Router Tests
+- Files changed : backend/core/model_router.py, backend/tests/test_model_router.py [NEW]
+- Approach      : Integrated automatic provider fallbacks, prompt caching for system messages, response healing plugins, and optimal payload headers inside the OpenRouter routing path, backed by a comprehensive unit test suite.
+- Outcome       : success
+- Notes         : Staged, committed, and pushed all updates to the main GitHub repository.
+
